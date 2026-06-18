@@ -74,9 +74,11 @@ your device. Happy gaming!
 
 | Asset | Status / where |
 |---|---|
-| App icon (512×512) | Auto-generated from the build — Play pulls it from the AAB |
+| **App icon (512×512)** | ✅ `assets/play-icon-512.png` — upload this (the store icon is uploaded separately; it is NOT taken from the build) |
 | **Feature graphic (1024×500)** | ✅ `assets/feature-graphic.png` — upload this |
 | **Phone screenshots (2–8, min 2)** | ⏳ You capture these on your phone (see below) |
+| 7" tablet screenshots | ⛔ Not needed — optional. We have none; skip for now. |
+| 10" tablet screenshots | ⛔ Not needed — optional. We have none; skip for now. |
 
 ### Screenshots to capture (on your phone, once the new build is installed)
 Take these 4–6 — portrait, just normal in-app screenshots:
