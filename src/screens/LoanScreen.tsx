@@ -78,7 +78,7 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
           value={name}
           onChangeText={setName}
           placeholder="e.g. Dave"
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={colors.placeholder}
         />
 
         <Text style={[styles.label, { marginTop: spacing.lg }]}>Date loaned</Text>
@@ -87,7 +87,7 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
           value={date}
           onChangeText={setDate}
           placeholder="DD/MM/YYYY"
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={colors.placeholder}
         />
 
         <Pressable style={styles.saveBtn} onPress={onLoan}>

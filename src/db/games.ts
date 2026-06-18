@@ -105,12 +105,15 @@ export async function searchGames(filters: SearchFilters): Promise<Game[]> {
     params.push(filters.minPlayTime);
   }
   if (filters.playerCount != null) {
+    // Effective max counts extra players from owned expansions, so a 1-6 game
+    // with a "+2" expansion can satisfy an "8 players" search.
+    const effMax =
+      '(COALESCE(g.max_players, 0) + (SELECT COALESCE(SUM(e.additional_players), 0) FROM expansions e WHERE e.game_id = g.id))';
     if (filters.playerCount >= 7) {
-      // "7+" means the game supports at least this many players.
-      where.push('g.max_players >= ?');
+      where.push(`${effMax} >= ?`);
       params.push(filters.playerCount);
     } else {
-      where.push('g.min_players <= ? AND g.max_players >= ?');
+      where.push(`g.min_players <= ? AND ${effMax} >= ?`);
       params.push(filters.playerCount, filters.playerCount);
     }
   }
@@ -295,6 +298,15 @@ export async function getExpansions(gameId: number): Promise<Expansion[]> {
     name: r.name,
     additionalPlayers: r.additional_players,
   }));
+}
+
+// Distinct storage locations in use, for the Collection location filter.
+export async function getAllLocations(): Promise<string[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{ location: string }>(
+    "SELECT DISTINCT location FROM games WHERE location IS NOT NULL AND trim(location) <> '' ORDER BY location COLLATE NOCASE ASC"
+  );
+  return rows.map((r) => r.location);
 }
 
 // All distinct tag names in use, for filter chips and autocomplete.

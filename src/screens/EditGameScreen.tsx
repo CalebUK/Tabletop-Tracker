@@ -253,7 +253,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               value={form.name}
               onChangeText={(v) => patch({ name: v })}
               placeholder="e.g. Wingspan"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={colors.placeholder}
             />
             <Pressable style={styles.identifyBtn} onPress={openBggSearch}>
               <Text style={styles.identifyText}>🔍 Look up on BoardGameGeek</Text>
@@ -271,7 +271,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               value={form.location ?? ''}
               onChangeText={(v) => patch({ location: v || null })}
               placeholder="e.g. Hall closet, top shelf"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={colors.placeholder}
             />
           </Field>
 
@@ -283,7 +283,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                 value={form.minPlayers?.toString() ?? ''}
                 onChangeText={(v) => patch({ minPlayers: numOrNull(v) })}
                 placeholder="1"
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor={colors.placeholder}
               />
             </Field>
             <Field label="Max players" style={styles.flex1}>
@@ -293,7 +293,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                 value={form.maxPlayers?.toString() ?? ''}
                 onChangeText={(v) => patch({ maxPlayers: numOrNull(v) })}
                 placeholder="4"
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor={colors.placeholder}
               />
             </Field>
           </View>
@@ -306,7 +306,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                 value={form.playTimeMin?.toString() ?? ''}
                 onChangeText={(v) => patch({ playTimeMin: numOrNull(v) })}
                 placeholder="45"
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor={colors.placeholder}
               />
             </Field>
             <Field label="Year" style={styles.flex1}>
@@ -316,18 +316,18 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                 value={form.year?.toString() ?? ''}
                 onChangeText={(v) => patch({ year: numOrNull(v) })}
                 placeholder="2019"
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor={colors.placeholder}
               />
             </Field>
           </View>
 
-          <Field label="Developer">
+          <Field label="Publisher/Designer">
             <TextInput
               style={styles.input}
               value={form.developer ?? ''}
               onChangeText={(v) => patch({ developer: v || null })}
-              placeholder="e.g. Elizabeth Hargrave"
-              placeholderTextColor={colors.textMuted}
+              placeholder="e.g. Hasbro Inc."
+              placeholderTextColor={colors.placeholder}
             />
           </Field>
 
@@ -364,7 +364,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               onChangeText={setTagText}
               onSubmitEditing={() => addTag(tagText)}
               placeholder="Type a tag and press return"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={colors.placeholder}
               autoCapitalize="none"
               returnKeyType="done"
             />
@@ -385,7 +385,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               value={form.notes ?? ''}
               onChangeText={(v) => patch({ notes: v || null })}
               placeholder="General notes about the game…"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={colors.placeholder}
               multiline
             />
           </Field>
@@ -396,7 +396,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               value={form.houseRules ?? ''}
               onChangeText={(v) => patch({ houseRules: v || null })}
               placeholder="Any variants or house rules…"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={colors.placeholder}
               multiline
             />
           </Field>
@@ -409,7 +409,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                   value={ex.name}
                   onChangeText={(v) => updateExpansion(i, { name: v })}
                   placeholder="Expansion name"
-                  placeholderTextColor={colors.textMuted}
+                  placeholderTextColor={colors.placeholder}
                 />
                 <View style={styles.expansionPlayers}>
                   <TextInput
@@ -418,7 +418,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                     value={ex.additionalPlayers ? String(ex.additionalPlayers) : ''}
                     onChangeText={(v) => updateExpansion(i, { additionalPlayers: numOrNull(v) ?? 0 })}
                     placeholder="0"
-                    placeholderTextColor={colors.textMuted}
+                    placeholderTextColor={colors.placeholder}
                   />
                   <Text style={styles.expansionPlayersLabel}>+players</Text>
                 </View>

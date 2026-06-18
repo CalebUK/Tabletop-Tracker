@@ -64,6 +64,8 @@ export interface Play {
   playedAt: string;
   notes: string | null;
   players: PlayPlayer[];
+  expansions: string[]; // names of expansions used (for display)
+  expansionIds: number[]; // expansion ids used (for editing)
 }
 
 export interface PlayPlayer {

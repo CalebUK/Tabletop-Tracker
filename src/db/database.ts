@@ -75,12 +75,21 @@ CREATE TABLE IF NOT EXISTS expansions (
   FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS play_expansions (
+  play_id INTEGER NOT NULL,
+  expansion_id INTEGER NOT NULL,
+  PRIMARY KEY (play_id, expansion_id),
+  FOREIGN KEY (play_id) REFERENCES plays(id) ON DELETE CASCADE,
+  FOREIGN KEY (expansion_id) REFERENCES expansions(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_game_tags_game ON game_tags(game_id);
 CREATE INDEX IF NOT EXISTS idx_game_tags_tag ON game_tags(tag_id);
 CREATE INDEX IF NOT EXISTS idx_plays_game ON plays(game_id);
 CREATE INDEX IF NOT EXISTS idx_play_players_play ON play_players(play_id);
 CREATE INDEX IF NOT EXISTS idx_loans_game ON loans(game_id);
 CREATE INDEX IF NOT EXISTS idx_expansions_game ON expansions(game_id);
+CREATE INDEX IF NOT EXISTS idx_play_expansions_play ON play_expansions(play_id);
 `;
 
 // Patch databases created by an earlier schema version. CREATE TABLE above

@@ -8,6 +8,7 @@ export const colors = {
   border: '#2e333d',
   text: '#f2f4f8',
   textMuted: '#9aa3b2',
+  placeholder: '#596273', // dimmer than textMuted, for example/suggestion hints
   primary: '#6c8cff',
   primaryText: '#ffffff',
   star: '#ffc857',

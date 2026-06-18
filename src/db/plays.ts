@@ -14,7 +14,30 @@ interface PlayPlayerRow {
   is_winner: number;
 }
 
-// All plays for a game, newest first, with their players attached.
+// Insert player + expansion rows for a play (shared by add and update).
+async function writePlayChildren(
+  db: Awaited<ReturnType<typeof getDb>>,
+  playId: number,
+  players: PlayPlayer[],
+  expansionIds: number[]
+): Promise<void> {
+  for (const p of players) {
+    const name = p.name.trim();
+    if (!name) continue;
+    await db.runAsync(
+      'INSERT INTO play_players (play_id, player_name, is_winner) VALUES (?, ?, ?)',
+      [playId, name, p.isWinner ? 1 : 0]
+    );
+  }
+  for (const id of expansionIds) {
+    await db.runAsync(
+      'INSERT OR IGNORE INTO play_expansions (play_id, expansion_id) VALUES (?, ?)',
+      [playId, id]
+    );
+  }
+}
+
+// All plays for a game, newest first, with players and used expansions.
 export async function getPlaysForGame(gameId: number): Promise<Play[]> {
   const db = await getDb();
   const playRows = await db.getAllAsync<PlayRow>(
@@ -30,12 +53,26 @@ export async function getPlaysForGame(gameId: number): Promise<Play[]> {
       WHERE p.game_id = ?`,
     [gameId]
   );
+  const expRows = await db.getAllAsync<{ play_id: number; name: string }>(
+    `SELECT pe.play_id, e.name
+       FROM play_expansions pe
+       JOIN expansions e ON e.id = pe.expansion_id
+       JOIN plays p ON p.id = pe.play_id
+      WHERE p.game_id = ?`,
+    [gameId]
+  );
 
-  const byPlay = new Map<number, PlayPlayer[]>();
+  const playersByPlay = new Map<number, PlayPlayer[]>();
   for (const r of playerRows) {
-    const list = byPlay.get(r.play_id) ?? [];
+    const list = playersByPlay.get(r.play_id) ?? [];
     list.push({ name: r.player_name, isWinner: r.is_winner === 1 });
-    byPlay.set(r.play_id, list);
+    playersByPlay.set(r.play_id, list);
+  }
+  const expsByPlay = new Map<number, string[]>();
+  for (const r of expRows) {
+    const list = expsByPlay.get(r.play_id) ?? [];
+    list.push(r.name);
+    expsByPlay.set(r.play_id, list);
   }
 
   return playRows.map((p) => ({
@@ -43,7 +80,9 @@ export async function getPlaysForGame(gameId: number): Promise<Play[]> {
     gameId: p.game_id,
     playedAt: p.played_at,
     notes: p.notes,
-    players: byPlay.get(p.id) ?? [],
+    players: playersByPlay.get(p.id) ?? [],
+    expansions: expsByPlay.get(p.id) ?? [],
+    expansionIds: [],
   }));
 }
 
@@ -51,7 +90,8 @@ export async function addPlay(
   gameId: number,
   playedAt: string,
   notes: string | null,
-  players: PlayPlayer[]
+  players: PlayPlayer[],
+  expansionIds: number[] = []
 ): Promise<number> {
   const db = await getDb();
   let playId = 0;
@@ -61,14 +101,7 @@ export async function addPlay(
       [gameId, playedAt, notes]
     );
     playId = res.lastInsertRowId;
-    for (const p of players) {
-      const name = p.name.trim();
-      if (!name) continue;
-      await db.runAsync(
-        'INSERT INTO play_players (play_id, player_name, is_winner) VALUES (?, ?, ?)',
-        [playId, name, p.isWinner ? 1 : 0]
-      );
-    }
+    await writePlayChildren(db, playId, players, expansionIds);
   });
   return playId;
 }
@@ -81,12 +114,20 @@ export async function getPlay(playId: number): Promise<Play | null> {
     'SELECT play_id, player_name, is_winner FROM play_players WHERE play_id = ?',
     [playId]
   );
+  const exps = await db.getAllAsync<{ expansion_id: number; name: string }>(
+    `SELECT pe.expansion_id, e.name
+       FROM play_expansions pe JOIN expansions e ON e.id = pe.expansion_id
+      WHERE pe.play_id = ?`,
+    [playId]
+  );
   return {
     id: p.id,
     gameId: p.game_id,
     playedAt: p.played_at,
     notes: p.notes,
     players: players.map((r) => ({ name: r.player_name, isWinner: r.is_winner === 1 })),
+    expansions: exps.map((e) => e.name),
+    expansionIds: exps.map((e) => e.expansion_id),
   };
 }
 
@@ -94,7 +135,8 @@ export async function updatePlay(
   playId: number,
   playedAt: string,
   notes: string | null,
-  players: PlayPlayer[]
+  players: PlayPlayer[],
+  expansionIds: number[] = []
 ): Promise<void> {
   const db = await getDb();
   await db.withTransactionAsync(async () => {
@@ -104,14 +146,8 @@ export async function updatePlay(
       playId,
     ]);
     await db.runAsync('DELETE FROM play_players WHERE play_id = ?', [playId]);
-    for (const p of players) {
-      const name = p.name.trim();
-      if (!name) continue;
-      await db.runAsync(
-        'INSERT INTO play_players (play_id, player_name, is_winner) VALUES (?, ?, ?)',
-        [playId, name, p.isWinner ? 1 : 0]
-      );
-    }
+    await db.runAsync('DELETE FROM play_expansions WHERE play_id = ?', [playId]);
+    await writePlayChildren(db, playId, players, expansionIds);
   });
 }
 

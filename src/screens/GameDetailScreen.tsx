@@ -116,7 +116,7 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
       ) : game.location ? (
         <Row label="📍 Location" value={game.location} />
       ) : null}
-      {game.developer ? <Row label="✍️ Developer" value={game.developer} /> : null}
+      {game.developer ? <Row label="✍️ Publisher/Designer" value={game.developer} /> : null}
 
       {/* House rules shown prominently, below the picture and above play history. */}
       {game.houseRules ? (
@@ -193,6 +193,9 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
                     .map((pl) => (pl.isWinner ? `🏆 ${pl.name}` : pl.name))
                     .join(', ')}
                 </Text>
+              )}
+              {p.expansions.length > 0 && (
+                <Text style={styles.bodyMuted}>🧩 {p.expansions.join(', ')}</Text>
               )}
               {p.notes ? <Text style={styles.bodyMuted}>{p.notes}</Text> : null}
             </Pressable>

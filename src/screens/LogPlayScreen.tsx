@@ -14,13 +14,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { RootStackProps } from '../navigation';
 import { addPlay, getPlay, updatePlay, getAllPlayers } from '../db/plays';
-import { PlayPlayer } from '../types';
+import { getGame, getExpansions } from '../db/games';
+import { Expansion, PlayPlayer } from '../types';
 import { colors, radius, spacing } from '../theme';
 import { isoToUk, todayIso, todayUk, ukToIso } from '../lib/dates';
 
 export default function LogPlayScreen({ route, navigation }: RootStackProps<'LogPlay'>) {
   const { gameId, playId } = route.params;
   const headerHeight = useHeaderHeight();
+  const [gameName, setGameName] = useState('');
+  const [gameExpansions, setGameExpansions] = useState<Expansion[]>([]);
+  const [selectedExpIds, setSelectedExpIds] = useState<number[]>([]);
   const [date, setDate] = useState(todayUk());
   const [notes, setNotes] = useState('');
   const [players, setPlayers] = useState<PlayPlayer[]>([{ name: '', isWinner: false }]);
@@ -30,15 +34,22 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
   useEffect(() => {
     navigation.setOptions({ title: playId ? 'Edit Play' : 'Log Play' });
     getAllPlayers().then(setAllPlayers).catch(() => {});
+    getGame(gameId).then((g) => g && setGameName(g.name));
+    getExpansions(gameId).then(setGameExpansions);
     if (playId) {
       getPlay(playId).then((p) => {
         if (!p) return;
         setDate(isoToUk(p.playedAt));
         setNotes(p.notes ?? '');
         setPlayers(p.players.length ? p.players : [{ name: '', isWinner: false }]);
+        setSelectedExpIds(p.expansionIds);
       });
     }
-  }, [playId]);
+  }, [playId, gameId]);
+
+  function toggleExpansion(id: number) {
+    setSelectedExpIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+  }
 
   function updatePlayer(i: number, p: Partial<PlayPlayer>) {
     setPlayers((list) => list.map((pl, idx) => (idx === i ? { ...pl, ...p } : pl)));
@@ -69,9 +80,9 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
     const cleaned = players.filter((p) => p.name.trim());
     const iso = ukToIso(date) ?? todayIso();
     if (playId) {
-      await updatePlay(playId, iso, notes.trim() || null, cleaned);
+      await updatePlay(playId, iso, notes.trim() || null, cleaned, selectedExpIds);
     } else {
-      await addPlay(gameId, iso, notes.trim() || null, cleaned);
+      await addPlay(gameId, iso, notes.trim() || null, cleaned, selectedExpIds);
     }
     navigation.goBack();
   }
@@ -84,13 +95,15 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
         keyboardVerticalOffset={headerHeight}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          {gameName ? <Text style={styles.gameName}>🎲 {gameName}</Text> : null}
+
           <Text style={styles.label}>Date played</Text>
           <TextInput
             style={styles.input}
             value={date}
             onChangeText={setDate}
             placeholder="DD/MM/YYYY"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={colors.placeholder}
           />
 
           <Text style={[styles.label, { marginTop: spacing.lg }]}>Players</Text>
@@ -105,7 +118,7 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
                     onChangeText={(v) => updatePlayer(i, { name: v })}
                     onFocus={() => setFocused(i)}
                     placeholder={`Player ${i + 1}`}
-                    placeholderTextColor={colors.textMuted}
+                    placeholderTextColor={colors.placeholder}
                   />
                   <View style={styles.winnerCol}>
                     <Text style={styles.winnerLabel}>Won</Text>
@@ -142,13 +155,34 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
             <Text style={styles.addPlayerText}>+ Add player</Text>
           </Pressable>
 
+          {gameExpansions.length > 0 && (
+            <>
+              <Text style={[styles.label, { marginTop: spacing.lg }]}>Expansions used</Text>
+              {gameExpansions.map((ex) => {
+                const on = selectedExpIds.includes(ex.id);
+                return (
+                  <Pressable
+                    key={ex.id}
+                    style={styles.expansionRow}
+                    onPress={() => toggleExpansion(ex.id)}
+                  >
+                    <Text style={[styles.checkbox, on && styles.checkboxOn]}>
+                      {on ? '☑' : '☐'}
+                    </Text>
+                    <Text style={styles.expansionName}>{ex.name}</Text>
+                  </Pressable>
+                );
+              })}
+            </>
+          )}
+
           <Text style={[styles.label, { marginTop: spacing.lg }]}>Notes</Text>
           <TextInput
             style={[styles.input, styles.multiline]}
             value={notes}
             onChangeText={setNotes}
             placeholder="Scores, memorable moments…"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={colors.placeholder}
             multiline
           />
 
@@ -164,7 +198,12 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, paddingBottom: spacing.xl * 2 },
+  gameName: { color: colors.text, fontSize: 20, fontWeight: '700', marginBottom: spacing.lg },
   label: { color: colors.textMuted, fontSize: 13, fontWeight: '600', marginBottom: 6 },
+  checkbox: { color: colors.textMuted, fontSize: 22, marginRight: spacing.sm },
+  checkboxOn: { color: colors.success },
+  expansionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
+  expansionName: { color: colors.text, fontSize: 15, flex: 1 },
   input: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,

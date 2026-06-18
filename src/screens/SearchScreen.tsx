@@ -23,12 +23,6 @@ const TIME_PRESETS: { label: string; max: number | null; min: number | null }[] 
 // 7 is the "7+" bucket (handled as "supports 7 or more" in the query).
 const PLAYER_PRESETS = [null, 1, 2, 3, 4, 5, 6, 7];
 
-const RATING_PRESETS: { label: string; value: number | null }[] = [
-  { label: 'Any', value: null },
-  { label: '5+', value: 5 },
-  { label: '8+', value: 8 },
-];
-
 const EMPTY_FILTERS: SearchFilters = {
   text: '',
   tags: [],
@@ -88,7 +82,7 @@ export default function SearchScreen() {
       <TextInput
         style={styles.search}
         placeholder="Search name, notes, designer…"
-        placeholderTextColor={colors.textMuted}
+        placeholderTextColor={colors.placeholder}
         value={filters.text}
         onChangeText={(v) => patch({ text: v })}
       />
@@ -122,28 +116,12 @@ export default function SearchScreen() {
         ))}
       </View>
 
-      <Text style={styles.groupLabel}>My rating</Text>
+      <Text style={styles.groupLabel}>Ratings</Text>
       <View style={styles.chipWrap}>
-        {RATING_PRESETS.map((p) => (
-          <Toggle
-            key={p.label}
-            label={p.value == null ? 'Any' : `★ ${p.label}`}
-            on={filters.minRating === p.value}
-            onPress={() => patch({ minRating: p.value })}
-          />
-        ))}
-      </View>
-
-      <Text style={styles.groupLabel}>BGG rating</Text>
-      <View style={styles.chipWrap}>
-        {RATING_PRESETS.map((p) => (
-          <Toggle
-            key={p.label}
-            label={p.value == null ? 'Any' : `BGG ${p.label}`}
-            on={filters.minBggRating === p.value}
-            onPress={() => patch({ minBggRating: p.value })}
-          />
-        ))}
+        <Toggle label="5+" on={filters.minRating === 5} onPress={() => patch({ minRating: filters.minRating === 5 ? null : 5 })} />
+        <Toggle label="8+" on={filters.minRating === 8} onPress={() => patch({ minRating: filters.minRating === 8 ? null : 8 })} />
+        <Toggle label="BGG 5+" on={filters.minBggRating === 5} onPress={() => patch({ minBggRating: filters.minBggRating === 5 ? null : 5 })} />
+        <Toggle label="BGG 8+" on={filters.minBggRating === 8} onPress={() => patch({ minBggRating: filters.minBggRating === 8 ? null : 8 })} />
       </View>
 
       {allTags.length > 0 && (
