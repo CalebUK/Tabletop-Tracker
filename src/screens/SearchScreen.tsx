@@ -1,5 +1,15 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  FlatList,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -50,6 +60,16 @@ export default function SearchScreen() {
   const [results, setResults] = useState<Game[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
 
+  // "Feeling lucky" dice-roll animation state.
+  const [rolling, setRolling] = useState(false);
+  const [rollName, setRollName] = useState('');
+  const lastPickId = useRef<number | null>(null);
+  const spin = useRef(new Animated.Value(0)).current;
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Clear any pending roll timers if we leave the screen mid-roll.
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+
   useFocusEffect(
     useCallback(() => {
       getAllTags().then(setAllTags);
@@ -72,11 +92,48 @@ export default function SearchScreen() {
     }));
   }
 
-  // Jump to a random game among the current results.
+  // Pick a random matching game — avoiding the previous pick — then play a
+  // short dice-roll animation before opening it.
   function feelingLucky() {
-    if (results.length === 0) return;
-    const pick = results[Math.floor(Math.random() * results.length)];
-    navigation.navigate('GameDetail', { gameId: pick.id });
+    if (rolling || results.length === 0) return;
+
+    // Don't immediately repeat the last pick (unless it's the only match).
+    const pool =
+      results.length > 1 && lastPickId.current != null
+        ? results.filter((g) => g.id !== lastPickId.current)
+        : results;
+    const finalPick = pool[Math.floor(Math.random() * pool.length)];
+    lastPickId.current = finalPick.id;
+
+    setRolling(true);
+    setRollName(results[Math.floor(Math.random() * results.length)].name);
+
+    // Spin the dice while it "rolls".
+    spin.setValue(0);
+    const spinLoop = Animated.loop(
+      Animated.timing(spin, { toValue: 1, duration: 450, easing: Easing.linear, useNativeDriver: true })
+    );
+    spinLoop.start();
+
+    // Flick through random names to look like it's shuffling.
+    const flick = setInterval(() => {
+      setRollName(results[Math.floor(Math.random() * results.length)].name);
+    }, 90);
+
+    // Settle on the chosen game, then open it.
+    timers.current.push(
+      setTimeout(() => {
+        clearInterval(flick);
+        spinLoop.stop();
+        setRollName(finalPick.name);
+        timers.current.push(
+          setTimeout(() => {
+            setRolling(false);
+            navigation.navigate('GameDetail', { gameId: finalPick.id });
+          }, 650)
+        );
+      }, 1100)
+    );
   }
 
   const active =
@@ -209,6 +266,22 @@ export default function SearchScreen() {
         )}
         ListEmptyComponent={<Text style={styles.noResults}>No games match these filters.</Text>}
       />
+
+      <Modal visible={rolling} transparent animationType="fade">
+        <View style={styles.rollOverlay}>
+          <Animated.Text
+            style={[
+              styles.rollDice,
+              { transform: [{ rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] },
+            ]}
+          >
+            🎲
+          </Animated.Text>
+          <Text style={styles.rollName} numberOfLines={2}>
+            {rollName}
+          </Text>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -266,5 +339,15 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   luckyText: { color: colors.primaryText, fontSize: 15, fontWeight: '700' },
+  rollOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+    gap: spacing.lg,
+  },
+  rollDice: { fontSize: 88 },
+  rollName: { color: colors.text, fontSize: 22, fontWeight: '700', textAlign: 'center' },
   noResults: { color: colors.textMuted, textAlign: 'center', marginTop: spacing.xl },
 });
