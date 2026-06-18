@@ -33,7 +33,7 @@ const EMPTY_FILTERS: SearchFilters = {
   playerCount: null,
   minRating: null,
   minBggRating: null,
-  ageBand: null,
+  ageBands: [],
   complexity: null,
 };
 
@@ -83,7 +83,7 @@ export default function SearchScreen() {
     filters.text || filters.tags.length || filters.favoritesOnly ||
     filters.unplayedOnly || filters.maxPlayTime != null || filters.minPlayTime != null ||
     filters.playerCount != null || filters.minRating != null || filters.minBggRating != null ||
-    filters.ageBand != null || filters.complexity != null;
+    filters.ageBands.length > 0 || filters.complexity != null;
 
   const header = (
     <View style={styles.filters}>
@@ -137,9 +137,20 @@ export default function SearchScreen() {
       <Text style={styles.groupLabel}>Age</Text>
       <View style={styles.chipWrap}>
         {AGE_BANDS.map((a) => {
-          const on = filters.ageBand?.lo === a.band.lo && filters.ageBand?.hi === a.band.hi;
+          const on = filters.ageBands.some((b) => b.lo === a.band.lo && b.hi === a.band.hi);
           return (
-            <Toggle key={a.label} label={a.label} on={!!on} onPress={() => patch({ ageBand: on ? null : a.band })} />
+            <Toggle
+              key={a.label}
+              label={a.label}
+              on={on}
+              onPress={() =>
+                patch({
+                  ageBands: on
+                    ? filters.ageBands.filter((b) => !(b.lo === a.band.lo && b.hi === a.band.hi))
+                    : [...filters.ageBands, a.band],
+                })
+              }
+            />
           );
         })}
       </View>

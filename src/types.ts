@@ -97,7 +97,8 @@ export interface SearchFilters {
   playerCount: number | null;
   minRating: number | null; // personal rating (0-10) at least this
   minBggRating: number | null; // BGG rating (0-10) at least this
-  // Minimum-age band: game's min age within [lo, hi] (hi null = open-ended).
-  ageBand: { lo: number; hi: number | null } | null;
+  // Minimum-age bands: game's min age within ANY selected [lo, hi] range
+  // (hi null = open-ended). Empty = no age filter.
+  ageBands: { lo: number; hi: number | null }[];
   complexity: Complexity | null;
 }

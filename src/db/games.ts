@@ -129,14 +129,19 @@ export async function searchGames(filters: SearchFilters): Promise<Game[]> {
     where.push('g.bgg_rating IS NOT NULL AND g.bgg_rating >= ?');
     params.push(filters.minBggRating);
   }
-  if (filters.ageBand != null) {
-    if (filters.ageBand.hi != null) {
-      where.push('g.min_age IS NOT NULL AND g.min_age >= ? AND g.min_age <= ?');
-      params.push(filters.ageBand.lo, filters.ageBand.hi);
-    } else {
-      where.push('g.min_age IS NOT NULL AND g.min_age >= ?');
-      params.push(filters.ageBand.lo);
+  if (filters.ageBands.length > 0) {
+    // Match if the game's min age falls within ANY selected band.
+    const ors: string[] = [];
+    for (const b of filters.ageBands) {
+      if (b.hi != null) {
+        ors.push('(g.min_age >= ? AND g.min_age <= ?)');
+        params.push(b.lo, b.hi);
+      } else {
+        ors.push('(g.min_age >= ?)');
+        params.push(b.lo);
+      }
     }
+    where.push(`g.min_age IS NOT NULL AND (${ors.join(' OR ')})`);
   }
   if (filters.complexity != null) {
     where.push('g.complexity = ?');

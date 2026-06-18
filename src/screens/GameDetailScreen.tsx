@@ -235,10 +235,10 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
+    <Text style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}: </Text>
       <Text style={styles.infoValue}>{value}</Text>
-    </View>
+    </Text>
   );
 }
 
@@ -267,9 +267,9 @@ const styles = StyleSheet.create({
   },
   loanText: { color: colors.text, fontSize: 14, flex: 1 },
   loanBold: { fontWeight: '700', color: colors.favorite },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md },
+  infoRow: { marginTop: spacing.md, fontSize: 14, lineHeight: 20 },
   infoLabel: { color: colors.textMuted, fontSize: 14 },
-  infoValue: { color: colors.text, fontSize: 14, flexShrink: 1, textAlign: 'right', marginLeft: spacing.md },
+  infoValue: { color: colors.text, fontSize: 14, fontWeight: '600' },
   section: { marginTop: spacing.xl },
   sectionTitle: { color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: spacing.sm },
   body: { color: colors.text, fontSize: 15, lineHeight: 21 },

@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { RootStackProps } from '../navigation';
-import { getGame, setLoan, returnLoan } from '../db/games';
+import { getGame, setLoan, returnLoan, getAllLocations } from '../db/games';
 import { isoToUk, todayUk, ukToIso } from '../lib/dates';
 import { colors, radius, spacing } from '../theme';
 
@@ -27,8 +27,10 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
   const [date, setDate] = useState(todayUk());
   const [returning, setReturning] = useState(false);
   const [returnLocation, setReturnLocation] = useState('');
+  const [allLocations, setAllLocations] = useState<string[]>([]);
 
   useEffect(() => {
+    getAllLocations().then(setAllLocations).catch(() => {});
     getGame(gameId).then((g) => {
       if (!g) return;
       setGameName(g.name);
@@ -55,6 +57,13 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
     await returnLoan(gameId, returnLocation);
     navigation.goBack();
   }
+
+  // Existing locations, narrowed by what's typed (for consistent spelling).
+  const locTyped = returnLocation.trim().toLowerCase();
+  const locationSuggestions = allLocations
+    .filter((l) => l.toLowerCase() !== locTyped)
+    .filter((l) => !locTyped || l.toLowerCase().includes(locTyped))
+    .slice(0, 8);
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
@@ -115,6 +124,15 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
               placeholder="e.g. Hall closet, top shelf"
               placeholderTextColor={colors.placeholder}
             />
+            {locationSuggestions.length > 0 && (
+              <View style={styles.chipWrap}>
+                {locationSuggestions.map((loc) => (
+                  <Pressable key={loc} style={styles.chip} onPress={() => setReturnLocation(loc)}>
+                    <Text style={styles.chipText}>📍 {loc}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
             <Pressable style={styles.returnConfirm} onPress={confirmReturn}>
               <Text style={styles.returnBtnText}>✓ Confirm return</Text>
             </Pressable>
@@ -167,6 +185,14 @@ const styles = StyleSheet.create({
   },
   returnBtnText: { color: colors.success, fontSize: 15, fontWeight: '700' },
   returnBox: { marginTop: spacing.lg, gap: 6 },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: {
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  chipText: { color: colors.text, fontSize: 13 },
   returnConfirm: {
     borderRadius: radius.md,
     paddingVertical: 14,
