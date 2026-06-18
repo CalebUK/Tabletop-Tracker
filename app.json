@@ -9,8 +9,8 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "BGK uses the camera so you can photograph your board games.",
-        "NSPhotoLibraryUsageDescription": "BGK lets you pick a photo of your board game from your library."
+        "NSCameraUsageDescription": "Tabletop Tracker uses the camera so you can photograph your board games.",
+        "NSPhotoLibraryUsageDescription": "Tabletop Tracker lets you pick a photo of your board game from your library."
       }
     },
     "android": {
@@ -21,10 +21,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.bgk.boardgamekeeper",
-      "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ]
+      "package": "com.bgk.boardgamekeeper"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,14 +31,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "BGK lets you pick a photo of your board game from your library.",
-          "cameraPermission": "BGK uses the camera so you can photograph your board games."
-        }
-      ],
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "BGK uses the camera to scan a game's barcode."
+          "photosPermission": "Tabletop Tracker lets you pick a photo of your board game from your library.",
+          "cameraPermission": "Tabletop Tracker uses the camera so you can photograph your board games."
         }
       ]
     ],

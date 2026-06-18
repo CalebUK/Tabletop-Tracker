@@ -15,7 +15,6 @@ import GameDetailScreen from './src/screens/GameDetailScreen';
 import EditGameScreen from './src/screens/EditGameScreen';
 import LogPlayScreen from './src/screens/LogPlayScreen';
 import LoanScreen from './src/screens/LoanScreen';
-import ScanBarcodeScreen from './src/screens/ScanBarcodeScreen';
 import PlayerStatsScreen from './src/screens/PlayerStatsScreen';
 
 const Tab = createBottomTabNavigator();
@@ -86,7 +85,6 @@ export default function App() {
           <Stack.Screen name="EditGame" component={EditGameScreen} options={{ title: 'Add Game' }} />
           <Stack.Screen name="LogPlay" component={LogPlayScreen} options={{ title: 'Log Play' }} />
           <Stack.Screen name="Loan" component={LoanScreen} options={{ title: 'Loan Out' }} />
-          <Stack.Screen name="ScanBarcode" component={ScanBarcodeScreen} options={{ title: 'Scan Barcode' }} />
           <Stack.Screen name="PlayerStats" component={PlayerStatsScreen} options={{ title: '' }} />
         </Stack.Navigator>
       </NavigationContainer>

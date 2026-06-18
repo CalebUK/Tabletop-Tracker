@@ -23,6 +23,12 @@ const TIME_PRESETS: { label: string; max: number | null; min: number | null }[] 
 // 7 is the "7+" bucket (handled as "supports 7 or more" in the query).
 const PLAYER_PRESETS = [null, 1, 2, 3, 4, 5, 6, 7];
 
+const RATING_PRESETS: { label: string; value: number | null }[] = [
+  { label: 'Any', value: null },
+  { label: '5+', value: 5 },
+  { label: '8+', value: 8 },
+];
+
 const EMPTY_FILTERS: SearchFilters = {
   text: '',
   tags: [],
@@ -31,6 +37,8 @@ const EMPTY_FILTERS: SearchFilters = {
   maxPlayTime: null,
   minPlayTime: null,
   playerCount: null,
+  minRating: null,
+  minBggRating: null,
 };
 
 export default function SearchScreen() {
@@ -71,7 +79,7 @@ export default function SearchScreen() {
   const active =
     filters.text || filters.tags.length || filters.favoritesOnly ||
     filters.unplayedOnly || filters.maxPlayTime != null || filters.minPlayTime != null ||
-    filters.playerCount != null;
+    filters.playerCount != null || filters.minRating != null || filters.minBggRating != null;
 
   const header = (
     <View style={styles.filters}>
@@ -110,6 +118,30 @@ export default function SearchScreen() {
             label={n == null ? 'Any' : n >= 7 ? `${n}+` : `${n}p`}
             on={filters.playerCount === n}
             onPress={() => patch({ playerCount: n })}
+          />
+        ))}
+      </View>
+
+      <Text style={styles.groupLabel}>My rating</Text>
+      <View style={styles.chipWrap}>
+        {RATING_PRESETS.map((p) => (
+          <Toggle
+            key={p.label}
+            label={p.value == null ? 'Any' : `★ ${p.label}`}
+            on={filters.minRating === p.value}
+            onPress={() => patch({ minRating: p.value })}
+          />
+        ))}
+      </View>
+
+      <Text style={styles.groupLabel}>BGG rating</Text>
+      <View style={styles.chipWrap}>
+        {RATING_PRESETS.map((p) => (
+          <Toggle
+            key={p.label}
+            label={p.value == null ? 'Any' : `BGG ${p.label}`}
+            on={filters.minBggRating === p.value}
+            onPress={() => patch({ minBggRating: p.value })}
           />
         ))}
       </View>

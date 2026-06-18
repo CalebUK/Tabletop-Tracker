@@ -1,6 +1,6 @@
 import type * as SQLite from 'expo-sqlite';
 import { getDb } from './database';
-import { Game, GameInput, LoanRecord, SearchFilters } from '../types';
+import { Expansion, Game, GameInput, LoanRecord, SearchFilters } from '../types';
 
 // Separator used inside group_concat for tags (an unlikely-to-appear char).
 const TAG_SEP = '';
@@ -28,6 +28,7 @@ interface GameRow {
   updated_at: string;
   tags: string | null; // group_concat result
   play_count: number;
+  expansion_count: number;
 }
 
 function rowToGame(row: GameRow): Game {
@@ -53,6 +54,7 @@ function rowToGame(row: GameRow): Game {
     updatedAt: row.updated_at,
     tags: row.tags ? row.tags.split(TAG_SEP).filter(Boolean) : [],
     playCount: row.play_count ?? 0,
+    expansionCount: row.expansion_count ?? 0,
   };
 }
 
@@ -61,7 +63,8 @@ const BASE_SELECT = `
     (SELECT group_concat(t.name, char(1))
        FROM game_tags gt JOIN tags t ON t.id = gt.tag_id
       WHERE gt.game_id = g.id) AS tags,
-    (SELECT count(*) FROM plays p WHERE p.game_id = g.id) AS play_count
+    (SELECT count(*) FROM plays p WHERE p.game_id = g.id) AS play_count,
+    (SELECT count(*) FROM expansions e WHERE e.game_id = g.id) AS expansion_count
   FROM games g
 `;
 
@@ -110,6 +113,14 @@ export async function searchGames(filters: SearchFilters): Promise<Game[]> {
       where.push('g.min_players <= ? AND g.max_players >= ?');
       params.push(filters.playerCount, filters.playerCount);
     }
+  }
+  if (filters.minRating != null) {
+    where.push('g.rating IS NOT NULL AND g.rating >= ?');
+    params.push(filters.minRating);
+  }
+  if (filters.minBggRating != null) {
+    where.push('g.bgg_rating IS NOT NULL AND g.bgg_rating >= ?');
+    params.push(filters.minBggRating);
   }
   for (const tag of filters.tags) {
     where.push(
@@ -181,6 +192,17 @@ export async function saveGame(input: GameInput): Promise<number> {
           [gameId, tagRow.id]
         );
       }
+    }
+
+    // Reconcile expansions: clear and re-insert from the form.
+    await db.runAsync('DELETE FROM expansions WHERE game_id = ?', [gameId]);
+    for (const ex of input.expansions) {
+      const name = ex.name.trim();
+      if (!name) continue;
+      await db.runAsync(
+        'INSERT INTO expansions (game_id, name, additional_players) VALUES (?, ?, ?)',
+        [gameId, name, ex.additionalPlayers || 0]
+      );
     }
   });
 
@@ -258,6 +280,20 @@ export async function getLoanHistory(gameId: number): Promise<LoanRecord[]> {
     loanedTo: r.loaned_to,
     loanedAt: r.loaned_at,
     returnedAt: r.returned_at,
+  }));
+}
+
+// Expansions owned for a game.
+export async function getExpansions(gameId: number): Promise<Expansion[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{ id: number; name: string; additional_players: number }>(
+    'SELECT id, name, additional_players FROM expansions WHERE game_id = ? ORDER BY id ASC',
+    [gameId]
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    additionalPlayers: r.additional_players,
   }));
 }
 

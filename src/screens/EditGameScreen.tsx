@@ -18,10 +18,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { RootStackProps } from '../navigation';
-import { getGame, getAllTags, saveGame, deleteGame } from '../db/games';
+import { getGame, getAllTags, saveGame, deleteGame, getExpansions } from '../db/games';
 import { deleteImage, pickFromLibrary, takePhoto } from '../lib/images';
 import { bggSearch, bggDetails, BggSearchResult } from '../lib/bgg';
-import { ocrImage } from '../lib/identify';
 import { GameInput } from '../types';
 import { colors, radius, spacing } from '../theme';
 import StarRating from '../components/StarRating';
@@ -42,6 +41,7 @@ const EMPTY: GameInput = {
   bggRating: null,
   developer: null,
   tags: [],
+  expansions: [],
 };
 
 function numOrNull(s: string): number | null {
@@ -61,13 +61,12 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
   const [bggResults, setBggResults] = useState<BggSearchResult[]>([]);
   const [bggError, setBggError] = useState<string | null>(null);
   const [photoMenu, setPhotoMenu] = useState(false);
-  const [ocrLoading, setOcrLoading] = useState(false);
 
   useEffect(() => {
     navigation.setOptions({ title: editingId ? 'Edit Game' : 'Add Game' });
     getAllTags().then(setAllTags).catch(() => {});
     if (editingId) {
-      getGame(editingId).then((g) => {
+      Promise.all([getGame(editingId), getExpansions(editingId)]).then(([g, exps]) => {
         if (!g) return;
         setForm({
           id: g.id,
@@ -86,19 +85,12 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
           bggRating: g.bggRating,
           developer: g.developer,
           tags: g.tags,
+          expansions: exps.map((e) => ({ name: e.name, additionalPlayers: e.additionalPlayers })),
         });
         setOriginalImage(g.imageUri);
       });
     }
   }, [editingId]);
-
-  // When we come back from the barcode scanner with a chosen BGG id, pull its
-  // details and pre-fill the form.
-  const bggIdParam = route.params?.bggId;
-  useEffect(() => {
-    if (bggIdParam) applyBggId(bggIdParam);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bggIdParam]);
 
   function patch(p: Partial<GameInput>) {
     setForm((f) => ({ ...f, ...p }));
@@ -187,42 +179,19 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
     }
   }
 
-  // Choose/refresh the photo, then run OCR on it to guess the name and search BGG.
-  async function scanNameFromPhoto() {
-    setPhotoMenu(false);
-    let uri = form.imageUri;
-    if (!uri) {
-      uri = await pickFromLibrary();
-      if (!uri) return;
-      patch({ imageUri: uri });
-    }
-    setOcrLoading(true);
-    try {
-      const guess = await ocrImage(uri);
-      if (!guess) {
-        Alert.alert('Nothing readable', "Couldn't read a name from that photo. Try a clearer shot of the title.");
-        return;
-      }
-      patch({ name: guess });
-      // Hand the guess straight to the BGG picker for confirmation.
-      setBggOpen(true);
-      setBggLoading(true);
-      setBggError(null);
-      setBggResults([]);
-      try {
-        const results = await bggSearch(guess);
-        setBggResults(results);
-        if (results.length === 0) setBggError(`No BGG match for "${guess}". Edit the name and try again.`);
-      } catch {
-        setBggError('Could not reach BoardGameGeek.');
-      } finally {
-        setBggLoading(false);
-      }
-    } catch (e: any) {
-      Alert.alert('OCR failed', e?.message ?? 'Could not read this image.');
-    } finally {
-      setOcrLoading(false);
-    }
+  // Expansion editing helpers.
+  function addExpansion() {
+    patch({ expansions: [...form.expansions, { name: '', additionalPlayers: 0 }] });
+  }
+
+  function updateExpansion(i: number, p: Partial<{ name: string; additionalPlayers: number }>) {
+    patch({
+      expansions: form.expansions.map((e, idx) => (idx === i ? { ...e, ...p } : e)),
+    });
+  }
+
+  function removeExpansion(i: number) {
+    patch({ expansions: form.expansions.filter((_, idx) => idx !== i) });
   }
 
   async function onSave() {
@@ -286,20 +255,9 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               placeholder="e.g. Wingspan"
               placeholderTextColor={colors.textMuted}
             />
-            <View style={styles.identifyRow}>
-              <Pressable style={styles.identifyBtn} onPress={openBggSearch}>
-                <Text style={styles.identifyText}>🔍 BGG</Text>
-              </Pressable>
-              <Pressable
-                style={styles.identifyBtn}
-                onPress={() => navigation.navigate('ScanBarcode', { gameId: editingId })}
-              >
-                <Text style={styles.identifyText}>📷 Barcode</Text>
-              </Pressable>
-              <Pressable style={styles.identifyBtn} onPress={scanNameFromPhoto}>
-                <Text style={styles.identifyText}>🔤 Scan name</Text>
-              </Pressable>
-            </View>
+            <Pressable style={styles.identifyBtn} onPress={openBggSearch}>
+              <Text style={styles.identifyText}>🔍 Look up on BoardGameGeek</Text>
+            </Pressable>
             {form.bggRating != null && (
               <Text style={styles.bggLinked}>
                 ✓ Linked to BGG · rating {form.bggRating.toFixed(1)}
@@ -443,6 +401,37 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
             />
           </Field>
 
+          <Field label="Expansions owned">
+            {form.expansions.map((ex, i) => (
+              <View key={i} style={styles.expansionRow}>
+                <TextInput
+                  style={[styles.input, styles.flex1]}
+                  value={ex.name}
+                  onChangeText={(v) => updateExpansion(i, { name: v })}
+                  placeholder="Expansion name"
+                  placeholderTextColor={colors.textMuted}
+                />
+                <View style={styles.expansionPlayers}>
+                  <TextInput
+                    style={[styles.input, styles.expansionPlayersInput]}
+                    keyboardType="number-pad"
+                    value={ex.additionalPlayers ? String(ex.additionalPlayers) : ''}
+                    onChangeText={(v) => updateExpansion(i, { additionalPlayers: numOrNull(v) ?? 0 })}
+                    placeholder="0"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                  <Text style={styles.expansionPlayersLabel}>+players</Text>
+                </View>
+                <Pressable onPress={() => removeExpansion(i)} hitSlop={8}>
+                  <Text style={styles.expansionRemove}>✕</Text>
+                </Pressable>
+              </View>
+            ))}
+            <Pressable style={styles.addExpansion} onPress={addExpansion}>
+              <Text style={styles.addExpansionText}>+ Add expansion</Text>
+            </Pressable>
+          </Field>
+
           <Pressable style={styles.saveBtn} onPress={onSave}>
             <Text style={styles.saveBtnText}>{editingId ? 'Save Changes' : 'Add Game'}</Text>
           </Pressable>
@@ -494,9 +483,6 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
             <Pressable style={styles.sheetItem} onPress={doPickPhoto}>
               <Text style={styles.sheetItemText}>🖼  Choose from Library</Text>
             </Pressable>
-            <Pressable style={styles.sheetItem} onPress={scanNameFromPhoto}>
-              <Text style={styles.sheetItemText}>🔤  Scan name from photo</Text>
-            </Pressable>
             {form.imageUri ? (
               <Pressable style={styles.sheetItem} onPress={doRemovePhoto}>
                 <Text style={[styles.sheetItemText, { color: colors.danger }]}>🗑  Remove Photo</Text>
@@ -508,13 +494,6 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
           </Pressable>
         </Pressable>
       </Modal>
-
-      {ocrLoading && (
-        <View style={styles.ocrOverlay}>
-          <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.ocrText}>Reading the photo…</Text>
-        </View>
-      )}
     </SafeAreaView>
   );
 }
@@ -569,16 +548,22 @@ const styles = StyleSheet.create({
   multiline: { minHeight: 80, textAlignVertical: 'top' },
   row: { flexDirection: 'row', gap: spacing.md },
   flex1: { flex: 1 },
-  identifyRow: { flexDirection: 'row', gap: spacing.sm, marginTop: 2 },
   identifyBtn: {
-    flex: 1,
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.md,
     paddingVertical: 10,
     alignItems: 'center',
+    marginTop: 2,
   },
-  identifyText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  identifyText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   bggLinked: { color: colors.success, fontSize: 12, marginTop: 2 },
+  expansionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  expansionPlayers: { alignItems: 'center' },
+  expansionPlayersInput: { width: 56, textAlign: 'center' },
+  expansionPlayersLabel: { color: colors.textMuted, fontSize: 10, marginTop: 2 },
+  expansionRemove: { color: colors.danger, fontSize: 18, paddingHorizontal: 4 },
+  addExpansion: { paddingVertical: spacing.sm },
+  addExpansionText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,
@@ -596,18 +581,6 @@ const styles = StyleSheet.create({
   sheetItemText: { color: colors.text, fontSize: 16 },
   sheetCancel: { backgroundColor: 'transparent', alignItems: 'center' },
   sheetCancelText: { color: colors.primary, fontSize: 16, fontWeight: '700' },
-  ocrOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  ocrText: { color: colors.text, fontSize: 15 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   modalCard: {
     backgroundColor: colors.surface,

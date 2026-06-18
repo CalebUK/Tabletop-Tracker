@@ -23,6 +23,18 @@ export interface Game {
   // Derived/joined fields (not stored directly on the games row):
   tags: string[];
   playCount: number;
+  expansionCount: number;
+}
+
+export interface Expansion {
+  id: number;
+  name: string;
+  additionalPlayers: number; // extra players this expansion allows
+}
+
+export interface ExpansionInput {
+  name: string;
+  additionalPlayers: number;
 }
 
 // Fields the user can edit. id is absent when creating a new game.
@@ -43,6 +55,7 @@ export interface GameInput {
   bggRating: number | null;
   developer: string | null;
   tags: string[];
+  expansions: ExpansionInput[];
 }
 
 export interface Play {
@@ -74,4 +87,6 @@ export interface SearchFilters {
   minPlayTime: number | null; // minutes; e.g. 60 for "60+ min" (longer games)
   // Game must support this many players. A value of 7 means "7 or more".
   playerCount: number | null;
+  minRating: number | null; // personal rating (0-10) at least this
+  minBggRating: number | null; // BGG rating (0-10) at least this
 }

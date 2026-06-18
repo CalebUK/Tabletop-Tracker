@@ -64,7 +64,7 @@ export default function CollectionScreen() {
       </View>
 
       {games.length > 0 && (
-        <Text style={styles.hint}>Swipe ← to edit & → to loan a game.</Text>
+        <Text style={styles.hint}>Swipe → to edit | ← to loan | hold to log play</Text>
       )}
 
       <FlatList
@@ -73,13 +73,13 @@ export default function CollectionScreen() {
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <SwipeableRow
-            leftSwipe={{
+            rightSwipe={{
               icon: '✏️',
               label: 'Edit',
               color: colors.primary,
               onTrigger: () => navigation.navigate('EditGame', { gameId: item.id }),
             }}
-            rightSwipe={{
+            leftSwipe={{
               icon: '🤝',
               label: item.loanedTo ? 'Manage' : 'Loan',
               color: colors.favorite,
@@ -89,6 +89,7 @@ export default function CollectionScreen() {
             <GameCard
               game={item}
               onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
+              onLongPress={() => navigation.navigate('LogPlay', { gameId: item.id })}
               onToggleFavorite={() => onToggleFavorite(item)}
             />
           </SwipeableRow>

@@ -2,9 +2,9 @@ import React, { useCallback, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootStackProps } from '../navigation';
-import { getGame, toggleFavorite, getLoanHistory } from '../db/games';
+import { getGame, toggleFavorite, getLoanHistory, getExpansions } from '../db/games';
 import { getPlaysForGame, deletePlay } from '../db/plays';
-import { Game, LoanRecord, Play } from '../types';
+import { Expansion, Game, LoanRecord, Play } from '../types';
 import { colors, radius, spacing } from '../theme';
 import { isoToUk } from '../lib/dates';
 import StarRating from '../components/StarRating';
@@ -24,6 +24,7 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
   const [game, setGame] = useState<Game | null>(null);
   const [plays, setPlays] = useState<Play[]>([]);
   const [loans, setLoans] = useState<LoanRecord[]>([]);
+  const [expansions, setExpansions] = useState<Expansion[]>([]);
 
   const load = useCallback(() => {
     getGame(gameId).then((g) => {
@@ -32,6 +33,7 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
     });
     getPlaysForGame(gameId).then(setPlays);
     getLoanHistory(gameId).then(setLoans);
+    getExpansions(gameId).then(setExpansions);
   }, [gameId]);
 
   useFocusEffect(load);
@@ -123,6 +125,28 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
           <Text style={styles.body}>{game.houseRules}</Text>
         </View>
       ) : null}
+
+      {expansions.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Expansions ({expansions.length})</Text>
+          {expansions.map((e) => (
+            <View key={e.id} style={styles.expansionRow}>
+              <Text style={styles.expansionName}>{e.name}</Text>
+              {e.additionalPlayers > 0 && (
+                <Text style={styles.expansionPlus}>+{e.additionalPlayers} players</Text>
+              )}
+            </View>
+          ))}
+          {(() => {
+            const extra = expansions.reduce((s, e) => s + e.additionalPlayers, 0);
+            return extra > 0 && game.maxPlayers ? (
+              <Text style={styles.expansionNote}>
+                Up to {game.maxPlayers + extra} players with all expansions.
+              </Text>
+            ) : null;
+          })()}
+        </View>
+      )}
 
       {game.tags.length > 0 && (
         <View style={styles.section}>
@@ -262,6 +286,16 @@ const styles = StyleSheet.create({
   },
   loanWho: { color: colors.text, fontSize: 14, fontWeight: '600' },
   loanDates: { color: colors.textMuted, fontSize: 13 },
+  expansionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  expansionName: { color: colors.text, fontSize: 15, flex: 1, marginRight: spacing.sm },
+  expansionPlus: { color: colors.success, fontSize: 13, fontWeight: '600' },
+  expansionNote: { color: colors.textMuted, fontSize: 13, marginTop: spacing.sm, fontStyle: 'italic' },
   editLink: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   hint: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
 });
