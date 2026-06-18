@@ -40,6 +40,12 @@ export default function GameCard({ game, onPress, onLongPress, onToggleFavorite 
           <Text style={styles.title} numberOfLines={1}>
             {game.name}
           </Text>
+          {game.expansionCount > 0 && (
+            <Text style={styles.expansions} numberOfLines={1}>
+              {'  '}🧩 {game.expansionCount} expansion{game.expansionCount === 1 ? '' : 's'}
+            </Text>
+          )}
+          <View style={styles.spacer} />
           {onToggleFavorite ? (
             <Pressable onPress={onToggleFavorite} hitSlop={10}>
               <Text style={[styles.fav, game.isFavorite && styles.favOn]}>
@@ -58,12 +64,6 @@ export default function GameCard({ game, onPress, onLongPress, onToggleFavorite 
             {loc.icon} {loc.text}
           </Text>
         ) : null}
-
-        {game.expansionCount > 0 && (
-          <Text style={styles.expansions}>
-            🧩 {game.expansionCount} expansion{game.expansionCount === 1 ? '' : 's'}
-          </Text>
-        )}
       </View>
     </Pressable>
   );
@@ -87,11 +87,12 @@ const styles = StyleSheet.create({
   thumbEmoji: { fontSize: 32 },
   body: { flex: 1, padding: spacing.md, justifyContent: 'center', gap: 4 },
   titleRow: { flexDirection: 'row', alignItems: 'center' },
-  title: { flex: 1, color: colors.text, fontSize: 16, fontWeight: '600' },
+  title: { flexShrink: 1, color: colors.text, fontSize: 16, fontWeight: '600' },
+  spacer: { flex: 1 },
   fav: { color: colors.textMuted, fontSize: 20, marginLeft: spacing.sm },
   favOn: { color: colors.favorite, fontSize: 20, marginLeft: spacing.sm },
   myRating: { color: colors.star, fontSize: 13, fontWeight: '700' },
   location: { color: colors.textMuted, fontSize: 13 },
   loaned: { color: colors.favorite },
-  expansions: { color: colors.textMuted, fontSize: 13 },
+  expansions: { color: colors.textMuted, fontSize: 12 },
 });

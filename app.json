@@ -16,9 +16,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0f1115",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.bgk.boardgamekeeper"
@@ -33,6 +31,15 @@
         {
           "photosPermission": "Tabletop Tracker lets you pick a photo of your board game from your library.",
           "cameraPermission": "Tabletop Tracker uses the camera so you can photograph your board games."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#0f1115"
         }
       ]
     ],

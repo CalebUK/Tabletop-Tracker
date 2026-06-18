@@ -18,7 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { RootStackProps } from '../navigation';
-import { getGame, getAllTags, saveGame, deleteGame, getExpansions } from '../db/games';
+import { getGame, getAllTags, getAllLocations, saveGame, deleteGame, getExpansions } from '../db/games';
 import { deleteImage, pickFromLibrary, takePhoto } from '../lib/images';
 import { bggSearch, bggDetails, BggSearchResult } from '../lib/bgg';
 import { GameInput } from '../types';
@@ -55,6 +55,8 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
   const [form, setForm] = useState<GameInput>(EMPTY);
   const [tagText, setTagText] = useState('');
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [allLocations, setAllLocations] = useState<string[]>([]);
+  const [locationFocused, setLocationFocused] = useState(false);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [bggOpen, setBggOpen] = useState(false);
   const [bggLoading, setBggLoading] = useState(false);
@@ -65,6 +67,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
   useEffect(() => {
     navigation.setOptions({ title: editingId ? 'Edit Game' : 'Add Game' });
     getAllTags().then(setAllTags).catch(() => {});
+    getAllLocations().then(setAllLocations).catch(() => {});
     if (editingId) {
       Promise.all([getGame(editingId), getExpansions(editingId)]).then(([g, exps]) => {
         if (!g) return;
@@ -91,6 +94,18 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
       });
     }
   }, [editingId]);
+
+  // Save button in the header so you don't have to scroll to the bottom.
+  // Re-set on every form change so the handler closes over the latest values.
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable onPress={onSave} hitSlop={10}>
+          <Text style={styles.headerSave}>Save</Text>
+        </Pressable>
+      ),
+    });
+  });
 
   function patch(p: Partial<GameInput>) {
     setForm((f) => ({ ...f, ...p }));
@@ -228,6 +243,13 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
     .filter((t) => !form.tags.some((x) => x.toLowerCase() === t.toLowerCase()))
     .filter((t) => !tagText.trim() || t.toLowerCase().includes(tagText.trim().toLowerCase()));
 
+  // Previously-used locations, narrowed by what's typed (for consistent spelling).
+  const locTyped = (form.location ?? '').trim().toLowerCase();
+  const locationSuggestions = allLocations
+    .filter((l) => l.toLowerCase() !== locTyped)
+    .filter((l) => !locTyped || l.toLowerCase().includes(locTyped))
+    .slice(0, 8);
+
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <KeyboardAvoidingView
@@ -270,9 +292,21 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               style={styles.input}
               value={form.location ?? ''}
               onChangeText={(v) => patch({ location: v || null })}
+              onFocus={() => setLocationFocused(true)}
+              // Delay so a tap on a suggestion chip registers before they hide.
+              onBlur={() => setTimeout(() => setLocationFocused(false), 150)}
               placeholder="e.g. Hall closet, top shelf"
               placeholderTextColor={colors.placeholder}
             />
+            {locationFocused && locationSuggestions.length > 0 && (
+              <View style={styles.chipWrap}>
+                {locationSuggestions.map((loc) => (
+                  <Pressable key={loc} style={styles.chip} onPress={() => patch({ location: loc })}>
+                    <Text style={styles.chipText}>📍 {loc}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </Field>
 
           <View style={styles.row}>
@@ -431,10 +465,6 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               <Text style={styles.addExpansionText}>+ Add expansion</Text>
             </Pressable>
           </Field>
-
-          <Pressable style={styles.saveBtn} onPress={onSave}>
-            <Text style={styles.saveBtnText}>{editingId ? 'Save Changes' : 'Add Game'}</Text>
-          </Pressable>
 
           {editingId && (
             <Pressable style={styles.deleteBtn} onPress={onDelete}>
@@ -631,14 +661,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   chipActiveText: { color: colors.primaryText, fontSize: 13 },
-  saveBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  saveBtnText: { color: colors.primaryText, fontSize: 16, fontWeight: '700' },
-  deleteBtn: { paddingVertical: 14, alignItems: 'center' },
+  headerSave: { color: colors.primary, fontSize: 16, fontWeight: '700' },
+  deleteBtn: { paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
   deleteBtnText: { color: colors.danger, fontSize: 15, fontWeight: '600' },
 });
