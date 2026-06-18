@@ -9,6 +9,7 @@ export type RootStackParamList = {
   Loan: { gameId: number };
   PlayerStats: { name: string };
   GameStats: { gameId: number };
+  Backup: undefined;
 };
 
 export type RootStackProps<T extends keyof RootStackParamList> =

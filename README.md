@@ -77,9 +77,17 @@ src/
   limited); for regular use, get a free key at https://ocr.space/ocrapi and set
   `OCR_API_KEY` in `src/lib/identify.ts`.
 
+## Backup & export
+
+- **Full backup** (⚙️ in the Collection header → Backup & Export): exports a
+  single JSON file containing every table plus photos (base64) that can be
+  re-imported on a new device. Import **replaces** all current data.
+- **CSV export**: a spreadsheet-friendly list of the collection (no photos /
+  play history). See `src/db/backup.ts`.
+
 ## Roadmap (not yet built)
 
-- AI-vision box recognition (more robust than OCR for stylised box art; needs a
-  paid vision API key).
-- Cloud sync + accounts (e.g. Supabase) and web viewing.
-- Wishlist, expansions, CSV export, BGG collection import.
+- Opt-in cloud sync + accounts (e.g. Supabase) and web viewing — deferred;
+  revisit when multi-device or the website is actually wanted.
+- AI-vision box recognition (needs a paid vision API key).
+- Wishlist, BGG collection import.

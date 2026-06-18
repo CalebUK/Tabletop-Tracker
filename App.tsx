@@ -17,6 +17,7 @@ import LogPlayScreen from './src/screens/LogPlayScreen';
 import LoanScreen from './src/screens/LoanScreen';
 import PlayerStatsScreen from './src/screens/PlayerStatsScreen';
 import GameStatsScreen from './src/screens/GameStatsScreen';
+import BackupScreen from './src/screens/BackupScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -88,6 +89,7 @@ export default function App() {
           <Stack.Screen name="Loan" component={LoanScreen} options={{ title: 'Loan Out' }} />
           <Stack.Screen name="PlayerStats" component={PlayerStatsScreen} options={{ title: '' }} />
           <Stack.Screen name="GameStats" component={GameStatsScreen} options={{ title: '' }} />
+          <Stack.Screen name="Backup" component={BackupScreen} options={{ title: 'Backup & Export' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
