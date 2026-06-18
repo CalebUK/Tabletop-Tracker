@@ -97,6 +97,10 @@ export default function BackupScreen({ navigation }: RootStackProps<'Backup'>) {
           Tip: send the backup to yourself (email, Google Drive, etc.). The CSV is a readable
           list and doesn’t include photos or play history — use the full backup to move devices.
         </Text>
+
+        <Pressable style={styles.aboutLink} onPress={() => navigation.navigate('About')}>
+          <Text style={styles.aboutLinkText}>About &amp; Privacy ›</Text>
+        </Pressable>
       </ScrollView>
 
       {busy && (
@@ -155,6 +159,8 @@ const styles = StyleSheet.create({
   buttonLabel: { color: colors.text, fontSize: 16, fontWeight: '600' },
   buttonSub: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
   note: { color: colors.textMuted, fontSize: 13, lineHeight: 19, marginTop: spacing.xl },
+  aboutLink: { marginTop: spacing.xl, paddingVertical: spacing.sm, alignItems: 'center' },
+  aboutLinkText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   overlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,

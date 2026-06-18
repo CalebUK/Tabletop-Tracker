@@ -10,6 +10,7 @@ export type RootStackParamList = {
   PlayerStats: { name: string };
   GameStats: { gameId: number };
   Backup: undefined;
+  About: undefined;
 };
 
 export type RootStackProps<T extends keyof RootStackParamList> =

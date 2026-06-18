@@ -85,6 +85,11 @@ CREATE TABLE IF NOT EXISTS play_expansions (
   FOREIGN KEY (expansion_id) REFERENCES expansions(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS meta (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_game_tags_game ON game_tags(game_id);
 CREATE INDEX IF NOT EXISTS idx_game_tags_tag ON game_tags(tag_id);
 CREATE INDEX IF NOT EXISTS idx_plays_game ON plays(game_id);

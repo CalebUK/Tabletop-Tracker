@@ -18,7 +18,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { RootStackProps } from '../navigation';
-import { getGame, getAllTags, getAllLocations, saveGame, deleteGame, getExpansions } from '../db/games';
+import {
+  getGame,
+  getAllTags,
+  getAllLocations,
+  saveGame,
+  deleteGame,
+  getExpansions,
+  countGamesByName,
+} from '../db/games';
 import { deleteImage, pickFromLibrary, takePhoto } from '../lib/images';
 import { bggSearch, bggDetails, BggSearchResult } from '../lib/bgg';
 import { GameInput } from '../types';
@@ -214,17 +222,35 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
     patch({ expansions: form.expansions.filter((_, idx) => idx !== i) });
   }
 
-  async function onSave() {
-    if (!form.name.trim()) {
-      Alert.alert('Name required', 'Please enter a name for the game.');
-      return;
-    }
+  async function doSave() {
     // If the photo changed, clean up the old file so storage doesn't leak.
     if (originalImage && originalImage !== form.imageUri) {
       await deleteImage(originalImage);
     }
     await saveGame({ ...form, name: form.name.trim() });
     navigation.goBack();
+  }
+
+  async function onSave() {
+    const name = form.name.trim();
+    if (!name) {
+      Alert.alert('Name required', 'Please enter a name for the game.');
+      return;
+    }
+    // Warn if another game already has this name (likely a duplicate).
+    const dupes = await countGamesByName(name, editingId);
+    if (dupes > 0) {
+      Alert.alert(
+        'Possible duplicate',
+        `You already have "${name}" in your collection. Add it anyway?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Add anyway', onPress: () => doSave() },
+        ]
+      );
+      return;
+    }
+    await doSave();
   }
 
   function onDelete() {

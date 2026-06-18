@@ -235,6 +235,17 @@ export async function saveGame(input: GameInput): Promise<number> {
   return gameId;
 }
 
+// How many other games share this name (case-insensitive)? Used to warn about
+// accidental duplicates. excludeId skips the game being edited.
+export async function countGamesByName(name: string, excludeId?: number): Promise<number> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ c: number }>(
+    'SELECT count(*) AS c FROM games WHERE name = ? COLLATE NOCASE AND id <> ?',
+    [name.trim(), excludeId ?? -1]
+  );
+  return row?.c ?? 0;
+}
+
 export async function deleteGame(id: number): Promise<void> {
   const db = await getDb();
   await db.runAsync('DELETE FROM games WHERE id = ?', [id]);
