@@ -53,4 +53,4 @@ If this policy changes, the updated version will be posted here with a new
 
 ## Contact
 
-Questions about this policy? Contact: **[add your contact email here]**
+Questions about this policy? Contact: **calebthill@gmail.com**
