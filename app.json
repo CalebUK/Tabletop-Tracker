@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Board Game Keeper",
+    "slug": "board-game-keeper",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "BGK uses the camera so you can photograph your board games.",
+        "NSPhotoLibraryUsageDescription": "BGK lets you pick a photo of your board game from your library."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f1115",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.bgk.boardgamekeeper",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "BGK lets you pick a photo of your board game from your library.",
+          "cameraPermission": "BGK uses the camera so you can photograph your board games."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "BGK uses the camera to scan a game's barcode."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e827d3e3-68cd-4add-ae75-63c8ce2a1626"
+      }
+    }
+  }
+}

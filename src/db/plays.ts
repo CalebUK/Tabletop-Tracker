@@ -1,0 +1,170 @@
+import { getDb } from './database';
+import { Play, PlayPlayer } from '../types';
+
+interface PlayRow {
+  id: number;
+  game_id: number;
+  played_at: string;
+  notes: string | null;
+}
+
+interface PlayPlayerRow {
+  play_id: number;
+  player_name: string;
+  is_winner: number;
+}
+
+// All plays for a game, newest first, with their players attached.
+export async function getPlaysForGame(gameId: number): Promise<Play[]> {
+  const db = await getDb();
+  const playRows = await db.getAllAsync<PlayRow>(
+    'SELECT * FROM plays WHERE game_id = ? ORDER BY played_at DESC, id DESC',
+    [gameId]
+  );
+  if (playRows.length === 0) return [];
+
+  const playerRows = await db.getAllAsync<PlayPlayerRow>(
+    `SELECT pp.play_id, pp.player_name, pp.is_winner
+       FROM play_players pp
+       JOIN plays p ON p.id = pp.play_id
+      WHERE p.game_id = ?`,
+    [gameId]
+  );
+
+  const byPlay = new Map<number, PlayPlayer[]>();
+  for (const r of playerRows) {
+    const list = byPlay.get(r.play_id) ?? [];
+    list.push({ name: r.player_name, isWinner: r.is_winner === 1 });
+    byPlay.set(r.play_id, list);
+  }
+
+  return playRows.map((p) => ({
+    id: p.id,
+    gameId: p.game_id,
+    playedAt: p.played_at,
+    notes: p.notes,
+    players: byPlay.get(p.id) ?? [],
+  }));
+}
+
+export async function addPlay(
+  gameId: number,
+  playedAt: string,
+  notes: string | null,
+  players: PlayPlayer[]
+): Promise<number> {
+  const db = await getDb();
+  let playId = 0;
+  await db.withTransactionAsync(async () => {
+    const res = await db.runAsync(
+      'INSERT INTO plays (game_id, played_at, notes) VALUES (?, ?, ?)',
+      [gameId, playedAt, notes]
+    );
+    playId = res.lastInsertRowId;
+    for (const p of players) {
+      const name = p.name.trim();
+      if (!name) continue;
+      await db.runAsync(
+        'INSERT INTO play_players (play_id, player_name, is_winner) VALUES (?, ?, ?)',
+        [playId, name, p.isWinner ? 1 : 0]
+      );
+    }
+  });
+  return playId;
+}
+
+export async function getPlay(playId: number): Promise<Play | null> {
+  const db = await getDb();
+  const p = await db.getFirstAsync<PlayRow>('SELECT * FROM plays WHERE id = ?', [playId]);
+  if (!p) return null;
+  const players = await db.getAllAsync<PlayPlayerRow>(
+    'SELECT play_id, player_name, is_winner FROM play_players WHERE play_id = ?',
+    [playId]
+  );
+  return {
+    id: p.id,
+    gameId: p.game_id,
+    playedAt: p.played_at,
+    notes: p.notes,
+    players: players.map((r) => ({ name: r.player_name, isWinner: r.is_winner === 1 })),
+  };
+}
+
+export async function updatePlay(
+  playId: number,
+  playedAt: string,
+  notes: string | null,
+  players: PlayPlayer[]
+): Promise<void> {
+  const db = await getDb();
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('UPDATE plays SET played_at = ?, notes = ? WHERE id = ?', [
+      playedAt,
+      notes,
+      playId,
+    ]);
+    await db.runAsync('DELETE FROM play_players WHERE play_id = ?', [playId]);
+    for (const p of players) {
+      const name = p.name.trim();
+      if (!name) continue;
+      await db.runAsync(
+        'INSERT INTO play_players (play_id, player_name, is_winner) VALUES (?, ?, ?)',
+        [playId, name, p.isWinner ? 1 : 0]
+      );
+    }
+  });
+}
+
+export async function deletePlay(playId: number): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('DELETE FROM plays WHERE id = ?', [playId]);
+}
+
+// Aggregate stats for the Stats tab.
+export interface CollectionStats {
+  totalGames: number;
+  totalPlays: number;
+  favorites: number;
+  unplayed: number;
+  topPlayers: { name: string; wins: number; plays: number }[];
+  mostPlayed: { name: string; plays: number }[];
+}
+
+export async function getStats(): Promise<CollectionStats> {
+  const db = await getDb();
+  const totals = await db.getFirstAsync<{
+    total_games: number;
+    favorites: number;
+  }>('SELECT count(*) AS total_games, sum(is_favorite) AS favorites FROM games');
+  const totalPlays = await db.getFirstAsync<{ c: number }>(
+    'SELECT count(*) AS c FROM plays'
+  );
+  const unplayed = await db.getFirstAsync<{ c: number }>(
+    'SELECT count(*) AS c FROM games g WHERE (SELECT count(*) FROM plays p WHERE p.game_id = g.id) = 0'
+  );
+  const topPlayers = await db.getAllAsync<{ name: string; wins: number; plays: number }>(
+    `SELECT player_name AS name,
+            sum(is_winner) AS wins,
+            count(*) AS plays
+       FROM play_players
+      GROUP BY player_name COLLATE NOCASE
+      ORDER BY wins DESC, plays DESC
+      LIMIT 5`
+  );
+  const mostPlayed = await db.getAllAsync<{ name: string; plays: number }>(
+    `SELECT g.name AS name, count(p.id) AS plays
+       FROM games g JOIN plays p ON p.game_id = g.id
+      GROUP BY g.id
+      ORDER BY plays DESC
+      LIMIT 5`
+  );
+
+  return {
+    totalGames: totals?.total_games ?? 0,
+    totalPlays: totalPlays?.c ?? 0,
+    favorites: totals?.favorites ?? 0,
+    unplayed: unplayed?.c ?? 0,
+    topPlayers,
+    mostPlayed,
+  };
+}
