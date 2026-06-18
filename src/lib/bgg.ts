@@ -45,11 +45,28 @@ function decodeEntities(s: string): string {
     .replace(/&gt;/g, '>');
 }
 
+const HEADERS = {
+  'User-Agent': 'TabletopTracker/1.0 (board game collection app)',
+  Accept: 'application/xml, text/xml',
+};
+
+// Friendlier message for BoardGameGeek's access limits.
+function bggError(status: number): Error {
+  if (status === 401 || status === 403 || status === 429) {
+    return new Error(
+      'BoardGameGeek is limiting automatic lookups right now. You can enter the BGG rating manually below.'
+    );
+  }
+  return new Error(`BoardGameGeek error (${status}).`);
+}
+
 export async function bggSearch(query: string): Promise<BggSearchResult[]> {
   const q = query.trim();
   if (!q) return [];
-  const res = await fetch(`${BASE}/search?type=boardgame&query=${encodeURIComponent(q)}`);
-  if (!res.ok) throw new Error(`BGG search failed (${res.status})`);
+  const res = await fetch(`${BASE}/search?type=boardgame&query=${encodeURIComponent(q)}`, {
+    headers: HEADERS,
+  });
+  if (!res.ok) throw bggError(res.status);
   const xml = await res.text();
 
   const results: BggSearchResult[] = [];
@@ -70,8 +87,13 @@ export async function bggSearch(query: string): Promise<BggSearchResult[]> {
 }
 
 export async function bggDetails(id: number): Promise<BggDetails | null> {
-  const res = await fetch(`${BASE}/thing?id=${id}&stats=1`);
-  if (!res.ok) throw new Error(`BGG lookup failed (${res.status})`);
+  // BGG sometimes answers 202 ("queued") first; retry briefly.
+  let res = await fetch(`${BASE}/thing?id=${id}&stats=1`, { headers: HEADERS });
+  for (let i = 0; i < 2 && res.status === 202; i++) {
+    await new Promise((r) => setTimeout(r, 1500));
+    res = await fetch(`${BASE}/thing?id=${id}&stats=1`, { headers: HEADERS });
+  }
+  if (!res.ok) throw bggError(res.status);
   const xml = await res.text();
 
   // Primary name carries type="primary"; fall back to the first name tag.

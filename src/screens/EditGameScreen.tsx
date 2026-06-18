@@ -59,6 +59,12 @@ function numOrNull(s: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function ratingOrNull(s: string): number | null {
+  const n = parseFloat(s);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.min(10, n)); // BGG ratings are 0–10
+}
+
 export default function EditGameScreen({ route, navigation }: RootStackProps<'EditGame'>) {
   const editingId = route.params?.gameId;
   const headerHeight = useHeaderHeight();
@@ -167,8 +173,8 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
       const results = await bggSearch(form.name);
       setBggResults(results);
       if (results.length === 0) setBggError('No matches on BoardGameGeek.');
-    } catch (e) {
-      setBggError('Could not reach BoardGameGeek. Check your connection.');
+    } catch (e: any) {
+      setBggError(e?.message ?? 'Could not reach BoardGameGeek.');
     } finally {
       setBggLoading(false);
     }
@@ -200,8 +206,8 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
     try {
       await applyBggId(r.id);
       setBggOpen(false);
-    } catch (e) {
-      setBggError('Could not load that game from BoardGameGeek.');
+    } catch (e: any) {
+      setBggError(e?.message ?? 'Could not load that game from BoardGameGeek.');
     } finally {
       setBggLoading(false);
     }
@@ -309,12 +315,12 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               placeholderTextColor={colors.placeholder}
             />
             <Pressable style={styles.identifyBtn} onPress={openBggSearch}>
-              <Text style={styles.identifyText}>🔍 Look up on BoardGameGeek</Text>
-            </Pressable>
-            {form.bggRating != null && (
-              <Text style={styles.bggLinked}>
-                ✓ Linked to BGG · rating {form.bggRating.toFixed(1)}
+              <Text style={styles.identifyText} numberOfLines={1} adjustsFontSizeToFit>
+                🔍 Look up on BoardGameGeek
               </Text>
+            </Pressable>
+            {form.bggId != null && (
+              <Text style={styles.bggLinked}>✓ Synced with BoardGameGeek</Text>
             )}
           </Field>
 
@@ -400,6 +406,17 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                 </Pressable>
               ))}
             </View>
+          </Field>
+
+          <Field label="BGG rating (0–10)">
+            <TextInput
+              style={styles.input}
+              keyboardType="decimal-pad"
+              value={form.bggRating != null ? String(form.bggRating) : ''}
+              onChangeText={(v) => patch({ bggRating: ratingOrNull(v) })}
+              placeholder="Filled by Look up, or type it from boardgamegeek.com"
+              placeholderTextColor={colors.placeholder}
+            />
           </Field>
 
           <Field label="Publisher/Designer">
