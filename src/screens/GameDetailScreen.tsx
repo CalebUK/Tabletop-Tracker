@@ -52,9 +52,17 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
     return <View style={styles.safe} />;
   }
 
-  const meta = [playersText(game), game.playTimeMin ? `${game.playTimeMin} min` : null, game.year ? `${game.year}` : null]
+  const meta = [
+    playersText(game),
+    game.playTimeMin ? `${game.playTimeMin} min` : null,
+    game.minAge ? `Ages ${game.minAge}+` : null,
+  ]
     .filter(Boolean)
     .join('  ·  ');
+
+  const complexityLabel = game.complexity
+    ? game.complexity[0].toUpperCase() + game.complexity.slice(1)
+    : null;
 
   async function onToggleFav() {
     if (!game) return;
@@ -117,6 +125,7 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
         <Row label="📍 Location" value={game.location} />
       ) : null}
       {game.developer ? <Row label="✍️ Publisher/Designer" value={game.developer} /> : null}
+      {complexityLabel ? <Row label="🎯 Complexity" value={complexityLabel} /> : null}
 
       {/* House rules shown prominently, below the picture and above play history. */}
       {game.houseRules ? (

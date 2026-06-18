@@ -40,6 +40,8 @@ const EMPTY: GameInput = {
   bggId: null,
   bggRating: null,
   developer: null,
+  minAge: null,
+  complexity: null,
   tags: [],
   expansions: [],
 };
@@ -87,6 +89,8 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
           bggId: g.bggId,
           bggRating: g.bggRating,
           developer: g.developer,
+          minAge: g.minAge,
+          complexity: g.complexity,
           tags: g.tags,
           expansions: exps.map((e) => ({ name: e.name, additionalPlayers: e.additionalPlayers })),
         });
@@ -173,6 +177,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
       minPlayers: d.minPlayers ?? f.minPlayers,
       maxPlayers: d.maxPlayers ?? f.maxPlayers,
       playTimeMin: d.playTimeMin ?? f.playTimeMin,
+      minAge: d.minAge ?? f.minAge,
       developer: d.developer ?? f.developer,
       bggId: d.id,
       bggRating: d.bggRating ?? f.bggRating,
@@ -343,17 +348,33 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                 placeholderTextColor={colors.placeholder}
               />
             </Field>
-            <Field label="Year" style={styles.flex1}>
+            <Field label="Minimum age" style={styles.flex1}>
               <TextInput
                 style={styles.input}
                 keyboardType="number-pad"
-                value={form.year?.toString() ?? ''}
-                onChangeText={(v) => patch({ year: numOrNull(v) })}
-                placeholder="2019"
+                value={form.minAge?.toString() ?? ''}
+                onChangeText={(v) => patch({ minAge: numOrNull(v) })}
+                placeholder="8"
                 placeholderTextColor={colors.placeholder}
               />
             </Field>
           </View>
+
+          <Field label="Complexity">
+            <View style={styles.segment}>
+              {(['easy', 'medium', 'high'] as const).map((c) => (
+                <Pressable
+                  key={c}
+                  style={[styles.segmentItem, form.complexity === c && styles.segmentItemOn]}
+                  onPress={() => patch({ complexity: form.complexity === c ? null : c })}
+                >
+                  <Text style={[styles.segmentText, form.complexity === c && styles.segmentTextOn]}>
+                    {c[0].toUpperCase() + c.slice(1)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </Field>
 
           <Field label="Publisher/Designer">
             <TextInput
@@ -468,7 +489,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
 
           {editingId && (
             <Pressable style={styles.deleteBtn} onPress={onDelete}>
-              <Text style={styles.deleteBtnText}>Delete Game</Text>
+              <Text style={styles.deleteBtnText}>🗑  Delete Game</Text>
             </Pressable>
           )}
         </ScrollView>
@@ -662,6 +683,26 @@ const styles = StyleSheet.create({
   },
   chipActiveText: { color: colors.primaryText, fontSize: 13 },
   headerSave: { color: colors.primary, fontSize: 16, fontWeight: '700' },
-  deleteBtn: { paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
+  segment: { flexDirection: 'row', gap: spacing.sm },
+  segmentItem: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  segmentItemOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  segmentText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
+  segmentTextOn: { color: colors.primaryText },
+  deleteBtn: {
+    marginTop: spacing.xl,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.danger,
+  },
   deleteBtnText: { color: colors.danger, fontSize: 15, fontWeight: '600' },
 });

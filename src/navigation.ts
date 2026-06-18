@@ -8,6 +8,7 @@ export type RootStackParamList = {
   LogPlay: { gameId: number; playId?: number }; // playId to edit an existing play
   Loan: { gameId: number };
   PlayerStats: { name: string };
+  GameStats: { gameId: number };
 };
 
 export type RootStackProps<T extends keyof RootStackParamList> =

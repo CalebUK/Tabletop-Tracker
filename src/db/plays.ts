@@ -210,7 +210,7 @@ export interface CollectionStats {
   favorites: number;
   unplayed: number;
   topPlayers: { name: string; wins: number; plays: number }[];
-  mostPlayed: { name: string; plays: number }[];
+  mostPlayed: { id: number; name: string; plays: number }[];
 }
 
 export async function getStats(): Promise<CollectionStats> {
@@ -234,8 +234,8 @@ export async function getStats(): Promise<CollectionStats> {
       ORDER BY wins DESC, plays DESC
       LIMIT 5`
   );
-  const mostPlayed = await db.getAllAsync<{ name: string; plays: number }>(
-    `SELECT g.name AS name, count(p.id) AS plays
+  const mostPlayed = await db.getAllAsync<{ id: number; name: string; plays: number }>(
+    `SELECT g.id AS id, g.name AS name, count(p.id) AS plays
        FROM games g JOIN plays p ON p.game_id = g.id
       GROUP BY g.id
       ORDER BY plays DESC
@@ -249,5 +249,37 @@ export async function getStats(): Promise<CollectionStats> {
     unplayed: unplayed?.c ?? 0,
     topPlayers,
     mostPlayed,
+  };
+}
+
+export interface GamePlayStats {
+  name: string;
+  totalPlays: number;
+  players: { name: string; wins: number; plays: number }[];
+}
+
+// Stats for a single game: total plays and a per-player win/play leaderboard.
+export async function getGamePlayStats(gameId: number): Promise<GamePlayStats> {
+  const db = await getDb();
+  const g = await db.getFirstAsync<{ name: string }>('SELECT name FROM games WHERE id = ?', [
+    gameId,
+  ]);
+  const total = await db.getFirstAsync<{ c: number }>(
+    'SELECT count(*) AS c FROM plays WHERE game_id = ?',
+    [gameId]
+  );
+  const players = await db.getAllAsync<{ name: string; wins: number; plays: number }>(
+    `SELECT pp.player_name AS name, sum(pp.is_winner) AS wins, count(*) AS plays
+       FROM play_players pp
+       JOIN plays p ON p.id = pp.play_id
+      WHERE p.game_id = ?
+      GROUP BY pp.player_name COLLATE NOCASE
+      ORDER BY wins DESC, plays DESC`,
+    [gameId]
+  );
+  return {
+    name: g?.name ?? 'Game',
+    totalPlays: total?.c ?? 0,
+    players,
   };
 }

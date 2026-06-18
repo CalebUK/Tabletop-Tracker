@@ -57,10 +57,14 @@ export default function StatsScreen() {
             <Text style={styles.muted}>No plays logged yet.</Text>
           ) : (
             stats.mostPlayed.map((g) => (
-              <View key={g.name} style={styles.listRow}>
-                <Text style={styles.listName}>{g.name}</Text>
+              <Pressable
+                key={g.id}
+                style={styles.listRow}
+                onPress={() => navigation.navigate('GameStats', { gameId: g.id })}
+              >
+                <Text style={styles.listName}>{g.name} ›</Text>
                 <Text style={styles.listValue}>{g.plays} play{g.plays === 1 ? '' : 's'}</Text>
-              </View>
+              </Pressable>
             ))
           )}
         </Section>

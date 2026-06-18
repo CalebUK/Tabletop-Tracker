@@ -25,6 +25,8 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
   const [currentLoanAt, setCurrentLoanAt] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [date, setDate] = useState(todayUk());
+  const [returning, setReturning] = useState(false);
+  const [returnLocation, setReturnLocation] = useState('');
 
   useEffect(() => {
     getGame(gameId).then((g) => {
@@ -32,6 +34,7 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
       setGameName(g.name);
       setCurrentLoanTo(g.loanedTo);
       setCurrentLoanAt(g.loanedAt);
+      setReturnLocation(g.location ?? '');
       if (g.loanedTo) setName(g.loanedTo);
       if (g.loanedAt) setDate(isoToUk(g.loanedAt));
       navigation.setOptions({ title: g.loanedTo ? 'Manage Loan' : 'Loan Out' });
@@ -48,8 +51,8 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
     navigation.goBack();
   }
 
-  async function onReturn() {
-    await returnLoan(gameId);
+  async function confirmReturn() {
+    await returnLoan(gameId, returnLocation);
     navigation.goBack();
   }
 
@@ -96,10 +99,26 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
           </Text>
         </Pressable>
 
-        {currentLoanTo ? (
-          <Pressable style={styles.returnBtn} onPress={onReturn}>
+        {currentLoanTo && !returning ? (
+          <Pressable style={styles.returnBtn} onPress={() => setReturning(true)}>
             <Text style={styles.returnBtnText}>✓ Mark as Returned</Text>
           </Pressable>
+        ) : null}
+
+        {currentLoanTo && returning ? (
+          <View style={styles.returnBox}>
+            <Text style={styles.label}>Where is it now? (storage location)</Text>
+            <TextInput
+              style={styles.input}
+              value={returnLocation}
+              onChangeText={setReturnLocation}
+              placeholder="e.g. Hall closet, top shelf"
+              placeholderTextColor={colors.placeholder}
+            />
+            <Pressable style={styles.returnConfirm} onPress={confirmReturn}>
+              <Text style={styles.returnBtnText}>✓ Confirm return</Text>
+            </Pressable>
+          </View>
         ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -147,4 +166,14 @@ const styles = StyleSheet.create({
     borderColor: colors.success,
   },
   returnBtnText: { color: colors.success, fontSize: 15, fontWeight: '700' },
+  returnBox: { marginTop: spacing.lg, gap: 6 },
+  returnConfirm: {
+    borderRadius: radius.md,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.success,
+    backgroundColor: colors.surfaceAlt,
+  },
 });

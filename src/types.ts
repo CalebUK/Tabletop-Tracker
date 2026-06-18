@@ -16,6 +16,8 @@ export interface Game {
   bggId: number | null;
   bggRating: number | null;
   developer: string | null;
+  minAge: number | null; // minimum recommended player age
+  complexity: Complexity | null;
   loanedTo: string | null;
   loanedAt: string | null; // ISO date (YYYY-MM-DD)
   createdAt: string;
@@ -54,9 +56,13 @@ export interface GameInput {
   bggId: number | null;
   bggRating: number | null;
   developer: string | null;
+  minAge: number | null;
+  complexity: Complexity | null;
   tags: string[];
   expansions: ExpansionInput[];
 }
+
+export type Complexity = 'easy' | 'medium' | 'high';
 
 export interface Play {
   id: number;
@@ -91,4 +97,7 @@ export interface SearchFilters {
   playerCount: number | null;
   minRating: number | null; // personal rating (0-10) at least this
   minBggRating: number | null; // BGG rating (0-10) at least this
+  // Minimum-age band: game's min age within [lo, hi] (hi null = open-ended).
+  ageBand: { lo: number; hi: number | null } | null;
+  complexity: Complexity | null;
 }

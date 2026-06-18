@@ -33,7 +33,16 @@ const EMPTY_FILTERS: SearchFilters = {
   playerCount: null,
   minRating: null,
   minBggRating: null,
+  ageBand: null,
+  complexity: null,
 };
+
+const AGE_BANDS: { label: string; band: { lo: number; hi: number | null } }[] = [
+  { label: '2–5', band: { lo: 2, hi: 5 } },
+  { label: '6–8', band: { lo: 6, hi: 8 } },
+  { label: '9–11', band: { lo: 9, hi: 11 } },
+  { label: '12+', band: { lo: 12, hi: null } },
+];
 
 export default function SearchScreen() {
   const navigation = useNavigation<Nav>();
@@ -73,7 +82,8 @@ export default function SearchScreen() {
   const active =
     filters.text || filters.tags.length || filters.favoritesOnly ||
     filters.unplayedOnly || filters.maxPlayTime != null || filters.minPlayTime != null ||
-    filters.playerCount != null || filters.minRating != null || filters.minBggRating != null;
+    filters.playerCount != null || filters.minRating != null || filters.minBggRating != null ||
+    filters.ageBand != null || filters.complexity != null;
 
   const header = (
     <View style={styles.filters}>
@@ -122,6 +132,28 @@ export default function SearchScreen() {
         <Toggle label="8+" on={filters.minRating === 8} onPress={() => patch({ minRating: filters.minRating === 8 ? null : 8 })} />
         <Toggle label="BGG 5+" on={filters.minBggRating === 5} onPress={() => patch({ minBggRating: filters.minBggRating === 5 ? null : 5 })} />
         <Toggle label="BGG 8+" on={filters.minBggRating === 8} onPress={() => patch({ minBggRating: filters.minBggRating === 8 ? null : 8 })} />
+      </View>
+
+      <Text style={styles.groupLabel}>Age</Text>
+      <View style={styles.chipWrap}>
+        {AGE_BANDS.map((a) => {
+          const on = filters.ageBand?.lo === a.band.lo && filters.ageBand?.hi === a.band.hi;
+          return (
+            <Toggle key={a.label} label={a.label} on={!!on} onPress={() => patch({ ageBand: on ? null : a.band })} />
+          );
+        })}
+      </View>
+
+      <Text style={styles.groupLabel}>Complexity</Text>
+      <View style={styles.chipWrap}>
+        {(['easy', 'medium', 'high'] as const).map((c) => (
+          <Toggle
+            key={c}
+            label={c[0].toUpperCase() + c.slice(1)}
+            on={filters.complexity === c}
+            onPress={() => patch({ complexity: filters.complexity === c ? null : c })}
+          />
+        ))}
       </View>
 
       {allTags.length > 0 && (

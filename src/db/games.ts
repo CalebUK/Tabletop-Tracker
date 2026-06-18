@@ -1,6 +1,6 @@
 import type * as SQLite from 'expo-sqlite';
 import { getDb } from './database';
-import { Expansion, Game, GameInput, LoanRecord, SearchFilters } from '../types';
+import { Complexity, Expansion, Game, GameInput, LoanRecord, SearchFilters } from '../types';
 
 // Separator used inside group_concat for tags (an unlikely-to-appear char).
 const TAG_SEP = '';
@@ -22,6 +22,8 @@ interface GameRow {
   bgg_id: number | null;
   bgg_rating: number | null;
   developer: string | null;
+  min_age: number | null;
+  complexity: string | null;
   loaned_to: string | null;
   loaned_at: string | null;
   created_at: string;
@@ -48,6 +50,8 @@ function rowToGame(row: GameRow): Game {
     bggId: row.bgg_id,
     bggRating: row.bgg_rating,
     developer: row.developer,
+    minAge: row.min_age,
+    complexity: (row.complexity as Complexity) ?? null,
     loanedTo: row.loaned_to,
     loanedAt: row.loaned_at,
     createdAt: row.created_at,
@@ -125,6 +129,19 @@ export async function searchGames(filters: SearchFilters): Promise<Game[]> {
     where.push('g.bgg_rating IS NOT NULL AND g.bgg_rating >= ?');
     params.push(filters.minBggRating);
   }
+  if (filters.ageBand != null) {
+    if (filters.ageBand.hi != null) {
+      where.push('g.min_age IS NOT NULL AND g.min_age >= ? AND g.min_age <= ?');
+      params.push(filters.ageBand.lo, filters.ageBand.hi);
+    } else {
+      where.push('g.min_age IS NOT NULL AND g.min_age >= ?');
+      params.push(filters.ageBand.lo);
+    }
+  }
+  if (filters.complexity != null) {
+    where.push('g.complexity = ?');
+    params.push(filters.complexity);
+  }
   for (const tag of filters.tags) {
     where.push(
       'EXISTS (SELECT 1 FROM game_tags gt JOIN tags t ON t.id = gt.tag_id WHERE gt.game_id = g.id AND t.name = ? COLLATE NOCASE)'
@@ -152,13 +169,14 @@ export async function saveGame(input: GameInput): Promise<number> {
            name = ?, image_uri = ?, location = ?, year = ?,
            min_players = ?, max_players = ?, play_time_min = ?, rating = ?,
            notes = ?, house_rules = ?, is_favorite = ?, bgg_id = ?,
-           bgg_rating = ?, developer = ?, updated_at = datetime('now')
+           bgg_rating = ?, developer = ?, min_age = ?, complexity = ?,
+           updated_at = datetime('now')
          WHERE id = ?`,
         [
           input.name, input.imageUri, input.location, input.year,
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
           input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.bggId,
-          input.bggRating, input.developer, input.id,
+          input.bggRating, input.developer, input.minAge, input.complexity, input.id,
         ]
       );
       gameId = input.id;
@@ -167,13 +185,13 @@ export async function saveGame(input: GameInput): Promise<number> {
         `INSERT INTO games
            (name, image_uri, location, year, min_players, max_players,
             play_time_min, rating, notes, house_rules, is_favorite,
-            bgg_id, bgg_rating, developer)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            bgg_id, bgg_rating, developer, min_age, complexity)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           input.name, input.imageUri, input.location, input.year,
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
           input.notes, input.houseRules, input.isFavorite ? 1 : 0,
-          input.bggId, input.bggRating, input.developer,
+          input.bggId, input.bggRating, input.developer, input.minAge, input.complexity,
         ]
       );
       gameId = res.lastInsertRowId;
@@ -254,7 +272,8 @@ export async function setLoan(id: number, loanedTo: string, loanedAt: string): P
 }
 
 // Mark a loaned game as returned: closes the open loan and clears the row.
-export async function returnLoan(id: number): Promise<void> {
+// Optionally update the game's storage location (in case it moved shelves).
+export async function returnLoan(id: number, newLocation?: string | null): Promise<void> {
   const db = await getDb();
   const today = new Date().toISOString().slice(0, 10);
   await db.withTransactionAsync(async () => {
@@ -263,6 +282,12 @@ export async function returnLoan(id: number): Promise<void> {
       [today, id]
     );
     await db.runAsync('UPDATE games SET loaned_to = NULL, loaned_at = NULL WHERE id = ?', [id]);
+    if (newLocation !== undefined) {
+      await db.runAsync('UPDATE games SET location = ? WHERE id = ?', [
+        newLocation && newLocation.trim() ? newLocation.trim() : null,
+        id,
+      ]);
+    }
   });
 }
 

@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS games (
   bgg_id INTEGER,
   bgg_rating REAL,
   developer TEXT,
+  min_age INTEGER,
+  complexity TEXT,
   loaned_to TEXT,
   loaned_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -108,6 +110,12 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   }
   if (!names.has('loaned_at')) {
     await db.execAsync('ALTER TABLE games ADD COLUMN loaned_at TEXT');
+  }
+  if (!names.has('min_age')) {
+    await db.execAsync('ALTER TABLE games ADD COLUMN min_age INTEGER');
+  }
+  if (!names.has('complexity')) {
+    await db.execAsync('ALTER TABLE games ADD COLUMN complexity TEXT');
   }
 
   // Versioned migrations for changes that can't be detected by column presence.

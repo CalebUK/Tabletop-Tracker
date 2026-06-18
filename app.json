@@ -19,6 +19,7 @@
         "foregroundImage": "./assets/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
+      "allowBackup": false,
       "package": "com.bgk.boardgamekeeper"
     },
     "web": {

@@ -17,6 +17,7 @@ export interface BggDetails {
   minPlayers: number | null;
   maxPlayers: number | null;
   playTimeMin: number | null;
+  minAge: number | null;
   developer: string | null; // BGG's "designer" — maps to our Developer field
   bggRating: number | null;
   imageUrl: string | null;
@@ -87,6 +88,7 @@ export async function bggDetails(id: number): Promise<BggDetails | null> {
     minPlayers: numAttr(xml, 'minplayers'),
     maxPlayers: numAttr(xml, 'maxplayers'),
     playTimeMin: numAttr(xml, 'playingtime'),
+    minAge: numAttr(xml, 'minage'),
     developer: designer ? decodeEntities(designer) : null,
     bggRating: rating,
     imageUrl: /<image>([^<]*)<\/image>/i.exec(xml)?.[1] ?? null,
