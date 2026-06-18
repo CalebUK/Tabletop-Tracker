@@ -1,11 +1,16 @@
 import React, { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation';
 import { CollectionStats, getStats } from '../db/plays';
 import { colors, radius, spacing } from '../theme';
 
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+
 export default function StatsScreen() {
+  const navigation = useNavigation<Nav>();
   const [stats, setStats] = useState<CollectionStats | null>(null);
 
   useFocusEffect(
@@ -33,12 +38,16 @@ export default function StatsScreen() {
             <Text style={styles.muted}>Log some plays to see who's winning.</Text>
           ) : (
             stats.topPlayers.map((p) => (
-              <View key={p.name} style={styles.listRow}>
-                <Text style={styles.listName}>{p.name}</Text>
+              <Pressable
+                key={p.name}
+                style={styles.listRow}
+                onPress={() => navigation.navigate('PlayerStats', { name: p.name })}
+              >
+                <Text style={styles.listName}>{p.name} ›</Text>
                 <Text style={styles.listValue}>
                   {p.wins} win{p.wins === 1 ? '' : 's'} · {p.plays} play{p.plays === 1 ? '' : 's'}
                 </Text>
-              </View>
+              </Pressable>
             ))
           )}
         </Section>

@@ -9,6 +9,7 @@ export type RootStackParamList = {
   LogPlay: { gameId: number; playId?: number }; // playId to edit an existing play
   Loan: { gameId: number };
   ScanBarcode: { gameId?: number }; // gameId to return to when editing
+  PlayerStats: { name: string };
 };
 
 export type RootStackProps<T extends keyof RootStackParamList> =

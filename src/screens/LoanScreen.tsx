@@ -1,6 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { RootStackProps } from '../navigation';
 import { getGame, setLoan, returnLoan } from '../db/games';
 import { isoToUk, todayUk, ukToIso } from '../lib/dates';
@@ -8,6 +19,7 @@ import { colors, radius, spacing } from '../theme';
 
 export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>) {
   const { gameId } = route.params;
+  const headerHeight = useHeaderHeight();
   const [gameName, setGameName] = useState('');
   const [currentLoanTo, setCurrentLoanTo] = useState<string | null>(null);
   const [currentLoanAt, setCurrentLoanAt] = useState<string | null>(null);
@@ -43,8 +55,13 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.game}>{gameName}</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={headerHeight}
+      >
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Text style={styles.game}>{gameName}</Text>
 
         {currentLoanTo ? (
           <View style={styles.banner}>
@@ -84,7 +101,8 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
             <Text style={styles.returnBtnText}>✓ Mark as Returned</Text>
           </Pressable>
         ) : null}
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

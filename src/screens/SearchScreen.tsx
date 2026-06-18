@@ -61,6 +61,13 @@ export default function SearchScreen() {
     }));
   }
 
+  // Jump to a random game among the current results.
+  function feelingLucky() {
+    if (results.length === 0) return;
+    const pick = results[Math.floor(Math.random() * results.length)];
+    navigation.navigate('GameDetail', { gameId: pick.id });
+  }
+
   const active =
     filters.text || filters.tags.length || filters.favoritesOnly ||
     filters.unplayedOnly || filters.maxPlayTime != null || filters.minPlayTime != null ||
@@ -126,6 +133,12 @@ export default function SearchScreen() {
           </Pressable>
         ) : null}
       </View>
+
+      {results.length > 0 && (
+        <Pressable style={styles.luckyBtn} onPress={feelingLucky}>
+          <Text style={styles.luckyText}>🎲 Feeling lucky</Text>
+        </Pressable>
+      )}
     </View>
   );
 
@@ -192,5 +205,13 @@ const styles = StyleSheet.create({
   },
   resultCount: { color: colors.text, fontSize: 15, fontWeight: '600' },
   clear: { color: colors.primary, fontSize: 14, fontWeight: '600' },
+  luckyBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  luckyText: { color: colors.primaryText, fontSize: 15, fontWeight: '700' },
   noResults: { color: colors.textMuted, textAlign: 'center', marginTop: spacing.xl },
 });

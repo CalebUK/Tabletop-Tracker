@@ -120,6 +120,53 @@ export async function deletePlay(playId: number): Promise<void> {
   await db.runAsync('DELETE FROM plays WHERE id = ?', [playId]);
 }
 
+// Distinct player names ever recorded, most-used first (for autocomplete).
+export async function getAllPlayers(): Promise<string[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{ name: string }>(
+    `SELECT player_name AS name, count(*) AS c
+       FROM play_players
+      GROUP BY player_name COLLATE NOCASE
+      ORDER BY c DESC, name COLLATE NOCASE ASC`
+  );
+  return rows.map((r) => r.name);
+}
+
+export interface PlayerStats {
+  name: string;
+  totalPlays: number;
+  wins: number;
+  winRate: number; // 0-100
+  perGame: { name: string; plays: number; wins: number }[];
+}
+
+export async function getPlayerStats(name: string): Promise<PlayerStats> {
+  const db = await getDb();
+  const totals = await db.getFirstAsync<{ plays: number; wins: number }>(
+    'SELECT count(*) AS plays, sum(is_winner) AS wins FROM play_players WHERE player_name = ? COLLATE NOCASE',
+    [name]
+  );
+  const perGame = await db.getAllAsync<{ name: string; plays: number; wins: number }>(
+    `SELECT g.name AS name, count(*) AS plays, sum(pp.is_winner) AS wins
+       FROM play_players pp
+       JOIN plays p ON p.id = pp.play_id
+       JOIN games g ON g.id = p.game_id
+      WHERE pp.player_name = ? COLLATE NOCASE
+      GROUP BY g.id
+      ORDER BY plays DESC, g.name COLLATE NOCASE ASC`,
+    [name]
+  );
+  const plays = totals?.plays ?? 0;
+  const wins = totals?.wins ?? 0;
+  return {
+    name,
+    totalPlays: plays,
+    wins,
+    winRate: plays > 0 ? Math.round((wins / plays) * 100) : 0,
+    perGame,
+  };
+}
+
 // Aggregate stats for the Stats tab.
 export interface CollectionStats {
   totalGames: number;

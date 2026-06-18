@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { RootStackProps } from '../navigation';
 import { getGame, getAllTags, saveGame, deleteGame } from '../db/games';
 import { deleteImage, pickFromLibrary, takePhoto } from '../lib/images';
@@ -50,6 +51,7 @@ function numOrNull(s: string): number | null {
 
 export default function EditGameScreen({ route, navigation }: RootStackProps<'EditGame'>) {
   const editingId = route.params?.gameId;
+  const headerHeight = useHeaderHeight();
   const [form, setForm] = useState<GameInput>(EMPTY);
   const [tagText, setTagText] = useState('');
   const [allTags, setAllTags] = useState<string[]>([]);
@@ -261,7 +263,8 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={headerHeight}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Pressable style={styles.photo} onPress={() => setPhotoMenu(true)}>

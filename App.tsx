@@ -16,6 +16,7 @@ import EditGameScreen from './src/screens/EditGameScreen';
 import LogPlayScreen from './src/screens/LogPlayScreen';
 import LoanScreen from './src/screens/LoanScreen';
 import ScanBarcodeScreen from './src/screens/ScanBarcodeScreen';
+import PlayerStatsScreen from './src/screens/PlayerStatsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -86,6 +87,7 @@ export default function App() {
           <Stack.Screen name="LogPlay" component={LogPlayScreen} options={{ title: 'Log Play' }} />
           <Stack.Screen name="Loan" component={LoanScreen} options={{ title: 'Loan Out' }} />
           <Stack.Screen name="ScanBarcode" component={ScanBarcodeScreen} options={{ title: 'Scan Barcode' }} />
+          <Stack.Screen name="PlayerStats" component={PlayerStatsScreen} options={{ title: '' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

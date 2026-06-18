@@ -16,6 +16,7 @@ export default function CollectionScreen() {
   const navigation = useNavigation<Nav>();
   const [games, setGames] = useState<Game[]>([]);
   const [query, setQuery] = useState('');
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   const load = useCallback(() => {
     getAllGames().then(setGames).catch((e) => console.warn('load games', e));
@@ -31,9 +32,10 @@ export default function CollectionScreen() {
     toggleFavorite(g.id, next).catch((e) => console.warn('toggle favorite', e));
   }
 
-  const filtered = query.trim()
-    ? games.filter((g) => g.name.toLowerCase().includes(query.trim().toLowerCase()))
-    : games;
+  const q = query.trim().toLowerCase();
+  const filtered = games
+    .filter((g) => (favoritesOnly ? g.isFavorite : true))
+    .filter((g) => (q ? g.name.toLowerCase().includes(q) : true));
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -42,17 +44,27 @@ export default function CollectionScreen() {
         <Text style={styles.count}>{games.length} games</Text>
       </View>
 
-      <TextInput
-        style={styles.search}
-        placeholder="Quick search by name…"
-        placeholderTextColor={colors.textMuted}
-        value={query}
-        onChangeText={setQuery}
-        clearButtonMode="while-editing"
-      />
+      <View style={styles.searchRow}>
+        <TextInput
+          style={[styles.search, styles.flex1]}
+          placeholder="Quick search by name…"
+          placeholderTextColor={colors.textMuted}
+          value={query}
+          onChangeText={setQuery}
+          clearButtonMode="while-editing"
+        />
+        <Pressable
+          style={[styles.favFilter, favoritesOnly && styles.favFilterOn]}
+          onPress={() => setFavoritesOnly((v) => !v)}
+        >
+          <Text style={[styles.favFilterText, favoritesOnly && styles.favFilterTextOn]}>
+            {favoritesOnly ? '♥' : '♡'}
+          </Text>
+        </Pressable>
+      </View>
 
       {games.length > 0 && (
-        <Text style={styles.hint}>Swipe a game → to edit · ← to loan</Text>
+        <Text style={styles.hint}>Swipe ← to edit & → to loan a game.</Text>
       )}
 
       <FlatList
@@ -61,13 +73,13 @@ export default function CollectionScreen() {
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <SwipeableRow
-            rightSwipe={{
+            leftSwipe={{
               icon: '✏️',
               label: 'Edit',
               color: colors.primary,
               onTrigger: () => navigation.navigate('EditGame', { gameId: item.id }),
             }}
-            leftSwipe={{
+            rightSwipe={{
               icon: '🤝',
               label: item.loanedTo ? 'Manage' : 'Loan',
               color: colors.favorite,
@@ -117,6 +129,13 @@ const styles = StyleSheet.create({
   },
   heading: { color: colors.text, fontSize: 26, fontWeight: '700' },
   count: { color: colors.textMuted, fontSize: 14 },
+  searchRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.md,
+  },
+  flex1: { flex: 1 },
   search: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
@@ -125,9 +144,19 @@ const styles = StyleSheet.create({
     color: colors.text,
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
   },
+  favFilter: {
+    width: 44,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  favFilterOn: { backgroundColor: colors.favorite, borderColor: colors.favorite },
+  favFilterText: { color: colors.textMuted, fontSize: 20 },
+  favFilterTextOn: { color: '#fff' },
   hint: {
     color: colors.textMuted,
     fontSize: 12,
