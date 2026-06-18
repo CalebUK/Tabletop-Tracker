@@ -45,17 +45,28 @@ function decodeEntities(s: string): string {
     .replace(/&gt;/g, '>');
 }
 
-const HEADERS = {
+// BGG now requires a registered application token (Authorization: Bearer ...).
+// Set EXPO_PUBLIC_BGG_TOKEN in the build env (kept out of git). Without it,
+// requests get 401 and we fall back to manual entry.
+const BGG_TOKEN = process.env.EXPO_PUBLIC_BGG_TOKEN;
+
+const HEADERS: Record<string, string> = {
   'User-Agent': 'TabletopTracker/1.0 (board game collection app)',
   Accept: 'application/xml, text/xml',
+  ...(BGG_TOKEN ? { Authorization: `Bearer ${BGG_TOKEN}` } : {}),
 };
 
-// Friendlier message for BoardGameGeek's access limits.
+// Friendlier message for BoardGameGeek's access limits / token issues.
 function bggError(status: number): Error {
-  if (status === 401 || status === 403 || status === 429) {
+  if (status === 401 || status === 403) {
     return new Error(
-      'BoardGameGeek is limiting automatic lookups right now. You can enter the BGG rating manually below.'
+      BGG_TOKEN
+        ? 'BoardGameGeek rejected the request (token may be pending or invalid). You can enter the BGG rating manually below.'
+        : 'Automatic BoardGameGeek lookup needs a BGG app token, which isn’t set up yet. You can enter the BGG rating manually below.'
     );
+  }
+  if (status === 429) {
+    return new Error('BoardGameGeek is rate-limiting right now. Try again shortly, or enter the rating manually.');
   }
   return new Error(`BoardGameGeek error (${status}).`);
 }

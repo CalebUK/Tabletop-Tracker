@@ -30,8 +30,10 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files (keep secrets like the BGG token out of git)
+.env
 .env*.local
+!.env.example
 
 # typescript
 *.tsbuildinfo
