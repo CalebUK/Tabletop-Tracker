@@ -7,6 +7,7 @@ import { getPlaysForGame, deletePlay } from '../db/plays';
 import { Expansion, Game, LoanRecord, Play } from '../types';
 import { colors, radius, spacing } from '../theme';
 import { isoToUk } from '../lib/dates';
+import { round2 } from '../lib/format';
 import StarRating from '../components/StarRating';
 
 function playersText(g: Game): string | null {
@@ -108,7 +109,13 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
         {game.bggRating != null && (
           <View style={styles.ratingBlock}>
             <Text style={styles.ratingLabel}>BGG rating</Text>
-            <Text style={styles.bgg}>{game.bggRating.toFixed(1)}</Text>
+            <Text style={styles.bgg}>{round2(game.bggRating)}</Text>
+          </View>
+        )}
+        {game.bggWeight != null && (
+          <View style={styles.ratingBlock}>
+            <Text style={styles.ratingLabel}>BGG complexity</Text>
+            <Text style={styles.bgg}>{round2(game.bggWeight)}/5</Text>
           </View>
         )}
       </View>

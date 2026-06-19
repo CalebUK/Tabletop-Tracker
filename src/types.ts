@@ -15,6 +15,7 @@ export interface Game {
   isFavorite: boolean;
   bggId: number | null;
   bggRating: number | null;
+  bggWeight: number | null; // BGG complexity / "weight", 0-5
   developer: string | null;
   minAge: number | null; // minimum recommended player age
   complexity: Complexity | null;
@@ -57,6 +58,7 @@ export interface GameInput {
   isFavorite: boolean;
   bggId: number | null;
   bggRating: number | null;
+  bggWeight: number | null;
   developer: string | null;
   minAge: number | null;
   complexity: Complexity | null;

@@ -20,6 +20,7 @@ export interface BggDetails {
   minAge: number | null;
   developer: string | null; // BGG's "designer" — maps to our Developer field
   bggRating: number | null;
+  bggWeight: number | null; // BGG complexity / "weight", 0-5
   imageUrl: string | null;
 }
 
@@ -113,6 +114,8 @@ export async function bggDetails(id: number): Promise<BggDetails | null> {
   const designer = /<link[^>]*type="boardgamedesigner"[^>]*value="([^"]*)"/i.exec(xml)?.[1] ?? null;
   const avg = /<average[^>]*value="([^"]*)"/i.exec(xml)?.[1];
   const rating = avg != null && avg !== '' && Number(avg) > 0 ? Number(avg) : null;
+  const weightStr = /<averageweight[^>]*value="([^"]*)"/i.exec(xml)?.[1];
+  const weight = weightStr != null && weightStr !== '' && Number(weightStr) > 0 ? Number(weightStr) : null;
 
   return {
     id,
@@ -124,6 +127,7 @@ export async function bggDetails(id: number): Promise<BggDetails | null> {
     minAge: numAttr(xml, 'minage'),
     developer: designer ? decodeEntities(designer) : null,
     bggRating: rating,
+    bggWeight: weight,
     imageUrl: /<image>([^<]*)<\/image>/i.exec(xml)?.[1] ?? null,
   };
 }

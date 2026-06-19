@@ -21,6 +21,7 @@ interface GameRow {
   is_favorite: number;
   bgg_id: number | null;
   bgg_rating: number | null;
+  bgg_weight: number | null;
   developer: string | null;
   min_age: number | null;
   complexity: string | null;
@@ -51,6 +52,7 @@ function rowToGame(row: GameRow): Game {
     isFavorite: row.is_favorite === 1,
     bggId: row.bgg_id,
     bggRating: row.bgg_rating,
+    bggWeight: row.bgg_weight,
     developer: row.developer,
     minAge: row.min_age,
     complexity: (row.complexity as Complexity) ?? null,
@@ -187,15 +189,15 @@ export async function saveGame(input: GameInput): Promise<number> {
            name = ?, image_uri = ?, location = ?, year = ?,
            min_players = ?, max_players = ?, play_time_min = ?, rating = ?,
            notes = ?, house_rules = ?, is_favorite = ?, bgg_id = ?,
-           bgg_rating = ?, developer = ?, min_age = ?, complexity = ?, edition = ?,
+           bgg_rating = ?, bgg_weight = ?, developer = ?, min_age = ?, complexity = ?, edition = ?,
            updated_at = datetime('now')
          WHERE id = ?`,
         [
           input.name, input.imageUri, input.location, input.year,
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
           input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.bggId,
-          input.bggRating, input.developer, input.minAge, input.complexity, input.edition,
-          input.id,
+          input.bggRating, input.bggWeight, input.developer, input.minAge, input.complexity,
+          input.edition, input.id,
         ]
       );
       gameId = input.id;
@@ -204,14 +206,14 @@ export async function saveGame(input: GameInput): Promise<number> {
         `INSERT INTO games
            (name, image_uri, location, year, min_players, max_players,
             play_time_min, rating, notes, house_rules, is_favorite,
-            bgg_id, bgg_rating, developer, min_age, complexity, edition)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            bgg_id, bgg_rating, bgg_weight, developer, min_age, complexity, edition)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           input.name, input.imageUri, input.location, input.year,
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
           input.notes, input.houseRules, input.isFavorite ? 1 : 0,
-          input.bggId, input.bggRating, input.developer, input.minAge, input.complexity,
-          input.edition,
+          input.bggId, input.bggRating, input.bggWeight, input.developer, input.minAge,
+          input.complexity, input.edition,
         ]
       );
       gameId = res.lastInsertRowId;

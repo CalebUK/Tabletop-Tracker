@@ -30,6 +30,7 @@ import {
 } from '../db/games';
 import { deleteImage, pickFromLibrary, takePhoto } from '../lib/images';
 import { bggSearch, bggDetails, BggSearchResult } from '../lib/bgg';
+import { round2num } from '../lib/format';
 import { GameInput } from '../types';
 import { colors, radius, spacing } from '../theme';
 import StarRating from '../components/StarRating';
@@ -48,6 +49,7 @@ const EMPTY: GameInput = {
   isFavorite: false,
   bggId: null,
   bggRating: null,
+  bggWeight: null,
   developer: null,
   minAge: null,
   complexity: null,
@@ -66,6 +68,12 @@ function ratingOrNull(s: string): number | null {
   const n = parseFloat(s);
   if (!Number.isFinite(n)) return null;
   return Math.max(0, Math.min(10, n)); // BGG ratings are 0–10
+}
+
+function weightOrNull(s: string): number | null {
+  const n = parseFloat(s);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.min(5, n)); // BGG complexity (weight) is 0–5
 }
 
 export default function EditGameScreen({ route, navigation }: RootStackProps<'EditGame'>) {
@@ -108,6 +116,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
           isFavorite: g.isFavorite,
           bggId: g.bggId,
           bggRating: g.bggRating,
+          bggWeight: g.bggWeight,
           developer: g.developer,
           minAge: g.minAge,
           complexity: g.complexity,
@@ -215,7 +224,8 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
       minAge: d.minAge ?? f.minAge,
       developer: d.developer ?? f.developer,
       bggId: d.id,
-      bggRating: d.bggRating ?? f.bggRating,
+      bggRating: d.bggRating != null ? round2num(d.bggRating) : f.bggRating,
+      bggWeight: d.bggWeight != null ? round2num(d.bggWeight) : f.bggWeight,
       // Use the BGG cover only if the user hasn't added their own photo.
       imageUri: f.imageUri ?? d.imageUrl,
     }));
@@ -341,9 +351,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               placeholderTextColor={colors.placeholder}
             />
             <Pressable style={styles.identifyBtn} onPress={openBggSearch}>
-              <Text style={styles.identifyText} numberOfLines={1} adjustsFontSizeToFit>
-                🔍 Look up on BoardGameGeek
-              </Text>
+              <Text style={styles.identifyText}>🔍 Look up on BoardGameGeek</Text>
             </Pressable>
             {form.bggId != null && (
               <Text style={styles.bggLinked}>✓ Synced with BoardGameGeek</Text>
@@ -371,6 +379,25 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               </View>
             )}
           </Field>
+
+          <Field label={`My rating${form.rating ? ` · ${form.rating}/10` : ''}`}>
+            <StarRating
+              value={form.rating}
+              max={10}
+              size={26}
+              editable
+              onChange={(v) => patch({ rating: v })}
+            />
+          </Field>
+
+          <View style={styles.switchRow}>
+            <Text style={styles.label}>Favorite</Text>
+            <Switch
+              value={form.isFavorite}
+              onValueChange={(v) => patch({ isFavorite: v })}
+              trackColor={{ true: colors.favorite, false: colors.border }}
+            />
+          </View>
 
           <View style={styles.row}>
             <Field label="Min players" style={styles.flex1}>
@@ -456,16 +483,28 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
             </View>
           </Field>
 
-          <Field label="BGG rating (0–10)">
-            <TextInput
-              style={styles.input}
-              keyboardType="decimal-pad"
-              value={form.bggRating != null ? String(form.bggRating) : ''}
-              onChangeText={(v) => patch({ bggRating: ratingOrNull(v) })}
-              placeholder="Filled by Look up, or type it from boardgamegeek.com"
-              placeholderTextColor={colors.placeholder}
-            />
-          </Field>
+          <View style={styles.row}>
+            <Field label="BGG rating (0–10)" style={styles.flex1}>
+              <TextInput
+                style={styles.input}
+                keyboardType="decimal-pad"
+                value={form.bggRating != null ? String(form.bggRating) : ''}
+                onChangeText={(v) => patch({ bggRating: ratingOrNull(v) })}
+                placeholder="—"
+                placeholderTextColor={colors.placeholder}
+              />
+            </Field>
+            <Field label="BGG complexity (0–5)" style={styles.flex1}>
+              <TextInput
+                style={styles.input}
+                keyboardType="decimal-pad"
+                value={form.bggWeight != null ? String(form.bggWeight) : ''}
+                onChangeText={(v) => patch({ bggWeight: weightOrNull(v) })}
+                placeholder="—"
+                placeholderTextColor={colors.placeholder}
+              />
+            </Field>
+          </View>
 
           <Field label="Publisher/Designer">
             <TextInput
@@ -477,24 +516,36 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
             />
           </Field>
 
-          <Field label={`My rating${form.rating ? ` · ${form.rating}/10` : ''}`}>
-            <StarRating
-              value={form.rating}
-              max={10}
-              size={26}
-              editable
-              onChange={(v) => patch({ rating: v })}
-            />
+          <Field label="Expansions owned">
+            {form.expansions.map((ex, i) => (
+              <View key={i} style={styles.expansionRow}>
+                <TextInput
+                  style={[styles.input, styles.flex1]}
+                  value={ex.name}
+                  onChangeText={(v) => updateExpansion(i, { name: v })}
+                  placeholder="Expansion name"
+                  placeholderTextColor={colors.placeholder}
+                />
+                <View style={styles.expansionPlayers}>
+                  <TextInput
+                    style={[styles.input, styles.expansionPlayersInput]}
+                    keyboardType="number-pad"
+                    value={ex.additionalPlayers ? String(ex.additionalPlayers) : ''}
+                    onChangeText={(v) => updateExpansion(i, { additionalPlayers: numOrNull(v) ?? 0 })}
+                    placeholder="0"
+                    placeholderTextColor={colors.placeholder}
+                  />
+                  <Text style={styles.expansionPlayersLabel}>+players</Text>
+                </View>
+                <Pressable onPress={() => removeExpansion(i)} hitSlop={8}>
+                  <Text style={styles.expansionRemove}>✕</Text>
+                </Pressable>
+              </View>
+            ))}
+            <Pressable style={styles.addExpansion} onPress={addExpansion}>
+              <Text style={styles.addExpansionText}>+ Add expansion</Text>
+            </Pressable>
           </Field>
-
-          <View style={styles.switchRow}>
-            <Text style={styles.label}>Favorite</Text>
-            <Switch
-              value={form.isFavorite}
-              onValueChange={(v) => patch({ isFavorite: v })}
-              trackColor={{ true: colors.favorite, false: colors.border }}
-            />
-          </View>
 
           <Field label="Tags">
             <View style={styles.chipWrap}>
@@ -574,37 +625,6 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               placeholderTextColor={colors.placeholder}
               multiline
             />
-          </Field>
-
-          <Field label="Expansions owned">
-            {form.expansions.map((ex, i) => (
-              <View key={i} style={styles.expansionRow}>
-                <TextInput
-                  style={[styles.input, styles.flex1]}
-                  value={ex.name}
-                  onChangeText={(v) => updateExpansion(i, { name: v })}
-                  placeholder="Expansion name"
-                  placeholderTextColor={colors.placeholder}
-                />
-                <View style={styles.expansionPlayers}>
-                  <TextInput
-                    style={[styles.input, styles.expansionPlayersInput]}
-                    keyboardType="number-pad"
-                    value={ex.additionalPlayers ? String(ex.additionalPlayers) : ''}
-                    onChangeText={(v) => updateExpansion(i, { additionalPlayers: numOrNull(v) ?? 0 })}
-                    placeholder="0"
-                    placeholderTextColor={colors.placeholder}
-                  />
-                  <Text style={styles.expansionPlayersLabel}>+players</Text>
-                </View>
-                <Pressable onPress={() => removeExpansion(i)} hitSlop={8}>
-                  <Text style={styles.expansionRemove}>✕</Text>
-                </Pressable>
-              </View>
-            ))}
-            <Pressable style={styles.addExpansion} onPress={addExpansion}>
-              <Text style={styles.addExpansionText}>+ Add expansion</Text>
-            </Pressable>
           </Field>
 
           {editingId && (

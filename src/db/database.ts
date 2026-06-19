@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS games (
   is_favorite INTEGER NOT NULL DEFAULT 0,
   bgg_id INTEGER,
   bgg_rating REAL,
+  bgg_weight REAL,
   developer TEXT,
   min_age INTEGER,
   complexity TEXT,
@@ -141,6 +142,9 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   }
   if (!names.has('edition')) {
     await db.execAsync('ALTER TABLE games ADD COLUMN edition TEXT');
+  }
+  if (!names.has('bgg_weight')) {
+    await db.execAsync('ALTER TABLE games ADD COLUMN bgg_weight REAL');
   }
 
   // loans.photo_uri (added later than the loans table itself).
