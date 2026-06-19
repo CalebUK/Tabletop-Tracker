@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS games (
   developer TEXT,
   min_age INTEGER,
   complexity TEXT,
+  edition TEXT,
   loaned_to TEXT,
   loaned_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -34,6 +35,19 @@ CREATE TABLE IF NOT EXISTS games (
 CREATE TABLE IF NOT EXISTS tags (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL UNIQUE COLLATE NOCASE
+);
+
+CREATE TABLE IF NOT EXISTS categories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE COLLATE NOCASE
+);
+
+CREATE TABLE IF NOT EXISTS game_categories (
+  game_id INTEGER NOT NULL,
+  category_id INTEGER NOT NULL,
+  PRIMARY KEY (game_id, category_id),
+  FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS game_tags (
@@ -66,6 +80,7 @@ CREATE TABLE IF NOT EXISTS loans (
   loaned_to TEXT NOT NULL,
   loaned_at TEXT NOT NULL,   -- ISO date the game went out
   returned_at TEXT,          -- ISO date it came back; NULL while still out
+  photo_uri TEXT,            -- optional "proof" photo; deleted on return
   FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
 );
 
@@ -92,6 +107,8 @@ CREATE TABLE IF NOT EXISTS meta (
 
 CREATE INDEX IF NOT EXISTS idx_game_tags_game ON game_tags(game_id);
 CREATE INDEX IF NOT EXISTS idx_game_tags_tag ON game_tags(tag_id);
+CREATE INDEX IF NOT EXISTS idx_game_categories_game ON game_categories(game_id);
+CREATE INDEX IF NOT EXISTS idx_game_categories_cat ON game_categories(category_id);
 CREATE INDEX IF NOT EXISTS idx_plays_game ON plays(game_id);
 CREATE INDEX IF NOT EXISTS idx_play_players_play ON play_players(play_id);
 CREATE INDEX IF NOT EXISTS idx_loans_game ON loans(game_id);
@@ -121,6 +138,15 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   }
   if (!names.has('complexity')) {
     await db.execAsync('ALTER TABLE games ADD COLUMN complexity TEXT');
+  }
+  if (!names.has('edition')) {
+    await db.execAsync('ALTER TABLE games ADD COLUMN edition TEXT');
+  }
+
+  // loans.photo_uri (added later than the loans table itself).
+  const loanCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(loans)');
+  if (!loanCols.some((c) => c.name === 'photo_uri')) {
+    await db.execAsync('ALTER TABLE loans ADD COLUMN photo_uri TEXT');
   }
 
   // Versioned migrations for changes that can't be detected by column presence.

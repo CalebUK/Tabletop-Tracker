@@ -24,11 +24,13 @@ interface GameRow {
   developer: string | null;
   min_age: number | null;
   complexity: string | null;
+  edition: string | null;
   loaned_to: string | null;
   loaned_at: string | null;
   created_at: string;
   updated_at: string;
   tags: string | null; // group_concat result
+  categories: string | null; // group_concat result
   play_count: number;
   expansion_count: number;
 }
@@ -52,11 +54,13 @@ function rowToGame(row: GameRow): Game {
     developer: row.developer,
     minAge: row.min_age,
     complexity: (row.complexity as Complexity) ?? null,
+    edition: row.edition,
     loanedTo: row.loaned_to,
     loanedAt: row.loaned_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     tags: row.tags ? row.tags.split(TAG_SEP).filter(Boolean) : [],
+    categories: row.categories ? row.categories.split(TAG_SEP).filter(Boolean) : [],
     playCount: row.play_count ?? 0,
     expansionCount: row.expansion_count ?? 0,
   };
@@ -67,6 +71,9 @@ const BASE_SELECT = `
     (SELECT group_concat(t.name, char(1))
        FROM game_tags gt JOIN tags t ON t.id = gt.tag_id
       WHERE gt.game_id = g.id) AS tags,
+    (SELECT group_concat(c.name, char(1))
+       FROM game_categories gc JOIN categories c ON c.id = gc.category_id
+      WHERE gc.game_id = g.id) AS categories,
     (SELECT count(*) FROM plays p WHERE p.game_id = g.id) AS play_count,
     (SELECT count(*) FROM expansions e WHERE e.game_id = g.id) AS expansion_count
   FROM games g
@@ -147,6 +154,12 @@ export async function searchGames(filters: SearchFilters): Promise<Game[]> {
     where.push('g.complexity = ?');
     params.push(filters.complexity);
   }
+  if (filters.category != null) {
+    where.push(
+      'EXISTS (SELECT 1 FROM game_categories gc JOIN categories c ON c.id = gc.category_id WHERE gc.game_id = g.id AND c.name = ? COLLATE NOCASE)'
+    );
+    params.push(filters.category);
+  }
   for (const tag of filters.tags) {
     where.push(
       'EXISTS (SELECT 1 FROM game_tags gt JOIN tags t ON t.id = gt.tag_id WHERE gt.game_id = g.id AND t.name = ? COLLATE NOCASE)'
@@ -174,14 +187,15 @@ export async function saveGame(input: GameInput): Promise<number> {
            name = ?, image_uri = ?, location = ?, year = ?,
            min_players = ?, max_players = ?, play_time_min = ?, rating = ?,
            notes = ?, house_rules = ?, is_favorite = ?, bgg_id = ?,
-           bgg_rating = ?, developer = ?, min_age = ?, complexity = ?,
+           bgg_rating = ?, developer = ?, min_age = ?, complexity = ?, edition = ?,
            updated_at = datetime('now')
          WHERE id = ?`,
         [
           input.name, input.imageUri, input.location, input.year,
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
           input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.bggId,
-          input.bggRating, input.developer, input.minAge, input.complexity, input.id,
+          input.bggRating, input.developer, input.minAge, input.complexity, input.edition,
+          input.id,
         ]
       );
       gameId = input.id;
@@ -190,13 +204,14 @@ export async function saveGame(input: GameInput): Promise<number> {
         `INSERT INTO games
            (name, image_uri, location, year, min_players, max_players,
             play_time_min, rating, notes, house_rules, is_favorite,
-            bgg_id, bgg_rating, developer, min_age, complexity)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            bgg_id, bgg_rating, developer, min_age, complexity, edition)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           input.name, input.imageUri, input.location, input.year,
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
           input.notes, input.houseRules, input.isFavorite ? 1 : 0,
           input.bggId, input.bggRating, input.developer, input.minAge, input.complexity,
+          input.edition,
         ]
       );
       gameId = res.lastInsertRowId;
@@ -216,6 +231,24 @@ export async function saveGame(input: GameInput): Promise<number> {
         await db.runAsync(
           'INSERT OR IGNORE INTO game_tags (game_id, tag_id) VALUES (?, ?)',
           [gameId, tagRow.id]
+        );
+      }
+    }
+
+    // Reconcile categories the same way as tags.
+    await db.runAsync('DELETE FROM game_categories WHERE game_id = ?', [gameId]);
+    for (const rawCat of input.categories) {
+      const cat = rawCat.trim();
+      if (!cat) continue;
+      await db.runAsync('INSERT OR IGNORE INTO categories (name) VALUES (?)', [cat]);
+      const catRow = await db.getFirstAsync<{ id: number }>(
+        'SELECT id FROM categories WHERE name = ? COLLATE NOCASE',
+        [cat]
+      );
+      if (catRow) {
+        await db.runAsync(
+          'INSERT OR IGNORE INTO game_categories (game_id, category_id) VALUES (?, ?)',
+          [gameId, catRow.id]
         );
       }
     }
@@ -259,7 +292,12 @@ export async function toggleFavorite(id: number, value: boolean): Promise<void> 
 // Mark a game as loaned out. loanedAt is an ISO date (YYYY-MM-DD). The current
 // loan is mirrored onto the games row (for cards/search) and recorded in the
 // loans history table.
-export async function setLoan(id: number, loanedTo: string, loanedAt: string): Promise<void> {
+export async function setLoan(
+  id: number,
+  loanedTo: string,
+  loanedAt: string,
+  photoUri?: string | null
+): Promise<void> {
   const db = await getDb();
   await db.withTransactionAsync(async () => {
     await db.runAsync('UPDATE games SET loaned_to = ?, loaned_at = ? WHERE id = ?', [
@@ -273,28 +311,38 @@ export async function setLoan(id: number, loanedTo: string, loanedAt: string): P
       [id]
     );
     if (open) {
-      await db.runAsync('UPDATE loans SET loaned_to = ?, loaned_at = ? WHERE id = ?', [
+      await db.runAsync('UPDATE loans SET loaned_to = ?, loaned_at = ?, photo_uri = ? WHERE id = ?', [
         loanedTo,
         loanedAt,
+        photoUri ?? null,
         open.id,
       ]);
     } else {
       await db.runAsync(
-        'INSERT INTO loans (game_id, loaned_to, loaned_at) VALUES (?, ?, ?)',
-        [id, loanedTo, loanedAt]
+        'INSERT INTO loans (game_id, loaned_to, loaned_at, photo_uri) VALUES (?, ?, ?, ?)',
+        [id, loanedTo, loanedAt, photoUri ?? null]
       );
     }
   });
 }
 
-// Mark a loaned game as returned: closes the open loan and clears the row.
+// Mark a loaned game as returned: closes the open loan, clears the row, and
+// returns the proof photo uri (if any) so the caller can delete the file.
 // Optionally update the game's storage location (in case it moved shelves).
-export async function returnLoan(id: number, newLocation?: string | null): Promise<void> {
+export async function returnLoan(
+  id: number,
+  newLocation?: string | null
+): Promise<string | null> {
   const db = await getDb();
   const today = new Date().toISOString().slice(0, 10);
+  const open = await db.getFirstAsync<{ photo_uri: string | null }>(
+    'SELECT photo_uri FROM loans WHERE game_id = ? AND returned_at IS NULL ORDER BY id DESC LIMIT 1',
+    [id]
+  );
   await db.withTransactionAsync(async () => {
+    // Drop the proof photo reference on return (the file is deleted by caller).
     await db.runAsync(
-      'UPDATE loans SET returned_at = ? WHERE game_id = ? AND returned_at IS NULL',
+      'UPDATE loans SET returned_at = ?, photo_uri = NULL WHERE game_id = ? AND returned_at IS NULL',
       [today, id]
     );
     await db.runAsync('UPDATE games SET loaned_to = NULL, loaned_at = NULL WHERE id = ?', [id]);
@@ -305,6 +353,7 @@ export async function returnLoan(id: number, newLocation?: string | null): Promi
       ]);
     }
   });
+  return open?.photo_uri ?? null;
 }
 
 // Full loan history for a game, most recent first.
@@ -315,8 +364,9 @@ export async function getLoanHistory(gameId: number): Promise<LoanRecord[]> {
     loaned_to: string;
     loaned_at: string;
     returned_at: string | null;
+    photo_uri: string | null;
   }>(
-    'SELECT id, loaned_to, loaned_at, returned_at FROM loans WHERE game_id = ? ORDER BY loaned_at DESC, id DESC',
+    'SELECT id, loaned_to, loaned_at, returned_at, photo_uri FROM loans WHERE game_id = ? ORDER BY loaned_at DESC, id DESC',
     [gameId]
   );
   return rows.map((r) => ({
@@ -324,6 +374,7 @@ export async function getLoanHistory(gameId: number): Promise<LoanRecord[]> {
     loanedTo: r.loaned_to,
     loanedAt: r.loaned_at,
     returnedAt: r.returned_at,
+    photoUri: r.photo_uri,
   }));
 }
 
@@ -355,6 +406,15 @@ export async function getAllTags(): Promise<string[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<{ name: string }>(
     'SELECT name FROM tags ORDER BY name COLLATE NOCASE ASC'
+  );
+  return rows.map((r) => r.name);
+}
+
+// All distinct category names in use, for the editor and the search dropdown.
+export async function getAllCategories(): Promise<string[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{ name: string }>(
+    'SELECT name FROM categories ORDER BY name COLLATE NOCASE ASC'
   );
   return rows.map((r) => r.name);
 }

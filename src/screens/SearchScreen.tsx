@@ -5,6 +5,7 @@ import {
   FlatList,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation';
-import { searchGames, getAllTags } from '../db/games';
+import { searchGames, getAllTags, getAllCategories } from '../db/games';
 import { Game, SearchFilters } from '../types';
 import { colors, radius, spacing } from '../theme';
 import GameCard from '../components/GameCard';
@@ -45,6 +46,7 @@ const EMPTY_FILTERS: SearchFilters = {
   minBggRating: null,
   ageBands: [],
   complexity: null,
+  category: null,
 };
 
 const AGE_BANDS: { label: string; band: { lo: number; hi: number | null } }[] = [
@@ -59,6 +61,8 @@ export default function SearchScreen() {
   const [filters, setFilters] = useState<SearchFilters>(EMPTY_FILTERS);
   const [results, setResults] = useState<Game[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+  const [categoryMenu, setCategoryMenu] = useState(false);
 
   // "Feeling lucky" dice-roll animation state.
   const [rolling, setRolling] = useState(false);
@@ -73,6 +77,7 @@ export default function SearchScreen() {
   useFocusEffect(
     useCallback(() => {
       getAllTags().then(setAllTags);
+      getAllCategories().then(setAllCategories);
     }, [])
   );
 
@@ -140,7 +145,7 @@ export default function SearchScreen() {
     filters.text || filters.tags.length || filters.favoritesOnly ||
     filters.unplayedOnly || filters.maxPlayTime != null || filters.minPlayTime != null ||
     filters.playerCount != null || filters.minRating != null || filters.minBggRating != null ||
-    filters.ageBands.length > 0 || filters.complexity != null;
+    filters.ageBands.length > 0 || filters.complexity != null || filters.category != null;
 
   const header = (
     <View style={styles.filters}>
@@ -224,6 +229,16 @@ export default function SearchScreen() {
         ))}
       </View>
 
+      {allCategories.length > 0 && (
+        <>
+          <Text style={styles.groupLabel}>Category</Text>
+          <Pressable style={styles.dropdown} onPress={() => setCategoryMenu(true)}>
+            <Text style={styles.dropdownText}>{filters.category ?? 'Any category'}</Text>
+            <Text style={styles.dropdownCaret}>▾</Text>
+          </Pressable>
+        </>
+      )}
+
       {allTags.length > 0 && (
         <>
           <Text style={styles.groupLabel}>Tags</Text>
@@ -282,7 +297,38 @@ export default function SearchScreen() {
           </Text>
         </View>
       </Modal>
+
+      <Modal visible={categoryMenu} animationType="slide" transparent onRequestClose={() => setCategoryMenu(false)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setCategoryMenu(false)}>
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <Text style={styles.sheetTitle}>Category</Text>
+            <ScrollView contentContainerStyle={{ gap: spacing.sm }}>
+              <CatItem
+                label="Any category"
+                active={filters.category == null}
+                onPress={() => { patch({ category: null }); setCategoryMenu(false); }}
+              />
+              {allCategories.map((c) => (
+                <CatItem
+                  key={c}
+                  label={c}
+                  active={filters.category === c}
+                  onPress={() => { patch({ category: c }); setCategoryMenu(false); }}
+                />
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
+  );
+}
+
+function CatItem({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable style={[styles.catItem, active && styles.catItemOn]} onPress={onPress}>
+      <Text style={[styles.catItemText, active && styles.catItemTextOn]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -339,6 +385,38 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   luckyText: { color: colors.primaryText, fontSize: 15, fontWeight: '700' },
+  dropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 11,
+  },
+  dropdownText: { color: colors.text, fontSize: 14 },
+  dropdownCaret: { color: colors.textMuted, fontSize: 14 },
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.sm,
+    maxHeight: '70%',
+  },
+  sheetTitle: { color: colors.textMuted, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs },
+  catItem: {
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    paddingVertical: 14,
+    paddingHorizontal: spacing.md,
+  },
+  catItemOn: { backgroundColor: colors.primary },
+  catItemText: { color: colors.text, fontSize: 16 },
+  catItemTextOn: { color: colors.primaryText, fontWeight: '700' },
   rollOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.8)',

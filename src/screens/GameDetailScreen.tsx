@@ -126,6 +126,14 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
       ) : null}
       {game.developer ? <Row label="✍️ Publisher/Designer" value={game.developer} /> : null}
       {complexityLabel ? <Row label="🎯 Complexity" value={complexityLabel} /> : null}
+      {game.year ? <Row label="📅 Year" value={String(game.year)} /> : null}
+      {game.edition ? <Row label="📖 Edition" value={game.edition} /> : null}
+
+      {!game.loanedTo && (
+        <Pressable style={styles.loanBtn} onPress={() => navigation.navigate('Loan', { gameId })}>
+          <Text style={styles.loanBtnText}>🤝 Loan out this game</Text>
+        </Pressable>
+      )}
 
       {/* House rules shown prominently, below the picture and above play history. */}
       {game.houseRules ? (
@@ -154,6 +162,19 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
               </Text>
             ) : null;
           })()}
+        </View>
+      )}
+
+      {game.categories.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Category</Text>
+          <View style={styles.chipWrap}>
+            {game.categories.map((c) => (
+              <View key={c} style={styles.chip}>
+                <Text style={styles.chipText}>{c}</Text>
+              </View>
+            ))}
+          </View>
         </View>
       )}
 
@@ -267,6 +288,15 @@ const styles = StyleSheet.create({
   },
   loanText: { color: colors.text, fontSize: 14, flex: 1 },
   loanBold: { fontWeight: '700', color: colors.favorite },
+  loanBtn: {
+    marginTop: spacing.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.favorite,
+  },
+  loanBtnText: { color: colors.favorite, fontSize: 15, fontWeight: '700' },
   infoRow: { marginTop: spacing.md, fontSize: 14, lineHeight: 20 },
   infoLabel: { color: colors.textMuted, fontSize: 14 },
   infoValue: { color: colors.text, fontSize: 14, fontWeight: '600' },

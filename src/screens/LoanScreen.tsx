@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,7 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { RootStackProps } from '../navigation';
-import { getGame, setLoan, returnLoan, getAllLocations } from '../db/games';
+import { getGame, setLoan, returnLoan, getAllLocations, getLoanHistory } from '../db/games';
+import { deleteImage, pickFromLibrary, takePhoto } from '../lib/images';
 import { isoToUk, todayUk, ukToIso } from '../lib/dates';
 import { colors, radius, spacing } from '../theme';
 
@@ -28,6 +30,8 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
   const [returning, setReturning] = useState(false);
   const [returnLocation, setReturnLocation] = useState('');
   const [allLocations, setAllLocations] = useState<string[]>([]);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [originalPhoto, setOriginalPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     getAllLocations().then(setAllLocations).catch(() => {});
@@ -41,20 +45,41 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
       if (g.loanedAt) setDate(isoToUk(g.loanedAt));
       navigation.setOptions({ title: g.loanedTo ? 'Manage Loan' : 'Loan Out' });
     });
+    // Load the open loan's proof photo, if any.
+    getLoanHistory(gameId).then((loans) => {
+      const open = loans.find((l) => l.returnedAt == null);
+      setPhotoUri(open?.photoUri ?? null);
+      setOriginalPhoto(open?.photoUri ?? null);
+    });
   }, [gameId]);
+
+  function addProofPhoto() {
+    Alert.alert('Proof photo', undefined, [
+      { text: 'Take Photo', onPress: async () => { const u = await takePhoto(); if (u) setPhotoUri(u); } },
+      { text: 'Choose from Library', onPress: async () => { const u = await pickFromLibrary(); if (u) setPhotoUri(u); } },
+      ...(photoUri ? [{ text: 'Remove Photo', style: 'destructive' as const, onPress: () => setPhotoUri(null) }] : []),
+      { text: 'Cancel', style: 'cancel' as const },
+    ]);
+  }
 
   async function onLoan() {
     if (!name.trim()) {
       Alert.alert('Who borrowed it?', 'Please enter who you loaned the game to.');
       return;
     }
+    // If the proof photo changed, delete the old file so storage doesn't leak.
+    if (originalPhoto && originalPhoto !== photoUri) {
+      await deleteImage(originalPhoto);
+    }
     const iso = ukToIso(date) ?? new Date().toISOString().slice(0, 10);
-    await setLoan(gameId, name.trim(), iso);
+    await setLoan(gameId, name.trim(), iso, photoUri);
     navigation.goBack();
   }
 
   async function confirmReturn() {
-    await returnLoan(gameId, returnLocation);
+    // returnLoan clears the photo reference and hands back its uri to delete.
+    const removedPhoto = await returnLoan(gameId, returnLocation);
+    await deleteImage(removedPhoto);
     navigation.goBack();
   }
 
@@ -101,6 +126,15 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
           placeholder="DD/MM/YYYY"
           placeholderTextColor={colors.placeholder}
         />
+
+        <Text style={[styles.label, { marginTop: spacing.lg }]}>Proof photo (optional)</Text>
+        <Pressable style={styles.photoBox} onPress={addProofPhoto}>
+          {photoUri ? (
+            <Image source={{ uri: photoUri }} style={styles.photo} />
+          ) : (
+            <Text style={styles.photoHint}>📷  Tap to add a photo (deleted when returned)</Text>
+          )}
+        </Pressable>
 
         <Pressable style={styles.saveBtn} onPress={onLoan}>
           <Text style={styles.saveBtnText}>
@@ -184,6 +218,19 @@ const styles = StyleSheet.create({
     borderColor: colors.success,
   },
   returnBtnText: { color: colors.success, fontSize: 15, fontWeight: '700' },
+  photoBox: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    minHeight: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  photo: { width: '100%', height: 200 },
+  photoHint: { color: colors.placeholder, fontSize: 14, padding: spacing.md, textAlign: 'center' },
   returnBox: { marginTop: spacing.lg, gap: 6 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {

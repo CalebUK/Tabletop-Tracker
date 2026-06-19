@@ -21,6 +21,7 @@ import { RootStackProps } from '../navigation';
 import {
   getGame,
   getAllTags,
+  getAllCategories,
   getAllLocations,
   saveGame,
   deleteGame,
@@ -50,7 +51,9 @@ const EMPTY: GameInput = {
   developer: null,
   minAge: null,
   complexity: null,
+  edition: null,
   tags: [],
+  categories: [],
   expansions: [],
 };
 
@@ -71,6 +74,8 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
   const [form, setForm] = useState<GameInput>(EMPTY);
   const [tagText, setTagText] = useState('');
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [catText, setCatText] = useState('');
+  const [allCategories, setAllCategories] = useState<string[]>([]);
   const [allLocations, setAllLocations] = useState<string[]>([]);
   const [locationFocused, setLocationFocused] = useState(false);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -83,6 +88,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
   useEffect(() => {
     navigation.setOptions({ title: editingId ? 'Edit Game' : 'Add Game' });
     getAllTags().then(setAllTags).catch(() => {});
+    getAllCategories().then(setAllCategories).catch(() => {});
     getAllLocations().then(setAllLocations).catch(() => {});
     if (editingId) {
       Promise.all([getGame(editingId), getExpansions(editingId)]).then(([g, exps]) => {
@@ -105,7 +111,9 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
           developer: g.developer,
           minAge: g.minAge,
           complexity: g.complexity,
+          edition: g.edition,
           tags: g.tags,
+          categories: g.categories,
           expansions: exps.map((e) => ({ name: e.name, additionalPlayers: e.additionalPlayers })),
         });
         setOriginalImage(g.imageUri);
@@ -157,6 +165,19 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
 
   function removeTag(tag: string) {
     patch({ tags: form.tags.filter((t) => t !== tag) });
+  }
+
+  function addCategory(raw: string) {
+    const cat = raw.trim();
+    if (!cat) return;
+    if (!form.categories.some((c) => c.toLowerCase() === cat.toLowerCase())) {
+      patch({ categories: [...form.categories, cat] });
+    }
+    setCatText('');
+  }
+
+  function removeCategory(cat: string) {
+    patch({ categories: form.categories.filter((c) => c !== cat) });
   }
 
   // Search BoardGameGeek for the name currently typed and open the picker.
@@ -280,6 +301,11 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
     .filter((t) => !form.tags.some((x) => x.toLowerCase() === t.toLowerCase()))
     .filter((t) => !tagText.trim() || t.toLowerCase().includes(tagText.trim().toLowerCase()));
 
+  // Previously-used categories not already on this game, narrowed by typed text.
+  const categorySuggestions = allCategories
+    .filter((c) => !form.categories.some((x) => x.toLowerCase() === c.toLowerCase()))
+    .filter((c) => !catText.trim() || c.toLowerCase().includes(catText.trim().toLowerCase()));
+
   // Previously-used locations, narrowed by what's typed (for consistent spelling).
   const locTyped = (form.location ?? '').trim().toLowerCase();
   const locationSuggestions = allLocations
@@ -392,6 +418,28 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
             </Field>
           </View>
 
+          <View style={styles.row}>
+            <Field label="Year" style={styles.flex1}>
+              <TextInput
+                style={styles.input}
+                keyboardType="number-pad"
+                value={form.year?.toString() ?? ''}
+                onChangeText={(v) => patch({ year: numOrNull(v) })}
+                placeholder="2019"
+                placeholderTextColor={colors.placeholder}
+              />
+            </Field>
+            <Field label="Edition" style={styles.flex1}>
+              <TextInput
+                style={styles.input}
+                value={form.edition ?? ''}
+                onChangeText={(v) => patch({ edition: v || null })}
+                placeholder="e.g. 2nd Edition"
+                placeholderTextColor={colors.placeholder}
+              />
+            </Field>
+          </View>
+
           <Field label="Complexity">
             <View style={styles.segment}>
               {(['easy', 'medium', 'high'] as const).map((c) => (
@@ -471,6 +519,35 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                 {suggestions.slice(0, 12).map((t) => (
                   <Pressable key={t} style={styles.chip} onPress={() => addTag(t)}>
                     <Text style={styles.chipText}>+ {t}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </Field>
+
+          <Field label="Category">
+            <Text style={styles.fieldHint}>e.g. Dice, Deck building, Eurogame</Text>
+            <View style={styles.chipWrap}>
+              {form.categories.map((c) => (
+                <Pressable key={c} style={styles.chipActive} onPress={() => removeCategory(c)}>
+                  <Text style={styles.chipActiveText}>{c} ✕</Text>
+                </Pressable>
+              ))}
+            </View>
+            <TextInput
+              style={styles.input}
+              value={catText}
+              onChangeText={setCatText}
+              onSubmitEditing={() => addCategory(catText)}
+              placeholder="Type a category and press return"
+              placeholderTextColor={colors.placeholder}
+              returnKeyType="done"
+            />
+            {categorySuggestions.length > 0 && (
+              <View style={styles.chipWrap}>
+                {categorySuggestions.slice(0, 12).map((c) => (
+                  <Pressable key={c} style={styles.chip} onPress={() => addCategory(c)}>
+                    <Text style={styles.chipText}>+ {c}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -629,6 +706,7 @@ const styles = StyleSheet.create({
   photoLabel: { color: colors.textMuted, marginTop: 6 },
   field: { gap: 6 },
   label: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+  fieldHint: { color: colors.placeholder, fontSize: 12, marginTop: -2 },
   input: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,

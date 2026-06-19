@@ -18,12 +18,14 @@ export interface Game {
   developer: string | null;
   minAge: number | null; // minimum recommended player age
   complexity: Complexity | null;
+  edition: string | null;
   loanedTo: string | null;
   loanedAt: string | null; // ISO date (YYYY-MM-DD)
   createdAt: string;
   updatedAt: string;
   // Derived/joined fields (not stored directly on the games row):
   tags: string[];
+  categories: string[];
   playCount: number;
   expansionCount: number;
 }
@@ -58,7 +60,9 @@ export interface GameInput {
   developer: string | null;
   minAge: number | null;
   complexity: Complexity | null;
+  edition: string | null;
   tags: string[];
+  categories: string[];
   expansions: ExpansionInput[];
 }
 
@@ -84,6 +88,7 @@ export interface LoanRecord {
   loanedTo: string;
   loanedAt: string; // ISO date
   returnedAt: string | null; // ISO date, or null while still out
+  photoUri: string | null; // proof photo while on loan (deleted on return)
 }
 
 export interface SearchFilters {
@@ -101,4 +106,5 @@ export interface SearchFilters {
   // (hi null = open-ended). Empty = no age filter.
   ageBands: { lo: number; hi: number | null }[];
   complexity: Complexity | null;
+  category: string | null; // game must have this category
 }
