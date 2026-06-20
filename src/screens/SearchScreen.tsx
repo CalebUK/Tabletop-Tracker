@@ -224,28 +224,22 @@ export default function SearchScreen() {
         ))}
       </View>
 
-      {(allCategories.length > 0 || allTags.length > 0) && (
-        <View style={styles.dropRow}>
-          {allCategories.length > 0 && (
-            <View style={styles.flex1}>
-              <Text style={styles.groupLabel}>Category</Text>
-              <Pressable style={styles.dropdown} onPress={() => setCategoryMenu(true)}>
-                <Text style={styles.dropdownText} numberOfLines={1}>{filters.category ?? 'Any'}</Text>
-                <Text style={styles.dropdownCaret}>▾</Text>
-              </Pressable>
-            </View>
-          )}
-          {allTags.length > 0 && (
-            <View style={styles.flex1}>
-              <Text style={styles.groupLabel}>Label</Text>
-              <Pressable style={styles.dropdown} onPress={() => setLabelMenu(true)}>
-                <Text style={styles.dropdownText} numberOfLines={1}>{filters.tags[0] ?? 'Any'}</Text>
-                <Text style={styles.dropdownCaret}>▾</Text>
-              </Pressable>
-            </View>
-          )}
+      <View style={styles.dropRow}>
+        <View style={styles.flex1}>
+          <Text style={styles.groupLabel}>Category</Text>
+          <Pressable style={styles.dropdown} onPress={() => setCategoryMenu(true)}>
+            <Text style={styles.dropdownText} numberOfLines={1}>{filters.category ?? 'Any'}</Text>
+            <Text style={styles.dropdownCaret}>▾</Text>
+          </Pressable>
         </View>
-      )}
+        <View style={styles.flex1}>
+          <Text style={styles.groupLabel}>Label</Text>
+          <Pressable style={styles.dropdown} onPress={() => setLabelMenu(true)}>
+            <Text style={styles.dropdownText} numberOfLines={1}>{filters.tags[0] ?? 'Any'}</Text>
+            <Text style={styles.dropdownCaret}>▾</Text>
+          </Pressable>
+        </View>
+      </View>
 
       <View style={styles.resultHeader}>
         <Text style={styles.resultCount}>{results.length} result{results.length === 1 ? '' : 's'}</Text>
