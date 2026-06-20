@@ -351,7 +351,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               placeholderTextColor={colors.placeholder}
             />
             <Pressable style={styles.identifyBtn} onPress={openBggSearch}>
-              <Text style={styles.identifyText}>🔍 Look up on BoardGameGeek</Text>
+              <Text style={styles.identifyText}>Look up on BoardGameGeek</Text>
             </Pressable>
             {form.bggId != null && (
               <Text style={styles.bggLinked}>✓ Synced with BoardGameGeek</Text>
@@ -380,23 +380,28 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
             )}
           </Field>
 
-          <Field label={`My rating${form.rating ? ` · ${form.rating}/10` : ''}`}>
-            <StarRating
-              value={form.rating}
-              max={10}
-              size={26}
-              editable
-              onChange={(v) => patch({ rating: v })}
-            />
-          </Field>
-
-          <View style={styles.switchRow}>
-            <Text style={styles.label}>Favorite</Text>
-            <Switch
-              value={form.isFavorite}
-              onValueChange={(v) => patch({ isFavorite: v })}
-              trackColor={{ true: colors.favorite, false: colors.border }}
-            />
+          <View style={styles.ratingFavRow}>
+            <View style={styles.flex1}>
+              <Text style={styles.label}>My rating{form.rating ? ` · ${form.rating}/10` : ''}</Text>
+              <View style={styles.ratingStars}>
+                <StarRating
+                  value={form.rating}
+                  max={10}
+                  size={20}
+                  editable
+                  onChange={(v) => patch({ rating: v })}
+                />
+              </View>
+            </View>
+            <View style={styles.favCol}>
+              <Text style={styles.label}>Favorite</Text>
+              <Switch
+                style={styles.favSwitch}
+                value={form.isFavorite}
+                onValueChange={(v) => patch({ isFavorite: v })}
+                trackColor={{ true: colors.favorite, false: colors.border }}
+              />
+            </View>
           </View>
 
           <View style={styles.row}>
@@ -747,7 +752,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 2,
   },
-  identifyText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
+  identifyText: { color: colors.primary, fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  ratingFavRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg },
+  ratingStars: { marginTop: 8 },
+  favCol: { alignItems: 'center' },
+  favSwitch: { marginTop: 6 },
   bggLinked: { color: colors.success, fontSize: 12, marginTop: 2 },
   expansionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   expansionPlayers: { alignItems: 'center' },
