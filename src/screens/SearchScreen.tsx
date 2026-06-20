@@ -63,6 +63,7 @@ export default function SearchScreen() {
   const [allTags, setAllTags] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const [categoryMenu, setCategoryMenu] = useState(false);
+  const [labelMenu, setLabelMenu] = useState(false);
 
   // "Feeling lucky" dice-roll animation state.
   const [rolling, setRolling] = useState(false);
@@ -88,13 +89,6 @@ export default function SearchScreen() {
 
   function patch(p: Partial<SearchFilters>) {
     setFilters((f) => ({ ...f, ...p }));
-  }
-
-  function toggleTag(tag: string) {
-    setFilters((f) => ({
-      ...f,
-      tags: f.tags.includes(tag) ? f.tags.filter((t) => t !== tag) : [...f.tags, tag],
-    }));
   }
 
   // Pick a random matching game — avoiding the previous pick — then play a
@@ -188,16 +182,17 @@ export default function SearchScreen() {
         ))}
       </View>
 
-      <Text style={styles.groupLabel}>Ratings</Text>
+      <Text style={styles.groupLabel}>My rating</Text>
       <View style={styles.chipWrap}>
-        <Toggle label="5+" on={filters.minRating === 5} onPress={() => patch({ minRating: filters.minRating === 5 ? null : 5 })} />
-        <Toggle label="8+" on={filters.minRating === 8} onPress={() => patch({ minRating: filters.minRating === 8 ? null : 8 })} />
-        <Toggle label="BGG 5+" on={filters.minBggRating === 5} onPress={() => patch({ minBggRating: filters.minBggRating === 5 ? null : 5 })} />
-        <Toggle label="BGG 8+" on={filters.minBggRating === 8} onPress={() => patch({ minBggRating: filters.minBggRating === 8 ? null : 8 })} />
+        <Toggle label="Any" on={filters.minRating == null} onPress={() => patch({ minRating: null })} />
+        <Toggle label="3+" on={filters.minRating === 3} onPress={() => patch({ minRating: 3 })} />
+        <Toggle label="6+" on={filters.minRating === 6} onPress={() => patch({ minRating: 6 })} />
+        <Toggle label="9+" on={filters.minRating === 9} onPress={() => patch({ minRating: 9 })} />
       </View>
 
       <Text style={styles.groupLabel}>Age</Text>
       <View style={styles.chipWrap}>
+        <Toggle label="Any" on={filters.ageBands.length === 0} onPress={() => patch({ ageBands: [] })} />
         {AGE_BANDS.map((a) => {
           const on = filters.ageBands.some((b) => b.lo === a.band.lo && b.hi === a.band.hi);
           return (
@@ -229,25 +224,27 @@ export default function SearchScreen() {
         ))}
       </View>
 
-      {allCategories.length > 0 && (
-        <>
-          <Text style={styles.groupLabel}>Category</Text>
-          <Pressable style={styles.dropdown} onPress={() => setCategoryMenu(true)}>
-            <Text style={styles.dropdownText}>{filters.category ?? 'Any category'}</Text>
-            <Text style={styles.dropdownCaret}>▾</Text>
-          </Pressable>
-        </>
-      )}
-
-      {allTags.length > 0 && (
-        <>
-          <Text style={styles.groupLabel}>Tags</Text>
-          <View style={styles.chipWrap}>
-            {allTags.map((t) => (
-              <Toggle key={t} label={t} on={filters.tags.includes(t)} onPress={() => toggleTag(t)} />
-            ))}
-          </View>
-        </>
+      {(allCategories.length > 0 || allTags.length > 0) && (
+        <View style={styles.dropRow}>
+          {allCategories.length > 0 && (
+            <View style={styles.flex1}>
+              <Text style={styles.groupLabel}>Category</Text>
+              <Pressable style={styles.dropdown} onPress={() => setCategoryMenu(true)}>
+                <Text style={styles.dropdownText} numberOfLines={1}>{filters.category ?? 'Any'}</Text>
+                <Text style={styles.dropdownCaret}>▾</Text>
+              </Pressable>
+            </View>
+          )}
+          {allTags.length > 0 && (
+            <View style={styles.flex1}>
+              <Text style={styles.groupLabel}>Label</Text>
+              <Pressable style={styles.dropdown} onPress={() => setLabelMenu(true)}>
+                <Text style={styles.dropdownText} numberOfLines={1}>{filters.tags[0] ?? 'Any'}</Text>
+                <Text style={styles.dropdownCaret}>▾</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
       )}
 
       <View style={styles.resultHeader}>
@@ -320,6 +317,29 @@ export default function SearchScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <Modal visible={labelMenu} animationType="slide" transparent onRequestClose={() => setLabelMenu(false)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setLabelMenu(false)}>
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <Text style={styles.sheetTitle}>Label</Text>
+            <ScrollView contentContainerStyle={{ gap: spacing.sm }}>
+              <CatItem
+                label="Any label"
+                active={filters.tags.length === 0}
+                onPress={() => { patch({ tags: [] }); setLabelMenu(false); }}
+              />
+              {allTags.map((t) => (
+                <CatItem
+                  key={t}
+                  label={t}
+                  active={filters.tags[0] === t}
+                  onPress={() => { patch({ tags: [t] }); setLabelMenu(false); }}
+                />
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -385,6 +405,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   luckyText: { color: colors.primaryText, fontSize: 15, fontWeight: '700' },
+  dropRow: { flexDirection: 'row', gap: spacing.sm },
+  flex1: { flex: 1 },
   dropdown: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -396,7 +418,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 11,
   },
-  dropdownText: { color: colors.text, fontSize: 14 },
+  dropdownText: { color: colors.text, fontSize: 14, flexShrink: 1, marginRight: 4 },
   dropdownCaret: { color: colors.textMuted, fontSize: 14 },
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   sheet: {
