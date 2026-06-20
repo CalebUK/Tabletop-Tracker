@@ -233,7 +233,7 @@ export default function SearchScreen() {
           </Pressable>
         </View>
         <View style={styles.flex1}>
-          <Text style={styles.groupLabel}>Label</Text>
+          <Text style={styles.groupLabel}>Tags</Text>
           <Pressable style={styles.dropdown} onPress={() => setLabelMenu(true)}>
             <Text style={styles.dropdownText} numberOfLines={1}>{filters.tags[0] ?? 'Any'}</Text>
             <Text style={styles.dropdownCaret}>▾</Text>
@@ -289,7 +289,7 @@ export default function SearchScreen() {
         </View>
       </Modal>
 
-      <Modal visible={categoryMenu} animationType="slide" transparent onRequestClose={() => setCategoryMenu(false)}>
+      <Modal visible={categoryMenu} animationType="fade" transparent onRequestClose={() => setCategoryMenu(false)}>
         <Pressable style={styles.sheetBackdrop} onPress={() => setCategoryMenu(false)}>
           <Pressable style={styles.sheet} onPress={() => {}}>
             <Text style={styles.sheetTitle}>Category</Text>
@@ -312,13 +312,13 @@ export default function SearchScreen() {
         </Pressable>
       </Modal>
 
-      <Modal visible={labelMenu} animationType="slide" transparent onRequestClose={() => setLabelMenu(false)}>
+      <Modal visible={labelMenu} animationType="fade" transparent onRequestClose={() => setLabelMenu(false)}>
         <Pressable style={styles.sheetBackdrop} onPress={() => setLabelMenu(false)}>
           <Pressable style={styles.sheet} onPress={() => {}}>
-            <Text style={styles.sheetTitle}>Label</Text>
+            <Text style={styles.sheetTitle}>Tags</Text>
             <ScrollView contentContainerStyle={{ gap: spacing.sm }}>
               <CatItem
-                label="Any label"
+                label="Any tag"
                 active={filters.tags.length === 0}
                 onPress={() => { patch({ tags: [] }); setLabelMenu(false); }}
               />
@@ -414,14 +414,28 @@ const styles = StyleSheet.create({
   },
   dropdownText: { color: colors.text, fontSize: 14, flexShrink: 1, marginRight: 4 },
   dropdownCaret: { color: colors.textMuted, fontSize: 14 },
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  sheetBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
   sheet: {
+    width: '100%',
+    maxWidth: 380,
+    maxHeight: '70%',
     backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: spacing.lg,
     gap: spacing.sm,
-    maxHeight: '70%',
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
   },
   sheetTitle: { color: colors.textMuted, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs },
   catItem: {
