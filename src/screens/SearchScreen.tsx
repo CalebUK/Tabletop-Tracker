@@ -411,6 +411,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: 11,
+    marginTop: 6,
   },
   dropdownText: { color: colors.text, fontSize: 14, flexShrink: 1, marginRight: 4 },
   dropdownCaret: { color: colors.textMuted, fontSize: 14 },
