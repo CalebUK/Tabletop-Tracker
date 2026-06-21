@@ -3,9 +3,21 @@ import { Play, PlayPlayer } from '../types';
 
 interface PlayRow {
   id: number;
-  game_id: number;
+  game_id: number | null;
+  game_name: string | null;
+  group_id: number | null;
   played_at: string;
   notes: string | null;
+}
+
+export interface PlayInput {
+  gameId: number | null;
+  gameName: string | null;
+  groupId: number | null;
+  playedAt: string;
+  notes: string | null;
+  players: PlayPlayer[];
+  expansionIds?: number[];
 }
 
 interface PlayPlayerRow {
@@ -78,6 +90,8 @@ export async function getPlaysForGame(gameId: number): Promise<Play[]> {
   return playRows.map((p) => ({
     id: p.id,
     gameId: p.game_id,
+    gameName: p.game_name,
+    groupId: p.group_id,
     playedAt: p.played_at,
     notes: p.notes,
     players: playersByPlay.get(p.id) ?? [],
@@ -86,22 +100,16 @@ export async function getPlaysForGame(gameId: number): Promise<Play[]> {
   }));
 }
 
-export async function addPlay(
-  gameId: number,
-  playedAt: string,
-  notes: string | null,
-  players: PlayPlayer[],
-  expansionIds: number[] = []
-): Promise<number> {
+export async function addPlay(input: PlayInput): Promise<number> {
   const db = await getDb();
   let playId = 0;
   await db.withTransactionAsync(async () => {
     const res = await db.runAsync(
-      'INSERT INTO plays (game_id, played_at, notes) VALUES (?, ?, ?)',
-      [gameId, playedAt, notes]
+      'INSERT INTO plays (game_id, game_name, group_id, played_at, notes) VALUES (?, ?, ?, ?, ?)',
+      [input.gameId, input.gameName, input.groupId, input.playedAt, input.notes]
     );
     playId = res.lastInsertRowId;
-    await writePlayChildren(db, playId, players, expansionIds);
+    await writePlayChildren(db, playId, input.players, input.expansionIds ?? []);
   });
   return playId;
 }
@@ -123,6 +131,8 @@ export async function getPlay(playId: number): Promise<Play | null> {
   return {
     id: p.id,
     gameId: p.game_id,
+    gameName: p.game_name,
+    groupId: p.group_id,
     playedAt: p.played_at,
     notes: p.notes,
     players: players.map((r) => ({ name: r.player_name, isWinner: r.is_winner === 1 })),
@@ -131,23 +141,16 @@ export async function getPlay(playId: number): Promise<Play | null> {
   };
 }
 
-export async function updatePlay(
-  playId: number,
-  playedAt: string,
-  notes: string | null,
-  players: PlayPlayer[],
-  expansionIds: number[] = []
-): Promise<void> {
+export async function updatePlay(playId: number, input: PlayInput): Promise<void> {
   const db = await getDb();
   await db.withTransactionAsync(async () => {
-    await db.runAsync('UPDATE plays SET played_at = ?, notes = ? WHERE id = ?', [
-      playedAt,
-      notes,
-      playId,
-    ]);
+    await db.runAsync(
+      'UPDATE plays SET game_id = ?, game_name = ?, group_id = ?, played_at = ?, notes = ? WHERE id = ?',
+      [input.gameId, input.gameName, input.groupId, input.playedAt, input.notes, playId]
+    );
     await db.runAsync('DELETE FROM play_players WHERE play_id = ?', [playId]);
     await db.runAsync('DELETE FROM play_expansions WHERE play_id = ?', [playId]);
-    await writePlayChildren(db, playId, players, expansionIds);
+    await writePlayChildren(db, playId, input.players, input.expansionIds ?? []);
   });
 }
 

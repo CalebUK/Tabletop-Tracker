@@ -2,12 +2,14 @@ import React from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import appConfig from '../../app.json';
+import { useOnboarding } from '../components/OnboardingProvider';
 import { colors, radius, spacing } from '../theme';
 
 const PRIVACY_URL = 'https://github.com/CalebUK/Tabletop-Tracker/blob/main/PRIVACY.md';
 
 export default function AboutScreen() {
   const version = appConfig.expo.version;
+  const { openTour } = useOnboarding();
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
@@ -37,6 +39,10 @@ export default function AboutScreen() {
 
         <Pressable style={styles.linkBtn} onPress={() => Linking.openURL(PRIVACY_URL)}>
           <Text style={styles.linkBtnText}>View full privacy policy ↗</Text>
+        </Pressable>
+
+        <Pressable style={styles.linkBtn} onPress={openTour}>
+          <Text style={styles.linkBtnText}>Show app tour again</Text>
         </Pressable>
 
         <Text style={styles.footer}>Made for board game lovers. 🎲</Text>

@@ -13,12 +13,14 @@ import SearchScreen from './src/screens/SearchScreen';
 import StatsScreen from './src/screens/StatsScreen';
 import LibraryScreen from './src/screens/LibraryScreen';
 import FriendLibraryScreen from './src/screens/FriendLibraryScreen';
+import { OnboardingProvider } from './src/components/OnboardingProvider';
 import GameDetailScreen from './src/screens/GameDetailScreen';
 import EditGameScreen from './src/screens/EditGameScreen';
 import LogPlayScreen from './src/screens/LogPlayScreen';
 import LoanScreen from './src/screens/LoanScreen';
 import PlayerStatsScreen from './src/screens/PlayerStatsScreen';
 import GameStatsScreen from './src/screens/GameStatsScreen';
+import GroupStatsScreen from './src/screens/GroupStatsScreen';
 import BackupScreen from './src/screens/BackupScreen';
 import AboutScreen from './src/screens/AboutScreen';
 
@@ -80,6 +82,7 @@ function Tabs() {
 export default function App() {
   return (
     <SafeAreaProvider>
+      <OnboardingProvider>
       <NavigationContainer theme={navTheme}>
         <StatusBar style="light" />
         <Stack.Navigator
@@ -97,11 +100,13 @@ export default function App() {
           <Stack.Screen name="Loan" component={LoanScreen} options={{ title: 'Loan Out' }} />
           <Stack.Screen name="PlayerStats" component={PlayerStatsScreen} options={{ title: '' }} />
           <Stack.Screen name="GameStats" component={GameStatsScreen} options={{ title: '' }} />
+          <Stack.Screen name="GroupStats" component={GroupStatsScreen} options={{ title: '' }} />
           <Stack.Screen name="Backup" component={BackupScreen} options={{ title: 'Backup & Export' }} />
           <Stack.Screen name="About" component={AboutScreen} options={{ title: 'About & Privacy' }} />
           <Stack.Screen name="FriendLibrary" component={FriendLibraryScreen} options={{ title: '' }} />
         </Stack.Navigator>
       </NavigationContainer>
+      </OnboardingProvider>
     </SafeAreaProvider>
   );
 }

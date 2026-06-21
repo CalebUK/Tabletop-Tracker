@@ -59,12 +59,21 @@ CREATE TABLE IF NOT EXISTS game_tags (
   FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS groups (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS plays (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  game_id INTEGER NOT NULL,
+  game_id INTEGER,            -- null when the game isn't in the collection
+  game_name TEXT,             -- name (denormalised; set for not-owned games too)
+  group_id INTEGER,           -- optional gaming group
   played_at TEXT NOT NULL,
   notes TEXT,
-  FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
+  FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
+  FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS play_players (
@@ -117,6 +126,7 @@ CREATE INDEX IF NOT EXISTS idx_game_tags_tag ON game_tags(tag_id);
 CREATE INDEX IF NOT EXISTS idx_game_categories_game ON game_categories(game_id);
 CREATE INDEX IF NOT EXISTS idx_game_categories_cat ON game_categories(category_id);
 CREATE INDEX IF NOT EXISTS idx_plays_game ON plays(game_id);
+CREATE INDEX IF NOT EXISTS idx_plays_group ON plays(group_id);
 CREATE INDEX IF NOT EXISTS idx_play_players_play ON play_players(play_id);
 CREATE INDEX IF NOT EXISTS idx_loans_game ON loans(game_id);
 CREATE INDEX IF NOT EXISTS idx_expansions_game ON expansions(game_id);
@@ -157,6 +167,34 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   const loanCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(loans)');
   if (!loanCols.some((c) => c.name === 'photo_uri')) {
     await db.execAsync('ALTER TABLE loans ADD COLUMN photo_uri TEXT');
+  }
+
+  // plays: make game_id nullable + add game_name/group_id (for not-owned games
+  // and gaming groups). game_id was created NOT NULL, so we rebuild the table.
+  const playCols = await db.getAllAsync<{ name: string; notnull: number }>('PRAGMA table_info(plays)');
+  const gameIdCol = playCols.find((c) => c.name === 'game_id');
+  if (gameIdCol && gameIdCol.notnull === 1) {
+    await db.execAsync('PRAGMA foreign_keys = OFF');
+    await db.execAsync(`
+      CREATE TABLE plays_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        game_id INTEGER,
+        game_name TEXT,
+        group_id INTEGER,
+        played_at TEXT NOT NULL,
+        notes TEXT,
+        FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
+        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE SET NULL
+      );
+      INSERT INTO plays_new (id, game_id, played_at, notes)
+        SELECT id, game_id, played_at, notes FROM plays;
+      UPDATE plays_new SET game_name =
+        (SELECT name FROM games WHERE games.id = plays_new.game_id)
+        WHERE game_id IS NOT NULL;
+      DROP TABLE plays;
+      ALTER TABLE plays_new RENAME TO plays;
+    `);
+    await db.execAsync('PRAGMA foreign_keys = ON');
   }
 
   // Versioned migrations for changes that can't be detected by column presence.

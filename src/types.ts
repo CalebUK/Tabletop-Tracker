@@ -88,12 +88,19 @@ export interface SharedLibrary {
 
 export interface Play {
   id: number;
-  gameId: number;
+  gameId: number | null; // null when the game isn't in the collection
+  gameName: string | null;
+  groupId: number | null;
   playedAt: string;
   notes: string | null;
   players: PlayPlayer[];
   expansions: string[]; // names of expansions used (for display)
   expansionIds: number[]; // expansion ids used (for editing)
+}
+
+export interface Group {
+  id: number;
+  name: string;
 }
 
 export interface PlayPlayer {

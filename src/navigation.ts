@@ -5,10 +5,13 @@ export type RootStackParamList = {
   Tabs: undefined;
   GameDetail: { gameId: number };
   EditGame: { gameId?: number }; // omit gameId to add a new game
-  LogPlay: { gameId: number; playId?: number }; // playId to edit an existing play
+  // Log/edit a play. From a game: pass gameId. From a group: pass groupId and
+  // let the user enter any game. playId edits an existing play.
+  LogPlay: { gameId?: number; groupId?: number; playId?: number };
   Loan: { gameId: number };
   PlayerStats: { name: string };
   GameStats: { gameId: number };
+  GroupStats: { groupId: number };
   Backup: undefined;
   About: undefined;
   FriendLibrary: { code: string; name?: string };

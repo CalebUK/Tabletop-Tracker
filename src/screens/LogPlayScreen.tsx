@@ -12,19 +12,25 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
+import { Alert } from 'react-native';
 import { RootStackProps } from '../navigation';
-import { addPlay, getPlay, updatePlay, getAllPlayers } from '../db/plays';
-import { getGame, getExpansions } from '../db/games';
-import { Expansion, PlayPlayer } from '../types';
+import { addPlay, getPlay, updatePlay, getAllPlayers, PlayInput } from '../db/plays';
+import { getGame, getExpansions, getAllGames } from '../db/games';
+import { getGroups } from '../db/groups';
+import { Expansion, Group, PlayPlayer } from '../types';
 import { colors, radius, spacing } from '../theme';
 import { isoToUk, todayIso, todayUk, ukToIso } from '../lib/dates';
 
 export default function LogPlayScreen({ route, navigation }: RootStackProps<'LogPlay'>) {
-  const { gameId, playId } = route.params;
+  const { gameId, groupId: groupParam, playId } = route.params;
   const headerHeight = useHeaderHeight();
   const [gameName, setGameName] = useState('');
+  const [gameFocused, setGameFocused] = useState(false);
+  const [ownedGames, setOwnedGames] = useState<{ id: number; name: string }[]>([]);
   const [gameExpansions, setGameExpansions] = useState<Expansion[]>([]);
   const [selectedExpIds, setSelectedExpIds] = useState<number[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [groupId, setGroupId] = useState<number | null>(groupParam ?? null);
   const [date, setDate] = useState(todayUk());
   const [notes, setNotes] = useState('');
   const [players, setPlayers] = useState<PlayPlayer[]>([{ name: '', isWinner: false }]);
@@ -34,18 +40,42 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
   useEffect(() => {
     navigation.setOptions({ title: playId ? 'Edit Play' : 'Log Play' });
     getAllPlayers().then(setAllPlayers).catch(() => {});
-    getGame(gameId).then((g) => g && setGameName(g.name));
-    getExpansions(gameId).then(setGameExpansions);
+    getAllGames().then((gs) => setOwnedGames(gs.map((g) => ({ id: g.id, name: g.name })))).catch(() => {});
+    getGroups().then(setGroups).catch(() => {});
     if (playId) {
       getPlay(playId).then((p) => {
         if (!p) return;
+        setGameName(p.gameName ?? '');
+        setGroupId(p.groupId);
         setDate(isoToUk(p.playedAt));
         setNotes(p.notes ?? '');
         setPlayers(p.players.length ? p.players : [{ name: '', isWinner: false }]);
         setSelectedExpIds(p.expansionIds);
       });
+    } else if (gameId) {
+      getGame(gameId).then((g) => g && setGameName(g.name));
     }
   }, [playId, gameId]);
+
+  // Resolve the typed game name to an owned game id (if it matches one).
+  const resolvedGameId =
+    ownedGames.find((g) => g.name.toLowerCase() === gameName.trim().toLowerCase())?.id ?? null;
+
+  // Load that owned game's expansions whenever the resolved game changes.
+  useEffect(() => {
+    if (resolvedGameId) getExpansions(resolvedGameId).then(setGameExpansions);
+    else setGameExpansions([]);
+  }, [resolvedGameId]);
+
+  const gameSuggestions = gameFocused
+    ? ownedGames
+        .map((g) => g.name)
+        .filter((n) => {
+          const t = gameName.trim().toLowerCase();
+          return n.toLowerCase() !== t && (!t || n.toLowerCase().includes(t));
+        })
+        .slice(0, 6)
+    : [];
 
   function toggleExpansion(id: number) {
     setSelectedExpIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
@@ -77,13 +107,22 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
   }
 
   async function onSave() {
-    const cleaned = players.filter((p) => p.name.trim());
-    const iso = ukToIso(date) ?? todayIso();
-    if (playId) {
-      await updatePlay(playId, iso, notes.trim() || null, cleaned, selectedExpIds);
-    } else {
-      await addPlay(gameId, iso, notes.trim() || null, cleaned, selectedExpIds);
+    if (!gameName.trim()) {
+      Alert.alert('Which game?', 'Please enter the game that was played.');
+      return;
     }
+    const cleaned = players.filter((p) => p.name.trim());
+    const input: PlayInput = {
+      gameId: resolvedGameId,
+      gameName: gameName.trim(),
+      groupId,
+      playedAt: ukToIso(date) ?? todayIso(),
+      notes: notes.trim() || null,
+      players: cleaned,
+      expansionIds: selectedExpIds,
+    };
+    if (playId) await updatePlay(playId, input);
+    else await addPlay(input);
     navigation.goBack();
   }
 
@@ -95,9 +134,53 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
         keyboardVerticalOffset={headerHeight}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {gameName ? <Text style={styles.gameName}>🎲 {gameName}</Text> : null}
+          <Text style={styles.label}>Game</Text>
+          <TextInput
+            style={styles.input}
+            value={gameName}
+            onChangeText={setGameName}
+            onFocus={() => setGameFocused(true)}
+            onBlur={() => setTimeout(() => setGameFocused(false), 150)}
+            placeholder="Game name (yours or one someone brought)"
+            placeholderTextColor={colors.placeholder}
+          />
+          {gameSuggestions.length > 0 && (
+            <View style={styles.suggestRow}>
+              {gameSuggestions.map((name) => (
+                <Pressable key={name} style={styles.suggestChip} onPress={() => setGameName(name)}>
+                  <Text style={styles.suggestText}>🎲 {name}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+          {gameName.trim() && !resolvedGameId && (
+            <Text style={styles.notOwned}>Not in your collection — logged as a guest game.</Text>
+          )}
 
-          <Text style={styles.label}>Date played</Text>
+          {groups.length > 0 && (
+            <>
+              <Text style={[styles.label, { marginTop: spacing.lg }]}>Group (optional)</Text>
+              <View style={styles.suggestRow}>
+                <Pressable
+                  style={[styles.groupChip, groupId == null && styles.groupChipOn]}
+                  onPress={() => setGroupId(null)}
+                >
+                  <Text style={[styles.groupChipText, groupId == null && styles.groupChipTextOn]}>No group</Text>
+                </Pressable>
+                {groups.map((g) => (
+                  <Pressable
+                    key={g.id}
+                    style={[styles.groupChip, groupId === g.id && styles.groupChipOn]}
+                    onPress={() => setGroupId(g.id)}
+                  >
+                    <Text style={[styles.groupChipText, groupId === g.id && styles.groupChipTextOn]}>{g.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          )}
+
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>Date played</Text>
           <TextInput
             style={styles.input}
             value={date}
@@ -198,8 +281,19 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, paddingBottom: spacing.xl * 2 },
-  gameName: { color: colors.text, fontSize: 20, fontWeight: '700', marginBottom: spacing.lg },
   label: { color: colors.textMuted, fontSize: 13, fontWeight: '600', marginBottom: 6 },
+  notOwned: { color: colors.textMuted, fontSize: 12, fontStyle: 'italic', marginTop: 4 },
+  groupChip: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  groupChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  groupChipText: { color: colors.textMuted, fontSize: 13 },
+  groupChipTextOn: { color: colors.primaryText, fontWeight: '600' },
   checkbox: { color: colors.textMuted, fontSize: 22, marginRight: spacing.sm },
   checkboxOn: { color: colors.success },
   expansionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
