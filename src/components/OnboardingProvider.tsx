@@ -20,6 +20,7 @@ interface Slide {
   logo?: boolean;
   title: string;
   body: string;
+  hints?: { icon: string; label: string }[];
 }
 
 const SLIDES: Slide[] = [
@@ -31,7 +32,11 @@ const SLIDES: Slide[] = [
   {
     emoji: '🎲',
     title: 'Your Collection',
-    body: 'Add games with a photo, rating, storage location, tags and more. Swipe a game → to edit, ← to loan it out, or hold to log a play.',
+    body: 'Add games with a photo, rating, location and tags. Swipe a game → to edit, ← to loan, or hold to log a play. Use the buttons up top to filter:',
+    hints: [
+      { icon: '📍', label: 'Filter by storage location' },
+      { icon: '♥', label: 'Show only your favourites' },
+    ],
   },
   {
     emoji: '🔍',
@@ -117,6 +122,18 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
                 )}
                 <Text style={styles.title}>{s.title}</Text>
                 <Text style={styles.body}>{s.body}</Text>
+                {s.hints && (
+                  <View style={styles.hints}>
+                    {s.hints.map((h) => (
+                      <View key={h.label} style={styles.hintRow}>
+                        <View style={styles.hintIcon}>
+                          <Text style={styles.hintIconText}>{h.icon}</Text>
+                        </View>
+                        <Text style={styles.hintLabel}>{h.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             ))}
           </ScrollView>
@@ -145,6 +162,20 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 72, marginBottom: spacing.xl },
   title: { color: colors.text, fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: spacing.md },
   body: { color: colors.textMuted, fontSize: 16, lineHeight: 24, textAlign: 'center' },
+  hints: { marginTop: spacing.xl, gap: spacing.md },
+  hintRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  hintIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hintIconText: { fontSize: 20 },
+  hintLabel: { color: colors.text, fontSize: 15 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: spacing.lg },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
   dotActive: { backgroundColor: colors.primary, width: 20 },
