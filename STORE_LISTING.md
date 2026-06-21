@@ -95,11 +95,30 @@ Take these 4–6 — portrait, just normal in-app screenshots:
 
 ## Data safety form (App content → Data safety)
 
-- **Does your app collect or share any of the required user data types?** → **No**
-  - Rationale: nothing is sent to us or any server we control. Photos and all
-    data stay on the device. (Game *titles* are sent to BoardGameGeek for an
-    optional lookup, but that isn't a personal-data type.)
+⚠️ This changed once the **online library** feature was added — the app can now
+upload data to the cloud (Google Firebase) when a user opts in. Declare it
+truthfully:
+
+- **Does your app collect or share any user data?** → **Yes** (only via the
+  optional online library; if a user never creates one, nothing is uploaded).
+- **Data collected (when the user creates an online library):**
+  - **App activity / other user-generated content** — the user's game list and
+    their ratings (game name, rating, player count, play time). **No photos.**
+  - **Device or other IDs** — an anonymous sign-in ID (used so only the owner can
+    edit their own library; no name, email or account).
+- **Is data shared with third parties?** → **No** (not sold or shared for ads;
+  friends can view a library only via a share code the user gives out).
+- **Is the data collected required or optional?** → **Optional** (opt-in).
+- **Is data encrypted in transit?** → **Yes** (HTTPS).
+- **Can users request data deletion?** → **Yes** — they delete their online
+  library in-app (Library tab → Delete), which removes it from the cloud.
+- Everything else (collection, photos, plays, notes) still stays **on-device**.
+  Game titles are also sent to BoardGameGeek for the optional lookup.
 - Privacy policy URL: paste the URL above.
+
+> The exact data-type checkboxes Google offers shift over time — pick the closest
+> truthful options to the description above. The key point is: **yes, optional
+> cloud upload of a game list + an anonymous ID; not shared for ads; deletable.**
 
 ## Content rating (App content → Content rating)
 
