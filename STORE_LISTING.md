@@ -21,50 +21,57 @@ use the exact answers in the forms.
 ## Short description (max 80 chars)
 
 ```
-Catalogue your board games, track plays and winners, and pick your next game.
+Catalogue your board games, track plays, and share with friends.
 ```
 
 ## Full description (max 4000 chars)
 
 ```
 Tabletop Tracker is a simple, private way to keep your whole board game
-collection in your pocket.
+collection in your pocket — and share it with friends.
 
-Your collection lives entirely on your device — no account, no sign-up, and
-nothing uploaded to the cloud.
+Your collection lives on your device. There's no sign-up, and nothing is
+uploaded unless you choose to share a library.
 
 CATALOGUE YOUR GAMES
 • Add each game with a photo, storage location, player count, play time,
-  minimum age, complexity, designer/publisher and your own rating.
-• Tag games however you like and add notes or house rules.
-• Mark favourites and record the expansions you own.
+  minimum age, complexity, publisher/designer and your own rating.
+• Pull in the details and the BoardGameGeek rating with a single tap.
+• Tag and categorise games, add notes and house rules, mark favourites, and
+  record the expansions you own.
 
-TRACK PLAYS
-• Log who played and who won.
-• See play history for every game and per-game winner stats.
-• View top players and your most-played games.
+TRACK PLAYS & GAME NIGHTS
+• Log who played and who won — even games you don't own.
+• See play history for every game, per-game winners and top players.
+• Create gaming groups (like a weekly game night) and see stats just for them.
 
 FIND THE RIGHT GAME
-• Powerful search by players, play time, age, complexity, rating, tags and more.
+• Powerful search by players, play time, player age, complexity, rating,
+  category and tags.
 • Filter by storage location to see what's on each shelf.
 • Feeling lucky? Let the app pick a random game that fits your criteria.
 
+SHARE WITH FRIENDS
+• Create an online library to get a share code, so friends can see what you
+  have and your ratings — just a game list, no photos or personal info.
+• Add friends' codes to browse their games, and view everyone's collections
+  together on one shelf.
+
 LEND WITH CONFIDENCE
-• Record who you've loaned a game to and when, and keep a full loan history so
-  you never lose track of a game again.
+• Record who you've loaned a game to and when, with a full loan history (and an
+  optional photo), so you never lose track of a game again.
 
 YOURS TO KEEP
 • Export a full backup (including photos) to move to a new phone.
 • Export your collection to CSV for spreadsheets.
 
-Tabletop Tracker doesn't show ads, doesn't track you, and keeps your data on
-your device. Happy gaming!
+Tabletop Tracker doesn't show ads and doesn't track you. Happy gaming!
 ```
 
 ## Categorisation & tags
 
 - Category: **Tools**
-- Tags: board games, collection, hobby, organiser
+- Tags: board games, collection, hobby, organiser, game night
 - Contains ads: **No**
 - In-app purchases: **No**
 
@@ -81,13 +88,15 @@ your device. Happy gaming!
 | 10" tablet screenshots | ⛔ Not needed — optional. We have none; skip for now. |
 
 ### Screenshots to capture (on your phone, once the new build is installed)
-Take these 4–6 — portrait, just normal in-app screenshots:
+Take these 5–8 — portrait, just normal in-app screenshots:
 1. **My Collection** list (with a few games + the logo header)
 2. A **game's detail** page (photo, rating, location, plays)
 3. **Search** tab with some filters selected
-4. **Log a play** screen
-5. **Stats** tab (top players / most played)
-6. The **🎲 Feeling lucky** dice-roll (optional, fun)
+4. **Library** tab — the share code + "Browse all games"
+5. **Browse all games** — the bookcase of spines
+6. **Stats** tab (top players / most played / a gaming group)
+7. **Log a play** screen
+8. The **🎲 Feeling lucky** dice-roll (optional, fun)
 
 > Tip: add 3–4 example games first so the screenshots look full.
 
