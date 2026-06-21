@@ -13,6 +13,7 @@ import SearchScreen from './src/screens/SearchScreen';
 import StatsScreen from './src/screens/StatsScreen';
 import LibraryScreen from './src/screens/LibraryScreen';
 import FriendLibraryScreen from './src/screens/FriendLibraryScreen';
+import BrowseAllScreen from './src/screens/BrowseAllScreen';
 import { OnboardingProvider } from './src/components/OnboardingProvider';
 import GameDetailScreen from './src/screens/GameDetailScreen';
 import EditGameScreen from './src/screens/EditGameScreen';
@@ -104,6 +105,7 @@ export default function App() {
           <Stack.Screen name="Backup" component={BackupScreen} options={{ title: 'Backup & Export' }} />
           <Stack.Screen name="About" component={AboutScreen} options={{ title: 'About & Privacy' }} />
           <Stack.Screen name="FriendLibrary" component={FriendLibraryScreen} options={{ title: '' }} />
+          <Stack.Screen name="BrowseAll" component={BrowseAllScreen} options={{ title: 'All games' }} />
         </Stack.Navigator>
       </NavigationContainer>
       </OnboardingProvider>

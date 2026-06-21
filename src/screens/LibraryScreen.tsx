@@ -130,6 +130,11 @@ export default function LibraryScreen() {
     <View>
       <Text style={styles.heading}>Library</Text>
 
+      <Pressable style={styles.browseAll} onPress={() => navigation.navigate('BrowseAll')}>
+        <Text style={styles.browseAllText}>📚  Browse all games</Text>
+        <Text style={styles.browseAllSub}>Everyone's games (yours + friends') on one shelf</Text>
+      </Pressable>
+
       <View style={styles.card}>
         <Text style={styles.cardTitle}>My online library</Text>
         {myLib ? (
@@ -235,6 +240,14 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   list: { padding: spacing.lg, paddingBottom: 60 },
   heading: { color: colors.text, fontSize: 26, fontWeight: '700', marginBottom: spacing.lg },
+  browseAll: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  browseAllText: { color: colors.primaryText, fontSize: 16, fontWeight: '700' },
+  browseAllSub: { color: colors.primaryText, fontSize: 13, opacity: 0.85, marginTop: 2 },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,

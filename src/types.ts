@@ -86,6 +86,18 @@ export interface SharedLibrary {
   updatedAt: number | null; // epoch ms
 }
 
+// A game merged across all linked libraries (+ optionally your own), for the
+// "browse all games" bookcase. Duplicates by name are combined; owners lists
+// who has it and their rating.
+export interface AggregatedGame {
+  name: string;
+  minPlayers: number | null;
+  maxPlayers: number | null;
+  playTimeMin: number | null;
+  owners: { owner: string; rating: number | null }[];
+  bestRating: number | null;
+}
+
 export interface Play {
   id: number;
   gameId: number | null; // null when the game isn't in the collection

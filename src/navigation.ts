@@ -15,6 +15,7 @@ export type RootStackParamList = {
   Backup: undefined;
   About: undefined;
   FriendLibrary: { code: string; name?: string };
+  BrowseAll: undefined;
 };
 
 export type RootStackProps<T extends keyof RootStackParamList> =
