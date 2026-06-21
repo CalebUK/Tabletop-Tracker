@@ -70,6 +70,22 @@ export interface GameInput {
 
 export type Complexity = 'easy' | 'medium' | 'high';
 
+// A game as it appears in a shared online library (no photos / personal info).
+export interface LibraryGame {
+  name: string;
+  rating: number | null;
+  minPlayers: number | null;
+  maxPlayers: number | null;
+  playTimeMin: number | null;
+}
+
+export interface SharedLibrary {
+  code: string;
+  name: string;
+  games: LibraryGame[];
+  updatedAt: number | null; // epoch ms
+}
+
 export interface Play {
   id: number;
   gameId: number;

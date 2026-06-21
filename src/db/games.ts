@@ -394,6 +394,29 @@ export async function getExpansions(gameId: number): Promise<Expansion[]> {
   }));
 }
 
+// Lightweight game list for publishing to an online library (no photos).
+export async function getGamesForLibrary(): Promise<
+  { name: string; rating: number | null; minPlayers: number | null; maxPlayers: number | null; playTimeMin: number | null }[]
+> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{
+    name: string;
+    rating: number | null;
+    min_players: number | null;
+    max_players: number | null;
+    play_time_min: number | null;
+  }>(
+    'SELECT name, rating, min_players, max_players, play_time_min FROM games ORDER BY name COLLATE NOCASE ASC'
+  );
+  return rows.map((r) => ({
+    name: r.name,
+    rating: r.rating,
+    minPlayers: r.min_players,
+    maxPlayers: r.max_players,
+    playTimeMin: r.play_time_min,
+  }));
+}
+
 // Distinct storage locations in use, for the Collection location filter.
 export async function getAllLocations(): Promise<string[]> {
   const db = await getDb();

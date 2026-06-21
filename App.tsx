@@ -11,6 +11,8 @@ import { colors } from './src/theme';
 import CollectionScreen from './src/screens/CollectionScreen';
 import SearchScreen from './src/screens/SearchScreen';
 import StatsScreen from './src/screens/StatsScreen';
+import LibraryScreen from './src/screens/LibraryScreen';
+import FriendLibraryScreen from './src/screens/FriendLibraryScreen';
 import GameDetailScreen from './src/screens/GameDetailScreen';
 import EditGameScreen from './src/screens/EditGameScreen';
 import LogPlayScreen from './src/screens/LogPlayScreen';
@@ -62,6 +64,11 @@ function Tabs() {
         options={{ tabBarIcon: tabIcon('🔍') }}
       />
       <Tab.Screen
+        name="Library"
+        component={LibraryScreen}
+        options={{ tabBarIcon: tabIcon('👥') }}
+      />
+      <Tab.Screen
         name="Stats"
         component={StatsScreen}
         options={{ tabBarIcon: tabIcon('📊') }}
@@ -92,6 +99,7 @@ export default function App() {
           <Stack.Screen name="GameStats" component={GameStatsScreen} options={{ title: '' }} />
           <Stack.Screen name="Backup" component={BackupScreen} options={{ title: 'Backup & Export' }} />
           <Stack.Screen name="About" component={AboutScreen} options={{ title: 'About & Privacy' }} />
+          <Stack.Screen name="FriendLibrary" component={FriendLibraryScreen} options={{ title: '' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

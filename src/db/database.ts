@@ -106,6 +106,12 @@ CREATE TABLE IF NOT EXISTS meta (
   value TEXT
 );
 
+CREATE TABLE IF NOT EXISTS friend_libraries (
+  code TEXT PRIMARY KEY,
+  name TEXT,
+  added_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_game_tags_game ON game_tags(game_id);
 CREATE INDEX IF NOT EXISTS idx_game_tags_tag ON game_tags(tag_id);
 CREATE INDEX IF NOT EXISTS idx_game_categories_game ON game_categories(game_id);
