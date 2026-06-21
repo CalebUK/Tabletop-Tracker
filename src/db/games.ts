@@ -139,15 +139,16 @@ export async function searchGames(filters: SearchFilters): Promise<Game[]> {
     params.push(filters.minBggRating);
   }
   if (filters.ageBands.length > 0) {
-    // Match if the game's min age falls within ANY selected band.
+    // The band is the age of the player. Show every game that player could
+    // play, i.e. the game's minimum age is at or below the band's top age.
+    // The open-ended top band (12+) shows any age-rated game.
     const ors: string[] = [];
     for (const b of filters.ageBands) {
       if (b.hi != null) {
-        ors.push('(g.min_age >= ? AND g.min_age <= ?)');
-        params.push(b.lo, b.hi);
+        ors.push('g.min_age <= ?');
+        params.push(b.hi);
       } else {
-        ors.push('(g.min_age >= ?)');
-        params.push(b.lo);
+        ors.push('1');
       }
     }
     where.push(`g.min_age IS NOT NULL AND (${ors.join(' OR ')})`);

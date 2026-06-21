@@ -190,7 +190,7 @@ export default function SearchScreen() {
         <Toggle label="9+" on={filters.minRating === 9} onPress={() => patch({ minRating: 9 })} />
       </View>
 
-      <Text style={styles.groupLabel}>Age</Text>
+      <Text style={styles.groupLabel}>Player age (shows games they can play)</Text>
       <View style={styles.chipWrap}>
         <Toggle label="Any" on={filters.ageBands.length === 0} onPress={() => patch({ ageBands: [] })} />
         {AGE_BANDS.map((a) => {
