@@ -1,93 +1,109 @@
-# Board Game Keeper (BGK)
+# Tabletop Tracker
 
-A local-first mobile app for cataloguing your board game collection, tracking
-plays, and finding the right game for tonight.
+A mobile app for cataloguing your board game collection, tracking plays, finding
+the right game for tonight, and sharing your collection with friends.
 
-Built with **Expo + React Native + TypeScript**, storing everything on-device in
-**SQLite**. The data model is structured so cloud sync / accounts / a web view
-can be added later without a rewrite.
+Built with **Expo (SDK 56) + React Native + TypeScript**. Your collection is
+stored on-device in **SQLite**; the optional online library uses **Firebase**.
 
-## Features (prototype)
+GitHub: https://github.com/CalebUK/Tabletop-Tracker
+
+## Features
 
 - **Collection** — add games with a photo (camera or library), storage location,
-  player count, play time, year, developer, personal star rating (half-stars),
-  favorite flag, custom tags (remembered for reuse), notes, and house rules.
-  Swipe a card right to edit, left to loan it out.
-- **Identify a game** three ways: search BoardGameGeek by name, **scan its
-  barcode** (camera → UPC lookup → BGG), or **scan the name from a photo**
-  (OCR → BGG). Any of them auto-fills year, players, play time, developer,
-  cover image, and the geek rating.
-- **10-star personal rating** (half-stars) to match BoardGameGeek's scale.
-- **Loans** — record who you loaned a game to and when; loaned games show
-  "Loaned to X" in place of their shelf location until marked returned. Full
-  **loan history** per game.
-- **Search** — filter by text, tags, favorites, unplayed, play length
-  (15/30/60 / 60+ min), and player count (1–6 / 7+). Results show ratings
-  and location.
-- **Plays** — log who played and who won; tap a play to edit it, long-press to
-  delete (with confirmation). Play history per game.
-- **Stats** — totals, top players (by wins), most-played games, unplayed count.
+  player count, play time, minimum age, complexity, edition, year,
+  publisher/designer, personal 10-star rating (half-stars), favourite flag,
+  custom tags and categories (remembered for reuse), notes and house rules.
+  Swipe a card → to edit, ← to loan, or hold to log a play. Sort and filter by
+  location/favourites.
+- **BoardGameGeek lookup** — one tap fills in players, play time, minimum age,
+  publisher, cover image, the BGG rating and BGG complexity. Results are ranked
+  so the game you mean surfaces first. (Requires a BGG app token — see below.)
+- **Plays & gaming groups** — log who played and who won, including games you
+  don't own. Create groups (e.g. a weekly game night) with their own stats
+  (winners, most-played). Per-game and per-player stats too.
+- **Search** — by player count (counts expansions), play time, **player age**
+  (shows games that age can play), complexity, personal rating, category and
+  tags. "Feeling lucky" picks a random matching game.
+- **Loans** — record who borrowed a game and when, with an optional proof photo
+  (deleted on return) and a full loan history.
+- **Online library (opt-in)** — publish your collection to get a share code;
+  friends enter the code to view it. "Browse all games" merges everyone's
+  collections into a bookcase you can search and sort. No photos or personal
+  info are shared. See `FIREBASE_SETUP.md`.
+- **Backup & export** — full JSON backup (incl. photos) to move devices, plus a
+  CSV export. A first-run **walkthrough** introduces the app.
 
 Dates are shown in UK format (DD/MM/YYYY) throughout.
 
-## Running it on your phone
+## Running it locally
 
-1. Install the **Expo Go** app from the App Store / Play Store.
-2. In this folder, start the dev server:
-   ```
-   npm start
-   ```
-3. Scan the QR code with your phone (Camera app on iOS, Expo Go on Android).
-   The app loads live — edits to the code refresh instantly.
+This app uses native modules and SDK 56, so **Expo Go won't work** — you need a
+**development build** (built once via EAS), then:
 
-> Note: the camera/photo and SQLite features run on a real device or simulator.
-> They do **not** work in the `npm run web` preview.
+1. Install the development build APK on your device (from an
+   `eas build --profile development` build).
+2. Create `.env.local` in the project root with your BGG token (git-ignored):
+   ```
+   EXPO_PUBLIC_BGG_TOKEN=your-token-here
+   ```
+3. Start the dev server and open the app:
+   ```
+   npx expo start --dev-client
+   ```
+   JavaScript changes hot-reload; only new native modules require a rebuild.
+
+## Validate changes
+
+- `npx tsc --noEmit` — typecheck
+- `npx expo export --platform android --output-dir <tmp>` — full bundle smoke test
 
 ## Project layout
 
 ```
-App.tsx                 Navigation (bottom tabs + stack)
+App.tsx                  Navigation (bottom tabs + stack) + onboarding provider
 src/
-  theme.ts              Colors, spacing, radius tokens
-  types.ts              Shared TypeScript types
-  navigation.ts         Route param types
+  theme.ts               Colours, spacing, radius tokens
+  types.ts               Shared TypeScript types
+  navigation.ts          Route param types
   db/
-    database.ts         SQLite connection + schema
-    games.ts            Game CRUD + search query + tags
-    plays.ts            Play logging + stats aggregates
+    database.ts          SQLite connection, schema, migrations
+    games.ts             Game CRUD, search, tags/categories, locations, loans
+    plays.ts             Play logging, edit, per-game/player stats
+    groups.ts            Gaming groups + per-group stats
+    library.ts           Local record of my library + saved friend codes
+    backup.ts            Full JSON backup/restore + CSV export
+    meta.ts              Key/value store (flags, onboarding, etc.)
   lib/
-    images.ts           Pick/take photo, persist to app storage
+    images.ts            Pick/take photo, persist to app storage
+    dates.ts             UK date formatting
+    bgg.ts               BoardGameGeek XML API client (token + ranking)
+    format.ts            Number rounding helpers
+    firebase.ts          Lazy Firebase init (auth + firestore)
+    firebaseConfig.ts    Firebase web config (public by design)
+    onlineLibrary.ts     Publish/fetch/delete libraries; aggregate all games
   components/
-    GameCard.tsx        Collection list row
-    StarRating.tsx      Reusable 1–5 star control
+    GameCard.tsx         Collection list row
+    StarRating.tsx       10-star control (half-stars)
+    SwipeableRow.tsx     Swipe-to-edit/loan wrapper
+    OnboardingProvider.tsx  First-run walkthrough carousel
   screens/
-    CollectionScreen.tsx
-    SearchScreen.tsx
-    StatsScreen.tsx
-    GameDetailScreen.tsx
-    EditGameScreen.tsx
-    LogPlayScreen.tsx
+    CollectionScreen, SearchScreen, StatsScreen, LibraryScreen,
+    GameDetailScreen, EditGameScreen, LogPlayScreen, LoanScreen,
+    PlayerStatsScreen, GameStatsScreen, GroupStatsScreen,
+    FriendLibraryScreen, BrowseAllScreen, BackupScreen, AboutScreen
 ```
 
-## OCR / barcode notes
+## Other docs
 
-- Barcode scanning uses `expo-camera`; the UPC is resolved to a product name
-  via upcitemdb's free trial endpoint, then searched on BGG.
-- OCR uses ocr.space. It ships with the public `helloworld` demo key (rate
-  limited); for regular use, get a free key at https://ocr.space/ocrapi and set
-  `OCR_API_KEY` in `src/lib/identify.ts`.
-
-## Backup & export
-
-- **Full backup** (⚙️ in the Collection header → Backup & Export): exports a
-  single JSON file containing every table plus photos (base64) that can be
-  re-imported on a new device. Import **replaces** all current data.
-- **CSV export**: a spreadsheet-friendly list of the collection (no photos /
-  play history). See `src/db/backup.ts`.
+- `FIREBASE_SETUP.md` — Firebase project + Firestore security rules for the library
+- `STORE_LISTING.md` — Play Store listing copy + data-safety/content-rating answers
+- `GOING_PUBLIC.md` — launch checklist for going from testing to public
+- `PRIVACY.md` — privacy policy (also the hosted policy URL)
 
 ## Roadmap (not yet built)
 
-- Opt-in cloud sync + accounts (e.g. Supabase) and web viewing — deferred;
-  revisit when multi-device or the website is actually wanted.
-- AI-vision box recognition (needs a paid vision API key).
-- Wishlist, BGG collection import.
+- Web viewing of libraries.
+- Wishlist, "last played" / haven't-played-in-a-while.
+- BGG collection import.
+- Firebase App Check before a wide public launch.

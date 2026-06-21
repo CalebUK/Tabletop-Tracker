@@ -1,7 +1,8 @@
-# Board Game Keeper — agent notes
+# Tabletop Tracker — agent notes
 
-Expo SDK 56 + React Native 0.85 + TypeScript. Local-first; data in on-device
-SQLite (`expo-sqlite` async API). See `README.md` for features and layout.
+Expo SDK 56 + React Native 0.85 + TypeScript. Collection data is on-device in
+SQLite (`expo-sqlite` async API); the optional online library uses Firebase.
+See `README.md` for features and layout, `FIREBASE_SETUP.md` for the cloud bits.
 
 ## Conventions
 - DB access goes through `src/db/*` — screens never open the database directly.
@@ -18,6 +19,11 @@ SQLite (`expo-sqlite` async API). See `README.md` for features and layout.
   exact signatures before adding native modules.
 - `expo-file-system` legacy API is imported from `expo-file-system/legacy`.
 - Camera/photo/SQLite only work on a device or simulator, not `expo start --web`.
+- BGG needs an app token (`EXPO_PUBLIC_BGG_TOKEN`): `.env.local` for `expo start`,
+  EAS env var for builds. Never commit it; `.env*` is git-ignored.
+- Firebase is lazy-initialised (`src/lib/firebase.ts`) so the app doesn't touch
+  native storage at launch; uses `getReactNativePersistence` from the RN build.
+- Adding a native module means a new dev/prod build; pure-JS changes hot-reload.
 
 ## Validate changes
 - `npx tsc --noEmit` — typecheck.
