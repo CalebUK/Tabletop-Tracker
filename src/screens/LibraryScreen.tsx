@@ -153,12 +153,16 @@ export default function LibraryScreen() {
             />
             <View style={styles.btnRow}>
               <Pressable style={[styles.btn, styles.btnPrimary]} onPress={onPublish}>
-                <Text style={styles.btnPrimaryText}>↑ Update ({gameCount})</Text>
+                <Text style={styles.btnPrimaryText}>↑ Update</Text>
               </Pressable>
               <Pressable style={[styles.btn, styles.btnOutline]} onPress={onShare}>
                 <Text style={styles.btnOutlineText}>Share</Text>
               </Pressable>
             </View>
+            <Text style={styles.updateNote}>
+              Your shared library only refreshes when you tap Update — changes to your collection
+              aren't shared automatically.
+            </Text>
             <Pressable onPress={onDelete} style={styles.deleteLink}>
               <Text style={styles.deleteLinkText}>Delete online library</Text>
             </Pressable>
@@ -262,6 +266,7 @@ const styles = StyleSheet.create({
   codeLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   code: { color: colors.primary, fontSize: 30, fontWeight: '800', letterSpacing: 3 },
   views: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
+  updateNote: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginTop: spacing.sm },
   input: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.md,

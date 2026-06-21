@@ -93,9 +93,27 @@ export async function bggSearch(query: string): Promise<BggSearchResult[]> {
     const name = attr(body, 'name') ?? '(unknown)';
     const year = numAttr(body, 'yearpublished');
     results.push({ id, name, year });
-    if (results.length >= 30) break;
+    if (results.length >= 250) break; // collect broadly, then rank below
   }
-  return results;
+
+  // Rank so the game you most likely mean floats to the top: exact name match
+  // first, then "starts with", then "contains"; within a tier the shorter name
+  // (usually the base game, not an edition/spin-off) and earlier year win.
+  const ql = q.toLowerCase();
+  const tier = (name: string) => {
+    const n = name.toLowerCase();
+    if (n === ql) return 0;
+    if (n.startsWith(ql)) return 1;
+    if (n.includes(ql)) return 2;
+    return 3;
+  };
+  results.sort(
+    (a, b) =>
+      tier(a.name) - tier(b.name) ||
+      a.name.length - b.name.length ||
+      (a.year ?? 9999) - (b.year ?? 9999)
+  );
+  return results.slice(0, 40);
 }
 
 export async function bggDetails(id: number): Promise<BggDetails | null> {
