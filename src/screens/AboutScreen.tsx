@@ -27,14 +27,19 @@ export default function AboutScreen() {
 
         <Text style={styles.sectionTitle}>Your data &amp; privacy</Text>
         <Text style={styles.body}>
-          Everything you add lives only on this device. Your collection, photos, plays and notes
-          are never uploaded to us or anyone else.
+          By default everything you add lives only on this device. Your collection, photos, plays
+          and notes are not uploaded anywhere unless you choose an action that shares them.
         </Text>
         <Text style={styles.body}>
-          The only time data leaves your phone is when you choose to: looking a game up on
-          BoardGameGeek sends just the game title to BGG, and exporting a backup or CSV shares a
-          file wherever you send it. Photos and the camera are used only to add pictures to your
-          games, stored on-device.
+          Those choices are: looking a game up on BoardGameGeek (sends just the game title);
+          exporting a backup or CSV (shares a file wherever you send it); and creating an online
+          library.
+        </Text>
+        <Text style={styles.body}>
+          The optional online library uploads a list of your games (name, rating, player count and
+          play time — no photos or personal info) so friends with your share code can view it. You
+          can delete it any time from the Library tab. Photos and the camera are only used to add
+          pictures to your games, stored on-device.
         </Text>
 
         <Pressable style={styles.linkBtn} onPress={() => Linking.openURL(PRIVACY_URL)}>
