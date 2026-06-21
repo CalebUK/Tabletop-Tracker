@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, deleteDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { getFirestoreDb, ensureSignedIn } from './firebase';
 import { getGamesForLibrary } from '../db/games';
 import { LibraryGame, SharedLibrary } from '../types';
@@ -29,14 +29,28 @@ export async function publishLibrary(name: string, existingCode?: string | null)
   const db = getFirestoreDb();
   const games = await getGamesForLibrary();
   const code = existingCode || (await freshCode());
-  await setDoc(doc(db, 'libraries', code), {
+  const ref = doc(db, 'libraries', code);
+  // Preserve the view counter across updates (setDoc overwrites the document).
+  let views = 0;
+  if (existingCode) {
+    const existing = await getDoc(ref);
+    if (existing.exists()) views = (existing.data() as any).views ?? 0;
+  }
+  await setDoc(ref, {
     ownerUid: uid,
     name: name.trim() || 'My library',
     games,
     gameCount: games.length,
+    views,
     updatedAt: serverTimestamp(),
   });
   return code;
+}
+
+// How many times this library has been opened by others.
+export async function getLibraryViews(code: string): Promise<number> {
+  const snap = await getDoc(doc(getFirestoreDb(), 'libraries', code));
+  return snap.exists() ? ((snap.data() as any).views ?? 0) : 0;
 }
 
 export async function deleteLibrary(code: string): Promise<void> {
@@ -46,8 +60,11 @@ export async function deleteLibrary(code: string): Promise<void> {
 
 // Fetch a library by its share code (anyone with the code can read).
 export async function fetchLibrary(code: string): Promise<SharedLibrary | null> {
-  const snap = await getDoc(doc(getFirestoreDb(), 'libraries', code.trim().toUpperCase()));
+  const ref = doc(getFirestoreDb(), 'libraries', code.trim().toUpperCase());
+  const snap = await getDoc(ref);
   if (!snap.exists()) return null;
+  // Count this view (best-effort; ignored if offline or rules disallow it).
+  updateDoc(ref, { views: increment(1) }).catch(() => {});
   const data = snap.data() as any;
   const games: LibraryGame[] = Array.isArray(data.games) ? data.games : [];
   return {

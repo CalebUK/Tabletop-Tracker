@@ -27,13 +27,24 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.resource.data.ownerUid == request.auth.uid;
 
-      // Only the owner can update or delete their own library.
-      allow update, delete: if request.auth != null
-                            && resource.data.ownerUid == request.auth.uid;
+      // Only the owner can delete their own library.
+      allow delete: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid;
+
+      // The owner can fully update; anyone viewing may bump the view counter by
+      // exactly 1 (and change nothing else).
+      allow update: if (request.auth != null && resource.data.ownerUid == request.auth.uid)
+                    || (
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
+                      && request.resource.data.views == resource.data.get('views', 0) + 1
+                    );
     }
   }
 }
 ```
+
+> If you've already published the earlier rules, **re-publish** with this updated
+> version — the new `update` rule is what lets the view counter work.
 
 These rules mean: libraries can only be reached by knowing the exact share code
 (they aren't listable or searchable), and only the device that created a library

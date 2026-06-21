@@ -24,7 +24,7 @@ import {
   removeFriendLibrary,
   FriendLibrary,
 } from '../db/library';
-import { publishLibrary, deleteLibrary, fetchLibrary } from '../lib/onlineLibrary';
+import { publishLibrary, deleteLibrary, fetchLibrary, getLibraryViews } from '../lib/onlineLibrary';
 import { colors, radius, spacing } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -37,11 +37,15 @@ export default function LibraryScreen() {
   const [friends, setFriends] = useState<FriendLibrary[]>([]);
   const [codeInput, setCodeInput] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  const [views, setViews] = useState<number | null>(null);
 
   const load = useCallback(() => {
     getMyLibrary().then((l) => {
       setMyLib(l);
-      if (l) setLibName(l.name);
+      if (l) {
+        setLibName(l.name);
+        getLibraryViews(l.code).then(setViews).catch(() => setViews(null));
+      }
     });
     getFriendLibraries().then(setFriends);
     getGamesForLibrary().then((g) => setGameCount(g.length));
@@ -132,6 +136,9 @@ export default function LibraryScreen() {
           <>
             <Text style={styles.codeLabel}>Share code</Text>
             <Text style={styles.code}>{myLib.code}</Text>
+            {views != null && (
+              <Text style={styles.views}>👁  Viewed {views} time{views === 1 ? '' : 's'}</Text>
+            )}
             <TextInput
               style={styles.input}
               value={libName}
@@ -241,6 +248,7 @@ const styles = StyleSheet.create({
   cardBody: { color: colors.textMuted, fontSize: 14, lineHeight: 20 },
   codeLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   code: { color: colors.primary, fontSize: 30, fontWeight: '800', letterSpacing: 3 },
+  views: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
   input: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.md,
