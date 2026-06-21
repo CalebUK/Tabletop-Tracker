@@ -126,7 +126,6 @@ CREATE INDEX IF NOT EXISTS idx_game_tags_tag ON game_tags(tag_id);
 CREATE INDEX IF NOT EXISTS idx_game_categories_game ON game_categories(game_id);
 CREATE INDEX IF NOT EXISTS idx_game_categories_cat ON game_categories(category_id);
 CREATE INDEX IF NOT EXISTS idx_plays_game ON plays(game_id);
-CREATE INDEX IF NOT EXISTS idx_plays_group ON plays(group_id);
 CREATE INDEX IF NOT EXISTS idx_play_players_play ON play_players(play_id);
 CREATE INDEX IF NOT EXISTS idx_loans_game ON loans(game_id);
 CREATE INDEX IF NOT EXISTS idx_expansions_game ON expansions(game_id);
@@ -196,6 +195,10 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
     `);
     await db.execAsync('PRAGMA foreign_keys = ON');
   }
+
+  // Index on the (possibly just-added) group_id column. Created here rather than
+  // in SCHEMA so it never runs before the column exists on an upgraded DB.
+  await db.execAsync('CREATE INDEX IF NOT EXISTS idx_plays_group ON plays(group_id)');
 
   // Versioned migrations for changes that can't be detected by column presence.
   const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
