@@ -29,6 +29,7 @@ export interface Game {
   tags: string[];
   categories: string[];
   playCount: number;
+  lastPlayedAt: string | null; // ISO date of most recent play, null if never
   expansionCount: number;
 }
 

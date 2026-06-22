@@ -77,15 +77,42 @@ export async function fetchLibrary(code: string, countView = true): Promise<Shar
   };
 }
 
-// Map of game name (lowercased) -> distinct friend names who own it, across all
-// linked friend libraries. Used to flag wishlist games a friend already has.
-// Returns an empty map when no libraries are linked or the fetch fails.
-export async function getFriendOwnersByGame(): Promise<Map<string, string[]>> {
+// A linked friend's library, fetched once. Several features build off these.
+interface FriendSource {
+  owner: string;
+  games: LibraryGame[];
+}
+
+// Fetch every linked friend's library once (view counter not bumped). The
+// single network round-trip behind the wishlist's owner-flags and suggestions
+// and the "browse all" view, so we don't fetch the same libraries repeatedly.
+async function fetchFriendSources(): Promise<FriendSource[]> {
+  const friends = await getFriendLibraries();
+  const fetched = await Promise.all(
+    friends.map((f) => fetchLibrary(f.code, false).catch(() => null))
+  );
+  const sources: FriendSource[] = [];
+  friends.forEach((f, i) => {
+    const lib = fetched[i];
+    if (lib) sources.push({ owner: f.name || lib.name || f.code, games: lib.games });
+  });
+  return sources;
+}
+
+// Map of game name (lowercased) -> distinct friend names who own it.
+function ownersByGame(sources: FriendSource[]): Map<string, string[]> {
   const map = new Map<string, string[]>();
-  const all = await fetchAllGames(false);
-  for (const g of all) {
-    const owners = Array.from(new Set(g.owners.map((o) => o.owner)));
-    if (owners.length) map.set(g.name.trim().toLowerCase(), owners);
+  for (const src of sources) {
+    for (const g of src.games) {
+      const key = g.name.trim().toLowerCase();
+      if (!key) continue;
+      const arr = map.get(key);
+      if (arr) {
+        if (!arr.includes(src.owner)) arr.push(src.owner);
+      } else {
+        map.set(key, [src.owner]);
+      }
+    }
   }
   return map;
 }
@@ -97,55 +124,36 @@ const MIN_SHARED = 5;
 const CLOSE_DELTA = 1;
 const AGREE_RATIO = 0.8;
 
-// Suggest games to wishlist: one per linked friend whose ratings line up with
-// yours on the games you both own — that friend's top-rated game you don't
-// already own or have wishlisted. De-duplicated across friends, best first.
-export async function getTasteSuggestions(): Promise<TasteSuggestion[]> {
-  const mine = await getGamesForLibrary(); // owned games, with my ratings
-  const myRatingByName = new Map<string, number>();
-  const myOwnedNames = new Set<string>();
-  for (const g of mine) {
-    const key = g.name.trim().toLowerCase();
-    myOwnedNames.add(key);
-    if (g.rating != null) myRatingByName.set(key, g.rating);
-  }
-  const myWishNames = new Set(
-    (await getAllGames(true)).map((w) => w.name.trim().toLowerCase())
-  );
-
-  const friends = await getFriendLibraries();
-  const libs = await Promise.all(
-    friends.map((f) => fetchLibrary(f.code, false).catch(() => null))
-  );
-
-  // One candidate suggestion per "similar" friend.
+// One suggestion per linked friend whose ratings line up with yours on the
+// games you both own — their top-rated game you don't own or have wishlisted.
+function suggestionsFromSources(
+  sources: FriendSource[],
+  myRatingByName: Map<string, number>,
+  myOwnedNames: Set<string>,
+  myWishNames: Set<string>
+): TasteSuggestion[] {
   const suggestions: TasteSuggestion[] = [];
-  friends.forEach((f, i) => {
-    const lib = libs[i];
-    if (!lib) return;
-    const friend = f.name || lib.name || f.code;
-
+  for (const src of sources) {
     let shared = 0;
     let close = 0;
-    for (const g of lib.games) {
+    for (const g of src.games) {
       const myR = myRatingByName.get(g.name.trim().toLowerCase());
       if (myR != null && g.rating != null) {
         shared++;
         if (Math.abs(myR - g.rating) <= CLOSE_DELTA) close++;
       }
     }
-    if (shared < MIN_SHARED || close / shared < AGREE_RATIO) return;
+    if (shared < MIN_SHARED || close / shared < AGREE_RATIO) continue;
 
-    // Their highest-rated game that you neither own nor have wishlisted.
-    const top = lib.games
+    const top = src.games
       .filter((g) => g.rating != null)
       .filter((g) => {
         const key = g.name.trim().toLowerCase();
         return !myOwnedNames.has(key) && !myWishNames.has(key);
       })
       .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))[0];
-    if (top) suggestions.push({ friend, sharedCount: shared, closeCount: close, game: top });
-  });
+    if (top) suggestions.push({ friend: src.owner, sharedCount: shared, closeCount: close, game: top });
+  }
 
   // One per matching friend, but if two friends top-suggest the same game show
   // it once (keep the higher rating). Best games first.
@@ -158,20 +166,50 @@ export async function getTasteSuggestions(): Promise<TasteSuggestion[]> {
   return [...byGame.values()].sort((a, b) => (b.game.rating ?? 0) - (a.game.rating ?? 0));
 }
 
+// Build the index of my owned/wishlisted game names and my ratings.
+async function myGameIndex(): Promise<{
+  ratingByName: Map<string, number>;
+  ownedNames: Set<string>;
+  wishNames: Set<string>;
+}> {
+  const [mine, wish] = await Promise.all([getGamesForLibrary(), getAllGames(true)]);
+  const ratingByName = new Map<string, number>();
+  const ownedNames = new Set<string>();
+  for (const g of mine) {
+    const key = g.name.trim().toLowerCase();
+    ownedNames.add(key);
+    if (g.rating != null) ratingByName.set(key, g.rating);
+  }
+  const wishNames = new Set(wish.map((w) => w.name.trim().toLowerCase()));
+  return { ratingByName, ownedNames, wishNames };
+}
+
+// Everything the wishlist needs from friends' libraries, in a SINGLE fetch:
+// which friends own each game, and the taste-based suggestions.
+export async function getWishlistInsights(): Promise<{
+  owners: Map<string, string[]>;
+  suggestions: TasteSuggestion[];
+}> {
+  const [sources, mine] = await Promise.all([fetchFriendSources(), myGameIndex()]);
+  return {
+    owners: ownersByGame(sources),
+    suggestions: suggestionsFromSources(sources, mine.ratingByName, mine.ownedNames, mine.wishNames),
+  };
+}
+
+// Just the owner flags (used by the game detail screen for a single game).
+export async function getFriendOwnersByGame(): Promise<Map<string, string[]>> {
+  return ownersByGame(await fetchFriendSources());
+}
+
 // Merge every game across linked libraries (+ optionally your own) into one
 // de-duplicated list for the "browse all games" view.
 export async function fetchAllGames(includeOwn: boolean): Promise<AggregatedGame[]> {
-  const sources: { owner: string; games: LibraryGame[] }[] = [];
-
+  const sources: FriendSource[] = [];
   if (includeOwn) {
     sources.push({ owner: 'You', games: await getGamesForLibrary() });
   }
-  const friends = await getFriendLibraries();
-  const fetched = await Promise.all(friends.map((f) => fetchLibrary(f.code, false).catch(() => null)));
-  friends.forEach((f, i) => {
-    const lib = fetched[i];
-    if (lib) sources.push({ owner: f.name || lib.name || f.code, games: lib.games });
-  });
+  sources.push(...(await fetchFriendSources()));
 
   const map = new Map<string, AggregatedGame>();
   for (const src of sources) {

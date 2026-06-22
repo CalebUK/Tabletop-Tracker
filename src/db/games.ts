@@ -34,6 +34,7 @@ interface GameRow {
   tags: string | null; // group_concat result
   categories: string | null; // group_concat result
   play_count: number;
+  last_played: string | null;
   expansion_count: number;
 }
 
@@ -66,6 +67,7 @@ function rowToGame(row: GameRow): Game {
     tags: row.tags ? row.tags.split(TAG_SEP).filter(Boolean) : [],
     categories: row.categories ? row.categories.split(TAG_SEP).filter(Boolean) : [],
     playCount: row.play_count ?? 0,
+    lastPlayedAt: row.last_played ?? null,
     expansionCount: row.expansion_count ?? 0,
   };
 }
@@ -79,6 +81,7 @@ const BASE_SELECT = `
        FROM game_categories gc JOIN categories c ON c.id = gc.category_id
       WHERE gc.game_id = g.id) AS categories,
     (SELECT count(*) FROM plays p WHERE p.game_id = g.id) AS play_count,
+    (SELECT max(p.played_at) FROM plays p WHERE p.game_id = g.id) AS last_played,
     (SELECT count(*) FROM expansions e WHERE e.game_id = g.id) AS expansion_count
   FROM games g
 `;

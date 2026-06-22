@@ -3,15 +3,21 @@ import { getDb } from './database';
 import { getAllGames, getExpansions } from './games';
 
 // Tables in dependency order (parents first) so a restore satisfies foreign keys.
+// (Restore deletes in reverse — children first — before re-inserting.)
 const TABLES = [
   'tags',
+  'categories',
+  'groups',
   'games',
   'expansions',
   'plays',
   'game_tags',
+  'game_categories',
   'play_players',
   'play_expansions',
   'loans',
+  'meta',
+  'friend_libraries',
 ] as const;
 
 const IMAGE_DIR = `${FileSystem.documentDirectory}game-images/`;
@@ -54,7 +60,7 @@ async function buildBackup(): Promise<BackupFile> {
 
   return {
     app: BACKUP_APP_ID,
-    version: 1,
+    version: 2, // v2 adds categories, groups, meta and friend libraries
     exportedAt: new Date().toISOString(),
     tables,
     images,
