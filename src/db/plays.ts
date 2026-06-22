@@ -177,7 +177,7 @@ export interface PlayerStats {
   totalPlays: number;
   wins: number;
   winRate: number; // 0-100
-  perGame: { name: string; plays: number; wins: number; gameId: number | null }[];
+  perGame: { name: string; plays: number; wins: number }[];
 }
 
 // Pass groupId to scope a player's stats to a single gaming group.
@@ -193,10 +193,8 @@ export async function getPlayerStats(name: string, groupId?: number): Promise<Pl
     [name, ...gp]
   );
   // COALESCE so guest games (no game_id, just a game_name) are included too.
-  // gameId is a representative owned-game id for click-through (null if guest).
-  const perGame = await db.getAllAsync<{ name: string; plays: number; wins: number; gameId: number | null }>(
-    `SELECT COALESCE(g.name, p.game_name) AS name, count(*) AS plays, sum(pp.is_winner) AS wins,
-            MAX(p.game_id) AS gameId
+  const perGame = await db.getAllAsync<{ name: string; plays: number; wins: number }>(
+    `SELECT COALESCE(g.name, p.game_name) AS name, count(*) AS plays, sum(pp.is_winner) AS wins
        FROM play_players pp
        JOIN plays p ON p.id = pp.play_id
        LEFT JOIN games g ON g.id = p.game_id
@@ -322,40 +320,60 @@ export interface GamePlayStats {
   topScores: TopScore[];
 }
 
-// Stats for a single game: total plays and a per-player win/play leaderboard.
-// Pass groupId to scope to a single gaming group.
-export async function getGamePlayStats(gameId: number, groupId?: number): Promise<GamePlayStats> {
+// Stats for a single game: total plays, a per-player win/play leaderboard and
+// top scores. Identify the game by id (owned) or by name (a guest game you
+// don't own). Pass groupId to scope to a single gaming group.
+export async function getGamePlayStats(opts: {
+  gameId?: number | null;
+  gameName?: string | null;
+  groupId?: number;
+}): Promise<GamePlayStats> {
   const db = await getDb();
-  const groupFilter = groupId != null ? ' AND p.group_id = ?' : '';
-  const gp = groupId != null ? [groupId] : [];
-  const g = await db.getFirstAsync<{ name: string }>('SELECT name FROM games WHERE id = ?', [
-    gameId,
-  ]);
+  const { gameId, gameName, groupId } = opts;
+
+  // Build the play filter: by id when owned, otherwise by name.
+  const filters: string[] = [];
+  const args: (number | string)[] = [];
+  let displayName = gameName ?? 'Game';
+  if (gameId != null) {
+    filters.push('p.game_id = ?');
+    args.push(gameId);
+    const g = await db.getFirstAsync<{ name: string }>('SELECT name FROM games WHERE id = ?', [gameId]);
+    if (g?.name) displayName = g.name;
+  } else if (gameName != null) {
+    filters.push('p.game_name = ? COLLATE NOCASE');
+    args.push(gameName);
+  }
+  if (groupId != null) {
+    filters.push('p.group_id = ?');
+    args.push(groupId);
+  }
+  const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+
   const total = await db.getFirstAsync<{ c: number }>(
-    `SELECT count(*) AS c FROM plays p WHERE p.game_id = ?${groupFilter}`,
-    [gameId, ...gp]
+    `SELECT count(*) AS c FROM plays p ${where}`,
+    args
   );
   const players = await db.getAllAsync<{ name: string; wins: number; plays: number }>(
     `SELECT pp.player_name AS name, sum(pp.is_winner) AS wins, count(*) AS plays
        FROM play_players pp
        JOIN plays p ON p.id = pp.play_id
-      WHERE p.game_id = ?${groupFilter}
+       ${where}
       GROUP BY pp.player_name COLLATE NOCASE
       ORDER BY wins DESC, plays DESC`,
-    [gameId, ...gp]
+    args
   );
-  // Top 3 individual scores ever recorded for this game (who and when).
   const topScores = await db.getAllAsync<TopScore>(
     `SELECT pp.player_name AS name, pp.score AS score, p.played_at AS playedAt
        FROM play_players pp
        JOIN plays p ON p.id = pp.play_id
-      WHERE p.game_id = ?${groupFilter} AND pp.score IS NOT NULL
+       ${where}${where ? ' AND' : ' WHERE'} pp.score IS NOT NULL
       ORDER BY pp.score DESC, p.played_at DESC
       LIMIT 3`,
-    [gameId, ...gp]
+    args
   );
   return {
-    name: g?.name ?? 'Game',
+    name: displayName,
     totalPlays: total?.c ?? 0,
     players,
     topScores,

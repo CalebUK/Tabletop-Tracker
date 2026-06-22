@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackProps } from '../navigation';
 import { getPlayerStats, PlayerStats } from '../db/plays';
@@ -38,33 +38,14 @@ export default function PlayerStatsScreen({ route, navigation }: RootStackProps<
       {stats.perGame.length === 0 ? (
         <Text style={styles.muted}>No games recorded for this player yet.</Text>
       ) : (
-        stats.perGame.map((g) =>
-          g.gameId != null ? (
-            <Pressable
-              key={g.name}
-              style={styles.row}
-              onPress={() =>
-                navigation.navigate('GameStats', {
-                  gameId: g.gameId as number,
-                  groupId,
-                  groupName,
-                })
-              }
-            >
-              <Text style={styles.gameName}>{g.name} ›</Text>
-              <Text style={styles.gameStat}>
-                {g.wins}/{g.plays} won
-              </Text>
-            </Pressable>
-          ) : (
-            <View key={g.name} style={styles.row}>
-              <Text style={styles.gameName}>{g.name}</Text>
-              <Text style={styles.gameStat}>
-                {g.wins}/{g.plays} won
-              </Text>
-            </View>
-          )
-        )
+        stats.perGame.map((g) => (
+          <View key={g.name} style={styles.row}>
+            <Text style={styles.gameName}>{g.name}</Text>
+            <Text style={styles.gameStat}>
+              {g.wins}/{g.plays} won
+            </Text>
+          </View>
+        ))
       )}
     </ScrollView>
   );

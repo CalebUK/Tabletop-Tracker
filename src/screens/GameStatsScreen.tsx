@@ -12,15 +12,15 @@ function fmtScore(n: number): string {
 }
 
 export default function GameStatsScreen({ route, navigation }: RootStackProps<'GameStats'>) {
-  const { gameId, groupId, groupName } = route.params;
+  const { gameId, gameName, groupId, groupName } = route.params;
   const [stats, setStats] = useState<GamePlayStats | null>(null);
 
   useEffect(() => {
-    getGamePlayStats(gameId, groupId).then((s) => {
+    getGamePlayStats({ gameId, gameName, groupId }).then((s) => {
       setStats(s);
       navigation.setOptions({ title: s.name });
     });
-  }, [gameId, groupId]);
+  }, [gameId, gameName, groupId]);
 
   if (!stats) return <View style={styles.safe} />;
 

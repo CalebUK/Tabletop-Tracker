@@ -71,29 +71,24 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
       {stats.games.length === 0 ? (
         <Text style={styles.muted}>No games logged yet.</Text>
       ) : (
-        stats.games.map((g) =>
-          g.gameId != null ? (
-            <Pressable
-              key={g.name}
-              style={styles.row}
-              onPress={() =>
-                navigation.navigate('GameStats', {
-                  gameId: g.gameId as number,
-                  groupId,
-                  groupName: stats.name,
-                })
-              }
-            >
-              <Text style={styles.name}>{g.name} ›</Text>
-              <Text style={styles.record}>{g.plays} play{g.plays === 1 ? '' : 's'}</Text>
-            </Pressable>
-          ) : (
-            <View key={g.name} style={styles.row}>
-              <Text style={styles.name}>{g.name}</Text>
-              <Text style={styles.record}>{g.plays} play{g.plays === 1 ? '' : 's'}</Text>
-            </View>
-          )
-        )
+        stats.games.map((g) => (
+          <Pressable
+            key={g.name}
+            style={styles.row}
+            onPress={() =>
+              navigation.navigate('GameStats', {
+                // Owned games go by id; guest games by name. Both stay group-scoped.
+                gameId: g.gameId ?? undefined,
+                gameName: g.gameId == null ? g.name : undefined,
+                groupId,
+                groupName: stats.name,
+              })
+            }
+          >
+            <Text style={styles.name}>{g.name} ›</Text>
+            <Text style={styles.record}>{g.plays} play{g.plays === 1 ? '' : 's'}</Text>
+          </Pressable>
+        ))
       )}
 
       <Pressable style={styles.deleteBtn} onPress={onDelete}>

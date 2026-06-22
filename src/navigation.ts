@@ -12,7 +12,8 @@ export type RootStackParamList = {
   Loan: { gameId: number };
   // groupId/groupName scope the stats to a single gaming group (omit for global).
   PlayerStats: { name: string; groupId?: number; groupName?: string };
-  GameStats: { gameId: number; groupId?: number; groupName?: string };
+  // Identify the game by id (owned) or by name (a guest game). groupId scopes it.
+  GameStats: { gameId?: number; gameName?: string; groupId?: number; groupName?: string };
   GroupStats: { groupId: number };
   Leaderboard: { kind: 'players' | 'games' }; // full ranked list (see all)
   Backup: undefined;
