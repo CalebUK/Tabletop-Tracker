@@ -138,45 +138,6 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
     );
   }
 
-  // The trailing gap on the last shelf gets a stack of flat books, a framed
-  // photo, or a leaning game box — varied from the shelf's own contents.
-  function renderDecoration(seedStr: string) {
-    const seed = hash(seedStr);
-    const kind = seed % 3;
-    if (kind === 1) return renderFrame();
-    if (kind === 2) return renderGameBox(seed);
-    return renderStack();
-  }
-
-  function renderStack() {
-    return (
-      <View style={styles.stack} pointerEvents="none">
-        <View style={[styles.stackBook, { width: 46, bottom: 0, left: 0, backgroundColor: '#8a6a4a' }]} />
-        <View style={[styles.stackBook, { width: 42, bottom: 7, left: 3, backgroundColor: '#4e7a6a' }]} />
-        <View style={[styles.stackBook, { width: 44, bottom: 14, left: 1, backgroundColor: '#9c5b52' }]} />
-      </View>
-    );
-  }
-
-  function renderFrame() {
-    return (
-      <View style={styles.frame} pointerEvents="none">
-        <View style={styles.frameMat}>
-          <View style={styles.framePhoto} />
-        </View>
-      </View>
-    );
-  }
-
-  function renderGameBox(seed: number) {
-    return (
-      <View style={[styles.gameBox, { backgroundColor: SPINE_COLORS[seed % SPINE_COLORS.length] }]} pointerEvents="none">
-        <View style={styles.gameBoxLid} />
-        <View style={styles.gameBoxLabel} />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <View style={styles.toolbar}>
@@ -222,7 +183,6 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
                       renderSpine(g, idx === arr.length - 1 && arr.length > 2 ? 4 + (hash(g.name) % 5) : 0)
                     )}
                   </View>
-                  {si === shelves.length - 1 && shelf.length < perShelf && renderDecoration(shelf[0]?.name ?? 'deco')}
                 </View>
                 <View style={styles.plankTop}>
                   <View style={styles.grainHi} />
@@ -420,7 +380,13 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowRadius: 2,
   },
-  spineTextDark: { color: '#3a2c1a', textShadowColor: 'transparent' },
+  spineTextDark: {
+    transform: [{ rotate: '-90deg' }],
+    color: '#3a2c1a',
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
   spineTextGold: {
     transform: [{ rotate: '-90deg' }],
     color: '#e6c878',
@@ -429,58 +395,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textShadowColor: 'rgba(0,0,0,0.55)',
     textShadowRadius: 2,
-  },
-  // Decorations that fill a shelf's trailing gap.
-  stack: { position: 'absolute', right: 6, bottom: 0, width: 50, height: 24 },
-  stackBook: {
-    position: 'absolute',
-    height: 6,
-    borderRadius: 1,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.35)',
-  },
-  frame: {
-    position: 'absolute',
-    right: 8,
-    bottom: 0,
-    width: 32,
-    height: 44,
-    backgroundColor: '#6e5238',
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.45)',
-    padding: 3,
-    transform: [{ rotate: '-3deg' }],
-    transformOrigin: 'left bottom',
-    elevation: 3,
-  },
-  frameMat: { flex: 1, backgroundColor: '#e9e2d2', padding: 2, borderRadius: 1 },
-  framePhoto: { flex: 1, backgroundColor: '#8fb0c4', borderRadius: 1 },
-  gameBox: {
-    position: 'absolute',
-    right: 6,
-    bottom: 0,
-    width: 42,
-    height: 38,
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.45)',
-    overflow: 'hidden',
-    transform: [{ rotate: '-6deg' }],
-    transformOrigin: 'left bottom',
-    elevation: 3,
-  },
-  gameBoxLid: { position: 'absolute', top: 0, left: 0, right: 0, height: 11, backgroundColor: 'rgba(0,0,0,0.22)' },
-  gameBoxLabel: {
-    position: 'absolute',
-    top: 14,
-    left: 9,
-    right: 9,
-    bottom: 8,
-    backgroundColor: '#f0e9d8',
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.2)',
   },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   sheet: {
