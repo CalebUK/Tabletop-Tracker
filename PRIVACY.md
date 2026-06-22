@@ -1,6 +1,6 @@
 # Privacy Policy — Tabletop Tracker
 
-**Last updated:** 18 June 2026
+**Last updated:** 22 June 2026
 
 Tabletop Tracker ("the app") is designed to be private by default. Your
 collection lives on your device, and we do not run servers that collect or
@@ -9,9 +9,9 @@ store your data.
 ## What data the app stores
 
 Everything you enter — your games, photos, ratings, notes, house rules, plays,
-players, loans, tags and expansions — is stored **only on your device**, in the
-app's local database and file storage. We have no account system and no copy of
-your data.
+players, scores, loans, wishlist, tags and expansions — is stored **only on your
+device**, in the app's local database and file storage. We have no account
+system and no copy of your data.
 
 ## When data leaves your device
 

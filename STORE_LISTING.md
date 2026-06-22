@@ -40,15 +40,21 @@ CATALOGUE YOUR GAMES
 • Tag and categorise games, add notes and house rules, mark favourites, and
   record the expansions you own.
 
+KEEP A WISHLIST
+• Track games you'd love to own, with a quick toggle from your collection.
+• See which of your friends already own a wishlist game (so you can borrow it).
+• Get suggestions from friends whose ratings match yours.
+
 TRACK PLAYS & GAME NIGHTS
-• Log who played and who won — even games you don't own.
-• See play history for every game, per-game winners and top players.
+• Log who played, who won and each player's score — even games you don't own.
+• See play history for every game, per-game winners, top players and the
+  top-three scores ever recorded.
 • Create gaming groups (like a weekly game night) and see stats just for them.
 
 FIND THE RIGHT GAME
 • Powerful search by players, play time, player age, complexity, rating,
   category and tags.
-• Filter by storage location to see what's on each shelf.
+• Filter by storage location, or hide games that are out on loan.
 • Feeling lucky? Let the app pick a random game that fits your criteria.
 
 SHARE WITH FRIENDS
@@ -91,11 +97,11 @@ Tabletop Tracker doesn't show ads and doesn't track you. Happy gaming!
 Take these 5–8 — portrait, just normal in-app screenshots:
 1. **My Collection** list (with a few games + the logo header)
 2. A **game's detail** page (photo, rating, location, plays)
-3. **Search** tab with some filters selected
-4. **Library** tab — the share code + "Browse all games"
-5. **Browse all games** — the bookcase of spines
+3. **Wishlist** view (or the photo **grid** view of the collection)
+4. **Search** tab with some filters selected
+5. **Browse all games** — the realistic bookcase of spines
 6. **Stats** tab (top players / most played / a gaming group)
-7. **Log a play** screen
+7. **Log a play** screen (with player scores)
 8. The **🎲 Feeling lucky** dice-roll (optional, fun)
 
 > Tip: add 3–4 example games first so the screenshots look full.

@@ -14,23 +14,31 @@ GitHub: https://github.com/CalebUK/Tabletop-Tracker
   player count, play time, minimum age, complexity, edition, year,
   publisher/designer, personal 10-star rating (half-stars), favourite flag,
   custom tags and categories (remembered for reuse), notes and house rules.
-  Swipe a card → to edit, ← to loan, or hold to log a play. Sort and filter by
-  location/favourites.
+  Cards show player count and play time. Toggle between a **list** and a **photo
+  grid**, sort (name / rating / times-played / last-played / date-added, each
+  reversible), and filter by location/favourites. Swipe a card → to edit, ← to
+  loan, or hold to log a play.
+- **Wishlist** — a toggle at the top of the Collection switches to games you'd
+  love to own. If a linked friend's library has one, it flags **who can lend it**,
+  and it suggests games from friends whose ratings line up with yours. One tap
+  moves a game into your collection.
 - **BoardGameGeek lookup** — one tap fills in players, play time, minimum age,
   publisher, cover image, the BGG rating and BGG complexity. Results are ranked
   so the game you mean surfaces first. (Requires a BGG app token — see below.)
-- **Plays & gaming groups** — log who played and who won, including games you
-  don't own. Create groups (e.g. a weekly game night) with their own stats
-  (winners, most-played). Per-game and per-player stats too.
+- **Plays & gaming groups** — log who played, who won and each player's **score**.
+  Create groups (e.g. a weekly game night) with their own stats. Per-game stats
+  show a **top-3 score leaderboard** (who and when); per-player and per-group
+  stats too, with "see all" leaderboards and tap-through that stays group-scoped.
+  You can log games you don't own (guests).
 - **Search** — by player count (counts expansions), play time, **player age**
   (shows games that age can play), complexity, personal rating, category and
-  tags. "Feeling lucky" picks a random matching game.
+  tags. **At home** hides games out on loan; "Feeling lucky" picks a random match.
 - **Loans** — record who borrowed a game and when, with an optional proof photo
   (deleted on return) and a full loan history.
 - **Online library (opt-in)** — publish your collection to get a share code;
   friends enter the code to view it. "Browse all games" merges everyone's
-  collections into a bookcase you can search and sort. No photos or personal
-  info are shared. See `FIREBASE_SETUP.md`.
+  collections into a **realistic bookcase** you can search and sort. No photos or
+  personal info are shared. See `FIREBASE_SETUP.md`.
 - **Backup & export** — full JSON backup (incl. photos) to move devices, plus a
   CSV export. A first-run **walkthrough** introduces the app.
 
@@ -90,7 +98,7 @@ src/
   screens/
     CollectionScreen, SearchScreen, StatsScreen, LibraryScreen,
     GameDetailScreen, EditGameScreen, LogPlayScreen, LoanScreen,
-    PlayerStatsScreen, GameStatsScreen, GroupStatsScreen,
+    PlayerStatsScreen, GameStatsScreen, GroupStatsScreen, LeaderboardScreen,
     FriendLibraryScreen, BrowseAllScreen, BackupScreen, AboutScreen
 ```
 
@@ -104,6 +112,6 @@ src/
 ## Roadmap (not yet built)
 
 - Web viewing of libraries.
-- Wishlist, "last played" / haven't-played-in-a-while.
+- "Haven't-played-in-a-while" surfacing.
 - BGG collection import.
-- Firebase App Check before a wide public launch.
+- Firebase App Check + API-key restriction before a wide public launch.

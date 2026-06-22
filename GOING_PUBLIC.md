@@ -32,8 +32,8 @@ Google requires personal developer accounts (created after ~Nov 2023) to run a
 - ✅ App name, short + full description (`STORE_LISTING.md`)
 - ✅ App icon 512×512 (`assets/play-icon-512.png`)
 - ✅ Feature graphic 1024×500 (`assets/feature-graphic.png`)
-- ⬜ **Phone screenshots** — refresh to include the newer features (Library /
-  bookcase, groups, onboarding)
+- ⬜ **Phone screenshots** — refresh to include the newer features (wishlist,
+  photo grid, the realistic bookcase, player scores, leaderboards)
 - ✅ Category, contact email, tags
 
 ## 3. App content declarations (must be accurate)
@@ -95,4 +95,4 @@ Google requires personal developer accounts (created after ~Nov 2023) to run a
 
 ---
 
-_Last reviewed: 2026-06-22._
+_Last reviewed: 2026-06-22 (v1.2.0)._
