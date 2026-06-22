@@ -83,26 +83,42 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
 
   const total = games.length;
 
-  // One book spine, shaded to look rounded with a couple of title bands.
-  function renderSpine(g: AggregatedGame) {
+  // One book spine: shaded to look rounded, with a cream page-block on top and
+  // one of a few cover treatments (plain bands / a parchment label / cloth
+  // accents) so a shelf looks like a real mix of books. `lean` tilts a book.
+  function renderSpine(g: AggregatedGame, lean: number) {
     const seed = hash(g.name);
     const h = 116 + (seed % 60);
     const w = SPINE_MIN_W + (Math.floor(seed / 7) % (SPINE_MAX_W - SPINE_MIN_W));
     const color = SPINE_COLORS[seed % SPINE_COLORS.length];
+    const style = seed % 3; // 0 = bands, 1 = parchment label, 2 = cloth accents
+    const onLabel = style === 1;
     return (
       <Pressable
         key={g.name}
-        style={[styles.spine, { height: h, width: w, backgroundColor: color }]}
+        style={[
+          styles.spine,
+          { height: h, width: w, backgroundColor: color },
+          lean ? { transform: [{ rotate: `${lean}deg` }], transformOrigin: 'right bottom' } : null,
+        ]}
         onPress={() => setSelected(g)}
       >
-        <View style={styles.spineHead} />
         <View style={styles.spineHighlight} />
         <View style={styles.spineShadow} />
-        <View style={[styles.spineBand, styles.spineBandTop]} />
-        <Text style={[styles.spineText, { width: h - 42 }]} numberOfLines={1}>
+        {style === 2 && <View style={[styles.coverAccent, styles.coverAccentTop]} />}
+        {style === 2 && <View style={[styles.coverAccent, styles.coverAccentBottom]} />}
+        {style === 0 && <View style={[styles.spineBand, styles.spineBandTop]} />}
+        {style === 0 && <View style={[styles.spineBand, styles.spineBandBottom]} />}
+        {onLabel && <View style={styles.label} />}
+        <View style={styles.pageTop} />
+        <View style={styles.pageTopLine} />
+        <View style={styles.spineFoot} />
+        <Text
+          style={[styles.spineText, onLabel && styles.spineTextDark, { width: h - (onLabel ? 52 : 42) }]}
+          numberOfLines={1}
+        >
           {g.name}
         </Text>
-        <View style={[styles.spineBand, styles.spineBandBottom]} />
       </Pressable>
     );
   }
@@ -140,7 +156,12 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
                 <View style={styles.shelfInner}>
                   <View style={styles.shelfBack} />
                   <View style={styles.shelfBackShade} />
-                  <View style={styles.shelfSpines}>{shelf.map(renderSpine)}</View>
+                  <View style={styles.shelfSpines}>
+                    {shelf.map((g, idx, arr) =>
+                      // The last book on a not-quite-full shelf leans into the gap.
+                      renderSpine(g, idx === arr.length - 1 && arr.length > 2 ? 4 + (hash(g.name) % 5) : 0)
+                    )}
+                  </View>
                 </View>
                 <View style={styles.plankTop} />
                 <View style={styles.plankFront} />
@@ -291,10 +312,30 @@ const styles = StyleSheet.create({
   },
   spineHighlight: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: 'rgba(255,255,255,0.22)' },
   spineShadow: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 5, backgroundColor: 'rgba(0,0,0,0.32)' },
-  spineHead: { position: 'absolute', top: 0, left: 0, right: 0, height: 6, backgroundColor: 'rgba(255,255,255,0.13)' },
+  // Cream page block on the top edge of the book.
+  pageTop: { position: 'absolute', top: 0, left: 2, right: 2, height: 4, backgroundColor: '#e8dcc0' },
+  pageTopLine: { position: 'absolute', top: 4, left: 2, right: 2, height: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
+  // Contact shadow where the book meets the shelf.
+  spineFoot: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, backgroundColor: 'rgba(0,0,0,0.3)' },
   spineBand: { position: 'absolute', left: 0, right: 0, height: 3, backgroundColor: 'rgba(0,0,0,0.22)' },
   spineBandTop: { top: 15 },
   spineBandBottom: { bottom: 15 },
+  // Cloth-cover accents (style 2).
+  coverAccent: { position: 'absolute', left: 0, right: 0, height: 9, backgroundColor: 'rgba(0,0,0,0.26)' },
+  coverAccentTop: { top: 7 },
+  coverAccentBottom: { bottom: 0 },
+  // Parchment title label (style 1).
+  label: {
+    position: 'absolute',
+    top: 22,
+    bottom: 22,
+    left: 3,
+    right: 5,
+    backgroundColor: '#efe4cb',
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.25)',
+  },
   spineText: {
     transform: [{ rotate: '-90deg' }],
     color: '#f4ead8',
@@ -304,6 +345,7 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowRadius: 2,
   },
+  spineTextDark: { color: '#3a2c1a', textShadowColor: 'transparent' },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   sheet: {
     width: '100%',
