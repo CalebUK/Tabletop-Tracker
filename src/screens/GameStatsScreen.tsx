@@ -5,15 +5,15 @@ import { getGamePlayStats, GamePlayStats } from '../db/plays';
 import { colors, radius, spacing } from '../theme';
 
 export default function GameStatsScreen({ route, navigation }: RootStackProps<'GameStats'>) {
-  const { gameId } = route.params;
+  const { gameId, groupId, groupName } = route.params;
   const [stats, setStats] = useState<GamePlayStats | null>(null);
 
   useEffect(() => {
-    getGamePlayStats(gameId).then((s) => {
+    getGamePlayStats(gameId, groupId).then((s) => {
       setStats(s);
       navigation.setOptions({ title: s.name });
     });
-  }, [gameId]);
+  }, [gameId, groupId]);
 
   if (!stats) return <View style={styles.safe} />;
 
@@ -22,6 +22,7 @@ export default function GameStatsScreen({ route, navigation }: RootStackProps<'G
       <Text style={styles.heading}>{stats.name}</Text>
       <Text style={styles.sub}>
         {stats.totalPlays} play{stats.totalPlays === 1 ? '' : 's'} logged
+        {groupId != null ? ` · 👥 ${groupName ?? 'this group'} only` : ''}
       </Text>
 
       <Text style={styles.sectionTitle}>🏆 Winners & records</Text>

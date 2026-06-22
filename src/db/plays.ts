@@ -179,21 +179,27 @@ export interface PlayerStats {
   perGame: { name: string; plays: number; wins: number }[];
 }
 
-export async function getPlayerStats(name: string): Promise<PlayerStats> {
+// Pass groupId to scope a player's stats to a single gaming group.
+export async function getPlayerStats(name: string, groupId?: number): Promise<PlayerStats> {
   const db = await getDb();
+  const groupFilter = groupId != null ? ' AND p.group_id = ?' : '';
+  const gp = groupId != null ? [groupId] : [];
   const totals = await db.getFirstAsync<{ plays: number; wins: number }>(
-    'SELECT count(*) AS plays, sum(is_winner) AS wins FROM play_players WHERE player_name = ? COLLATE NOCASE',
-    [name]
+    `SELECT count(*) AS plays, sum(pp.is_winner) AS wins
+       FROM play_players pp
+       JOIN plays p ON p.id = pp.play_id
+      WHERE pp.player_name = ? COLLATE NOCASE${groupFilter}`,
+    [name, ...gp]
   );
   const perGame = await db.getAllAsync<{ name: string; plays: number; wins: number }>(
     `SELECT g.name AS name, count(*) AS plays, sum(pp.is_winner) AS wins
        FROM play_players pp
        JOIN plays p ON p.id = pp.play_id
        JOIN games g ON g.id = p.game_id
-      WHERE pp.player_name = ? COLLATE NOCASE
+      WHERE pp.player_name = ? COLLATE NOCASE${groupFilter}
       GROUP BY g.id
       ORDER BY plays DESC, g.name COLLATE NOCASE ASC`,
-    [name]
+    [name, ...gp]
   );
   const plays = totals?.plays ?? 0;
   const wins = totals?.wins ?? 0;
@@ -305,23 +311,26 @@ export interface GamePlayStats {
 }
 
 // Stats for a single game: total plays and a per-player win/play leaderboard.
-export async function getGamePlayStats(gameId: number): Promise<GamePlayStats> {
+// Pass groupId to scope to a single gaming group.
+export async function getGamePlayStats(gameId: number, groupId?: number): Promise<GamePlayStats> {
   const db = await getDb();
+  const groupFilter = groupId != null ? ' AND p.group_id = ?' : '';
+  const gp = groupId != null ? [groupId] : [];
   const g = await db.getFirstAsync<{ name: string }>('SELECT name FROM games WHERE id = ?', [
     gameId,
   ]);
   const total = await db.getFirstAsync<{ c: number }>(
-    'SELECT count(*) AS c FROM plays WHERE game_id = ?',
-    [gameId]
+    `SELECT count(*) AS c FROM plays p WHERE p.game_id = ?${groupFilter}`,
+    [gameId, ...gp]
   );
   const players = await db.getAllAsync<{ name: string; wins: number; plays: number }>(
     `SELECT pp.player_name AS name, sum(pp.is_winner) AS wins, count(*) AS plays
        FROM play_players pp
        JOIN plays p ON p.id = pp.play_id
-      WHERE p.game_id = ?
+      WHERE p.game_id = ?${groupFilter}
       GROUP BY pp.player_name COLLATE NOCASE
       ORDER BY wins DESC, plays DESC`,
-    [gameId]
+    [gameId, ...gp]
   );
   return {
     name: g?.name ?? 'Game',

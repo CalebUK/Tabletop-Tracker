@@ -6,13 +6,13 @@ import { getPlayerStats, PlayerStats } from '../db/plays';
 import { colors, radius, spacing } from '../theme';
 
 export default function PlayerStatsScreen({ route, navigation }: RootStackProps<'PlayerStats'>) {
-  const { name } = route.params;
+  const { name, groupId, groupName } = route.params;
   const [stats, setStats] = useState<PlayerStats | null>(null);
 
   useEffect(() => {
     navigation.setOptions({ title: name });
-    getPlayerStats(name).then(setStats).catch((e) => console.warn('player stats', e));
-  }, [name]);
+    getPlayerStats(name, groupId).then(setStats).catch((e) => console.warn('player stats', e));
+  }, [name, groupId]);
 
   if (!stats) return <SafeAreaView style={styles.safe} />;
 
@@ -21,6 +21,11 @@ export default function PlayerStatsScreen({ route, navigation }: RootStackProps<
   return (
     <ScrollView style={styles.safe} contentContainerStyle={styles.content}>
       <Text style={styles.heading}>{stats.name}</Text>
+      {groupId != null && (
+        <Text style={styles.scope}>
+          👥 Within {groupName ?? 'this group'} only
+        </Text>
+      )}
 
       <View style={styles.grid}>
         <Stat label="Plays" value={stats.totalPlays} />
@@ -58,8 +63,9 @@ function Stat({ label, value, accent }: { label: string; value: number | string;
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, paddingBottom: spacing.xl * 2 },
-  heading: { color: colors.text, fontSize: 26, fontWeight: '700', marginBottom: spacing.lg },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  heading: { color: colors.text, fontSize: 26, fontWeight: '700' },
+  scope: { color: colors.primary, fontSize: 14, fontWeight: '600', marginTop: 2 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.lg },
   statCard: {
     flexGrow: 1,
     flexBasis: '45%',

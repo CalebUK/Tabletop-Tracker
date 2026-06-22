@@ -55,7 +55,9 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
             <Pressable
               key={p.name}
               style={styles.row}
-              onPress={() => navigation.navigate('PlayerStats', { name: p.name })}
+              onPress={() =>
+                navigation.navigate('PlayerStats', { name: p.name, groupId, groupName: stats.name })
+              }
             >
               <Text style={styles.rank}>{i + 1}</Text>
               <Text style={styles.name}>{p.name} ›</Text>
@@ -74,7 +76,13 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
             <Pressable
               key={g.name}
               style={styles.row}
-              onPress={() => navigation.navigate('GameStats', { gameId: g.gameId as number })}
+              onPress={() =>
+                navigation.navigate('GameStats', {
+                  gameId: g.gameId as number,
+                  groupId,
+                  groupName: stats.name,
+                })
+              }
             >
               <Text style={styles.name}>{g.name} ›</Text>
               <Text style={styles.record}>{g.plays} play{g.plays === 1 ? '' : 's'}</Text>

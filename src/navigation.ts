@@ -10,8 +10,9 @@ export type RootStackParamList = {
   // let the user enter any game. playId edits an existing play.
   LogPlay: { gameId?: number; groupId?: number; playId?: number };
   Loan: { gameId: number };
-  PlayerStats: { name: string };
-  GameStats: { gameId: number };
+  // groupId/groupName scope the stats to a single gaming group (omit for global).
+  PlayerStats: { name: string; groupId?: number; groupName?: string };
+  GameStats: { gameId: number; groupId?: number; groupName?: string };
   GroupStats: { groupId: number };
   Leaderboard: { kind: 'players' | 'games' }; // full ranked list (see all)
   Backup: undefined;
