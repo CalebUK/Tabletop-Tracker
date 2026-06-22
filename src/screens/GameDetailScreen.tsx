@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootStackProps } from '../navigation';
-import { getGame, toggleFavorite, getLoanHistory, getExpansions } from '../db/games';
+import { getGame, toggleFavorite, getLoanHistory, getExpansions, setWishlist } from '../db/games';
 import { getPlaysForGame, deletePlay } from '../db/plays';
 import { Expansion, Game, LoanRecord, Play } from '../types';
 import { colors, radius, spacing } from '../theme';
@@ -71,6 +71,24 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
     load();
   }
 
+  function onMoveToCollection() {
+    if (!game) return;
+    Alert.alert(
+      'Move to collection?',
+      `Add "${game.name}" to your collection? It'll come off your wishlist.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Move',
+          onPress: async () => {
+            await setWishlist(game.id, false);
+            load();
+          },
+        },
+      ]
+    );
+  }
+
   function onDeletePlay(playId: number) {
     Alert.alert('Delete this play?', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
@@ -120,6 +138,12 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
         )}
       </View>
 
+      {game.isWishlist && (
+        <Pressable style={styles.wishBtn} onPress={onMoveToCollection}>
+          <Text style={styles.wishBtnText}>✅ Move to my collection</Text>
+        </Pressable>
+      )}
+
       {game.loanedTo ? (
         <Pressable style={styles.loanBanner} onPress={() => navigation.navigate('Loan', { gameId })}>
           <Text style={styles.loanText}>
@@ -136,7 +160,7 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
       {game.year ? <Row label="📅 Year" value={String(game.year)} /> : null}
       {game.edition ? <Row label="📖 Edition" value={game.edition} /> : null}
 
-      {!game.loanedTo && (
+      {!game.isWishlist && !game.loanedTo && (
         <Pressable style={styles.loanBtn} onPress={() => navigation.navigate('Loan', { gameId })}>
           <Text style={styles.loanBtnText}>🤝 Loan out this game</Text>
         </Pressable>
@@ -205,6 +229,7 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
         </View>
       ) : null}
 
+      {!game.isWishlist && (
       <View style={styles.section}>
         <View style={styles.playsHeader}>
           <Text style={styles.sectionTitle}>Plays ({plays.length})</Text>
@@ -242,6 +267,7 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
           <Text style={styles.hint}>Tap a play to edit · long-press to delete.</Text>
         )}
       </View>
+      )}
 
       {loans.length > 0 && (
         <View style={styles.section}>
@@ -304,6 +330,14 @@ const styles = StyleSheet.create({
     borderColor: colors.favorite,
   },
   loanBtnText: { color: colors.favorite, fontSize: 15, fontWeight: '700' },
+  wishBtn: {
+    marginTop: spacing.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: radius.md,
+    backgroundColor: colors.success,
+  },
+  wishBtnText: { color: colors.primaryText, fontSize: 15, fontWeight: '700' },
   infoRow: { marginTop: spacing.md, fontSize: 14, lineHeight: 20 },
   infoLabel: { color: colors.textMuted, fontSize: 14 },
   infoValue: { color: colors.text, fontSize: 14, fontWeight: '600' },

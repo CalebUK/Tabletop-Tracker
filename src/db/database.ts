@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS games (
   notes TEXT,
   house_rules TEXT,
   is_favorite INTEGER NOT NULL DEFAULT 0,
+  is_wishlist INTEGER NOT NULL DEFAULT 0,
   bgg_id INTEGER,
   bgg_rating REAL,
   bgg_weight REAL,
@@ -160,6 +161,10 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   }
   if (!names.has('bgg_weight')) {
     await db.execAsync('ALTER TABLE games ADD COLUMN bgg_weight REAL');
+  }
+  // Wishlist: games the user wants but doesn't own yet (is_wishlist = 1).
+  if (!names.has('is_wishlist')) {
+    await db.execAsync('ALTER TABLE games ADD COLUMN is_wishlist INTEGER NOT NULL DEFAULT 0');
   }
 
   // loans.photo_uri (added later than the loans table itself).

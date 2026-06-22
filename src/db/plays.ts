@@ -221,12 +221,12 @@ export async function getStats(): Promise<CollectionStats> {
   const totals = await db.getFirstAsync<{
     total_games: number;
     favorites: number;
-  }>('SELECT count(*) AS total_games, sum(is_favorite) AS favorites FROM games');
+  }>('SELECT count(*) AS total_games, sum(is_favorite) AS favorites FROM games WHERE is_wishlist = 0');
   const totalPlays = await db.getFirstAsync<{ c: number }>(
     'SELECT count(*) AS c FROM plays'
   );
   const unplayed = await db.getFirstAsync<{ c: number }>(
-    'SELECT count(*) AS c FROM games g WHERE (SELECT count(*) FROM plays p WHERE p.game_id = g.id) = 0'
+    'SELECT count(*) AS c FROM games g WHERE g.is_wishlist = 0 AND (SELECT count(*) FROM plays p WHERE p.game_id = g.id) = 0'
   );
   const topPlayers = await db.getAllAsync<{ name: string; wins: number; plays: number }>(
     `SELECT player_name AS name,

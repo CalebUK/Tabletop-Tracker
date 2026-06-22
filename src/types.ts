@@ -13,6 +13,7 @@ export interface Game {
   notes: string | null;
   houseRules: string | null;
   isFavorite: boolean;
+  isWishlist: boolean; // true = a game the user wants but doesn't own yet
   bggId: number | null;
   bggRating: number | null;
   bggWeight: number | null; // BGG complexity / "weight", 0-5
@@ -56,6 +57,7 @@ export interface GameInput {
   notes: string | null;
   houseRules: string | null;
   isFavorite: boolean;
+  isWishlist: boolean;
   bggId: number | null;
   bggRating: number | null;
   bggWeight: number | null;

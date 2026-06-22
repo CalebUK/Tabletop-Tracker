@@ -47,6 +47,7 @@ const EMPTY: GameInput = {
   notes: null,
   houseRules: null,
   isFavorite: false,
+  isWishlist: false,
   bggId: null,
   bggRating: null,
   bggWeight: null,
@@ -79,7 +80,11 @@ function weightOrNull(s: string): number | null {
 export default function EditGameScreen({ route, navigation }: RootStackProps<'EditGame'>) {
   const editingId = route.params?.gameId;
   const headerHeight = useHeaderHeight();
-  const [form, setForm] = useState<GameInput>(EMPTY);
+  // New items inherit the list they were added from (collection vs wishlist).
+  const [form, setForm] = useState<GameInput>({
+    ...EMPTY,
+    isWishlist: route.params?.wishlist ?? false,
+  });
   const [tagText, setTagText] = useState('');
   const [allTags, setAllTags] = useState<string[]>([]);
   const [catText, setCatText] = useState('');
@@ -94,7 +99,6 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
   const [photoMenu, setPhotoMenu] = useState(false);
 
   useEffect(() => {
-    navigation.setOptions({ title: editingId ? 'Edit Game' : 'Add Game' });
     getAllTags().then(setAllTags).catch(() => {});
     getAllCategories().then(setAllCategories).catch(() => {});
     getAllLocations().then(setAllLocations).catch(() => {});
@@ -114,6 +118,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
           notes: g.notes,
           houseRules: g.houseRules,
           isFavorite: g.isFavorite,
+          isWishlist: g.isWishlist,
           bggId: g.bggId,
           bggRating: g.bggRating,
           bggWeight: g.bggWeight,
@@ -129,6 +134,12 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
       });
     }
   }, [editingId]);
+
+  // Title reflects which list this game belongs to.
+  useEffect(() => {
+    const noun = form.isWishlist ? 'Wishlist Item' : 'Game';
+    navigation.setOptions({ title: editingId ? `Edit ${noun}` : `Add ${noun}` });
+  }, [editingId, form.isWishlist]);
 
   // Save button in the header so you don't have to scroll to the bottom.
   // Re-set on every form change so the handler closes over the latest values.
@@ -274,12 +285,12 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
       Alert.alert('Name required', 'Please enter a name for the game.');
       return;
     }
-    // Warn if another game already has this name (likely a duplicate).
-    const dupes = await countGamesByName(name, editingId);
+    // Warn if another game in the same list already has this name (likely a dup).
+    const dupes = await countGamesByName(name, editingId, form.isWishlist);
     if (dupes > 0) {
       Alert.alert(
         'Possible duplicate',
-        `You already have "${name}" in your collection. Add it anyway?`,
+        `You already have "${name}" on your ${form.isWishlist ? 'wishlist' : 'collection'}. Add it anyway?`,
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Add anyway', onPress: () => doSave() },

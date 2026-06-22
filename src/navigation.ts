@@ -4,7 +4,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 export type RootStackParamList = {
   Tabs: undefined;
   GameDetail: { gameId: number };
-  EditGame: { gameId?: number }; // omit gameId to add a new game
+  // omit gameId to add a new game; wishlist:true creates it on the wishlist
+  EditGame: { gameId?: number; wishlist?: boolean };
   // Log/edit a play. From a game: pass gameId. From a group: pass groupId and
   // let the user enter any game. playId edits an existing play.
   LogPlay: { gameId?: number; groupId?: number; playId?: number };

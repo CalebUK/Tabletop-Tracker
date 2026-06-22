@@ -19,6 +19,7 @@ interface GameRow {
   notes: string | null;
   house_rules: string | null;
   is_favorite: number;
+  is_wishlist: number;
   bgg_id: number | null;
   bgg_rating: number | null;
   bgg_weight: number | null;
@@ -50,6 +51,7 @@ function rowToGame(row: GameRow): Game {
     notes: row.notes,
     houseRules: row.house_rules,
     isFavorite: row.is_favorite === 1,
+    isWishlist: row.is_wishlist === 1,
     bggId: row.bgg_id,
     bggRating: row.bgg_rating,
     bggWeight: row.bgg_weight,
@@ -81,9 +83,14 @@ const BASE_SELECT = `
   FROM games g
 `;
 
-export async function getAllGames(): Promise<Game[]> {
+// Games in the collection (default) or the wishlist. The two lists share the
+// games table, separated by the is_wishlist flag.
+export async function getAllGames(wishlist = false): Promise<Game[]> {
   const db = await getDb();
-  const rows = await db.getAllAsync<GameRow>(`${BASE_SELECT} ORDER BY g.name COLLATE NOCASE ASC`);
+  const rows = await db.getAllAsync<GameRow>(
+    `${BASE_SELECT} WHERE g.is_wishlist = ? ORDER BY g.name COLLATE NOCASE ASC`,
+    [wishlist ? 1 : 0]
+  );
   return rows.map(rowToGame);
 }
 
@@ -95,7 +102,8 @@ export async function getGame(id: number): Promise<Game | null> {
 
 export async function searchGames(filters: SearchFilters): Promise<Game[]> {
   const db = await getDb();
-  const where: string[] = [];
+  // Search only covers owned games, never wishlist items.
+  const where: string[] = ['g.is_wishlist = 0'];
   const params: SQLite.SQLiteBindValue[] = [];
 
   if (filters.text.trim()) {
@@ -189,14 +197,14 @@ export async function saveGame(input: GameInput): Promise<number> {
         `UPDATE games SET
            name = ?, image_uri = ?, location = ?, year = ?,
            min_players = ?, max_players = ?, play_time_min = ?, rating = ?,
-           notes = ?, house_rules = ?, is_favorite = ?, bgg_id = ?,
+           notes = ?, house_rules = ?, is_favorite = ?, is_wishlist = ?, bgg_id = ?,
            bgg_rating = ?, bgg_weight = ?, developer = ?, min_age = ?, complexity = ?, edition = ?,
            updated_at = datetime('now')
          WHERE id = ?`,
         [
           input.name, input.imageUri, input.location, input.year,
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
-          input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.bggId,
+          input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.isWishlist ? 1 : 0, input.bggId,
           input.bggRating, input.bggWeight, input.developer, input.minAge, input.complexity,
           input.edition, input.id,
         ]
@@ -206,13 +214,13 @@ export async function saveGame(input: GameInput): Promise<number> {
       const res = await db.runAsync(
         `INSERT INTO games
            (name, image_uri, location, year, min_players, max_players,
-            play_time_min, rating, notes, house_rules, is_favorite,
+            play_time_min, rating, notes, house_rules, is_favorite, is_wishlist,
             bgg_id, bgg_rating, bgg_weight, developer, min_age, complexity, edition)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           input.name, input.imageUri, input.location, input.year,
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
-          input.notes, input.houseRules, input.isFavorite ? 1 : 0,
+          input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.isWishlist ? 1 : 0,
           input.bggId, input.bggRating, input.bggWeight, input.developer, input.minAge,
           input.complexity, input.edition,
         ]
@@ -272,12 +280,18 @@ export async function saveGame(input: GameInput): Promise<number> {
 }
 
 // How many other games share this name (case-insensitive)? Used to warn about
-// accidental duplicates. excludeId skips the game being edited.
-export async function countGamesByName(name: string, excludeId?: number): Promise<number> {
+// accidental duplicates. excludeId skips the game being edited. The check stays
+// within the same list (collection vs wishlist) so a wishlist entry doesn't
+// flag a real collection add, and vice versa.
+export async function countGamesByName(
+  name: string,
+  excludeId?: number,
+  wishlist = false
+): Promise<number> {
   const db = await getDb();
   const row = await db.getFirstAsync<{ c: number }>(
-    'SELECT count(*) AS c FROM games WHERE name = ? COLLATE NOCASE AND id <> ?',
-    [name.trim(), excludeId ?? -1]
+    'SELECT count(*) AS c FROM games WHERE name = ? COLLATE NOCASE AND id <> ? AND is_wishlist = ?',
+    [name.trim(), excludeId ?? -1, wishlist ? 1 : 0]
   );
   return row?.c ?? 0;
 }
@@ -290,6 +304,15 @@ export async function deleteGame(id: number): Promise<void> {
 export async function toggleFavorite(id: number, value: boolean): Promise<void> {
   const db = await getDb();
   await db.runAsync('UPDATE games SET is_favorite = ? WHERE id = ?', [value ? 1 : 0, id]);
+}
+
+// Move a game between the wishlist and the collection (flip the flag).
+export async function setWishlist(id: number, value: boolean): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    "UPDATE games SET is_wishlist = ?, updated_at = datetime('now') WHERE id = ?",
+    [value ? 1 : 0, id]
+  );
 }
 
 // Mark a game as loaned out. loanedAt is an ISO date (YYYY-MM-DD). The current
@@ -407,7 +430,7 @@ export async function getGamesForLibrary(): Promise<
     max_players: number | null;
     play_time_min: number | null;
   }>(
-    'SELECT name, rating, min_players, max_players, play_time_min FROM games ORDER BY name COLLATE NOCASE ASC'
+    'SELECT name, rating, min_players, max_players, play_time_min FROM games WHERE is_wishlist = 0 ORDER BY name COLLATE NOCASE ASC'
   );
   return rows.map((r) => ({
     name: r.name,
@@ -422,7 +445,7 @@ export async function getGamesForLibrary(): Promise<
 export async function getAllLocations(): Promise<string[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<{ location: string }>(
-    "SELECT DISTINCT location FROM games WHERE location IS NOT NULL AND trim(location) <> '' ORDER BY location COLLATE NOCASE ASC"
+    "SELECT DISTINCT location FROM games WHERE is_wishlist = 0 AND location IS NOT NULL AND trim(location) <> '' ORDER BY location COLLATE NOCASE ASC"
   );
   return rows.map((r) => r.location);
 }
