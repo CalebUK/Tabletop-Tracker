@@ -36,6 +36,11 @@ function hash(s: string): number {
   return h;
 }
 
+// A book's spine thickness, derived from its name (stable per game).
+function spineWidth(name: string): number {
+  return SPINE_MIN_W + (Math.floor(hash(name) / 7) % (SPINE_MAX_W - SPINE_MIN_W));
+}
+
 function fmt(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
@@ -54,13 +59,6 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
       .catch((e: any) => setError(e?.message ?? 'Could not load libraries.'));
   }, []);
 
-  // Conservative count (assume the widest spines) so a shelf never overflows;
-  // narrower books just leave a little realistic gap at the end.
-  const perShelf = Math.max(
-    1,
-    Math.floor((Dimensions.get('window').width - spacing.lg * 2 - 28) / (SPINE_MAX_W + SPINE_GAP))
-  );
-
   const shelves = useMemo(() => {
     if (!games) return [];
     const q = query.trim().toLowerCase();
@@ -70,10 +68,26 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
         ? (b.bestRating ?? -1) - (a.bestRating ?? -1) || a.name.localeCompare(b.name)
         : a.name.localeCompare(b.name)
     );
+    // Pack each shelf by actual spine width so it fills the width (no end gap).
+    const availW = Dimensions.get('window').width - spacing.lg * 2 - 28;
     const rows: AggregatedGame[][] = [];
-    for (let i = 0; i < filtered.length; i += perShelf) rows.push(filtered.slice(i, i + perShelf));
+    let row: AggregatedGame[] = [];
+    let used = 0;
+    for (const g of filtered) {
+      const w = spineWidth(g.name);
+      const next = row.length === 0 ? w : used + SPINE_GAP + w;
+      if (row.length > 0 && next > availW) {
+        rows.push(row);
+        row = [g];
+        used = w;
+      } else {
+        row.push(g);
+        used = next;
+      }
+    }
+    if (row.length) rows.push(row);
     return rows;
-  }, [games, query, sortBy, perShelf]);
+  }, [games, query, sortBy]);
 
   if (error) {
     return (
@@ -95,11 +109,11 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
 
   // One book spine: shaded to look rounded, with a cream page-block on top and
   // one of a few cover treatments (plain bands / a parchment label / cloth
-  // accents) so a shelf looks like a real mix of books. `lean` tilts a book.
-  function renderSpine(g: AggregatedGame, lean: number) {
+  // accents) so a shelf looks like a real mix of books.
+  function renderSpine(g: AggregatedGame) {
     const seed = hash(g.name);
     const h = 116 + (seed % 60);
-    const w = SPINE_MIN_W + (Math.floor(seed / 7) % (SPINE_MAX_W - SPINE_MIN_W));
+    const w = spineWidth(g.name);
     const color = SPINE_COLORS[seed % SPINE_COLORS.length];
     const style = seed % 3; // 0 = bands, 1 = parchment label, 2 = cloth accents
     const onLabel = style === 1;
@@ -111,12 +125,7 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
     return (
       <Pressable
         key={g.name}
-        style={[
-          styles.spine,
-          { height: h, width: w, backgroundColor: color },
-          // Lean left, into the neighbouring books, so it looks supported.
-          lean ? { transform: [{ rotate: `-${lean}deg` }], transformOrigin: 'left bottom' } : null,
-        ]}
+        style={[styles.spine, { height: h, width: w, backgroundColor: color }]}
         onPress={() => setSelected(g)}
       >
         {tint && <View style={[styles.tint, { backgroundColor: tint }]} />}
@@ -176,13 +185,7 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
                 <View style={styles.shelfInner}>
                   <View style={styles.shelfBack} />
                   <View style={styles.shelfBackShade} />
-                  <View style={styles.shelfSpines}>
-                    {shelf.map((g, idx, arr) =>
-                      // The last book on a not-quite-full shelf leans against its
-                      // neighbours (to the left), so it looks supported.
-                      renderSpine(g, idx === arr.length - 1 && arr.length > 2 ? 4 + (hash(g.name) % 5) : 0)
-                    )}
-                  </View>
+                  <View style={styles.shelfSpines}>{shelf.map((g) => renderSpine(g))}</View>
                 </View>
                 <View style={styles.plankTop}>
                   <View style={styles.grainHi} />
