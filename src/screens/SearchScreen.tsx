@@ -184,6 +184,18 @@ export default function SearchScreen() {
         ))}
       </View>
 
+      <Text style={styles.groupLabel}>Complexity</Text>
+      <View style={styles.chipWrap}>
+        {(['easy', 'medium', 'high'] as const).map((c) => (
+          <Toggle
+            key={c}
+            label={c[0].toUpperCase() + c.slice(1)}
+            on={filters.complexity === c}
+            onPress={() => patch({ complexity: filters.complexity === c ? null : c })}
+          />
+        ))}
+      </View>
+
       <Text style={styles.groupLabel}>My rating</Text>
       <View style={styles.chipWrap}>
         <Toggle label="Any" on={filters.minRating == null} onPress={() => patch({ minRating: null })} />
@@ -212,18 +224,6 @@ export default function SearchScreen() {
             />
           );
         })}
-      </View>
-
-      <Text style={styles.groupLabel}>Complexity</Text>
-      <View style={styles.chipWrap}>
-        {(['easy', 'medium', 'high'] as const).map((c) => (
-          <Toggle
-            key={c}
-            label={c[0].toUpperCase() + c.slice(1)}
-            on={filters.complexity === c}
-            onPress={() => patch({ complexity: filters.complexity === c ? null : c })}
-          />
-        ))}
       </View>
 
       <View style={styles.dropRow}>
