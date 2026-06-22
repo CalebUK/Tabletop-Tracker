@@ -177,7 +177,7 @@ export interface PlayerStats {
   totalPlays: number;
   wins: number;
   winRate: number; // 0-100
-  perGame: { name: string; plays: number; wins: number }[];
+  perGame: { name: string; plays: number; wins: number; gameId: number | null }[];
 }
 
 // Pass groupId to scope a player's stats to a single gaming group.
@@ -193,8 +193,10 @@ export async function getPlayerStats(name: string, groupId?: number): Promise<Pl
     [name, ...gp]
   );
   // COALESCE so guest games (no game_id, just a game_name) are included too.
-  const perGame = await db.getAllAsync<{ name: string; plays: number; wins: number }>(
-    `SELECT COALESCE(g.name, p.game_name) AS name, count(*) AS plays, sum(pp.is_winner) AS wins
+  // gameId is a representative owned-game id for click-through (null if guest).
+  const perGame = await db.getAllAsync<{ name: string; plays: number; wins: number; gameId: number | null }>(
+    `SELECT COALESCE(g.name, p.game_name) AS name, count(*) AS plays, sum(pp.is_winner) AS wins,
+            MAX(p.game_id) AS gameId
        FROM play_players pp
        JOIN plays p ON p.id = pp.play_id
        LEFT JOIN games g ON g.id = p.game_id

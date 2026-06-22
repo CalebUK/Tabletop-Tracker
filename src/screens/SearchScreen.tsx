@@ -76,17 +76,15 @@ export default function SearchScreen() {
   // Clear any pending roll timers if we leave the screen mid-roll.
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
+  // Run on focus (so edits/additions show up when you return to the tab) and
+  // whenever the filters change.
   useFocusEffect(
     useCallback(() => {
       getAllTags().then(setAllTags);
       getAllCategories().then(setAllCategories);
-    }, [])
+      searchGames(filters).then(setResults).catch((e) => console.warn('search', e));
+    }, [filters])
   );
-
-  // Re-run the query whenever any filter changes.
-  useEffect(() => {
-    searchGames(filters).then(setResults).catch((e) => console.warn('search', e));
-  }, [filters]);
 
   function patch(p: Partial<SearchFilters>) {
     setFilters((f) => ({ ...f, ...p }));

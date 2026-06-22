@@ -228,7 +228,7 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
                     />
                   </View>
                   {players.length > 1 && (
-                    <Pressable onPress={() => removePlayerRow(i)} hitSlop={8}>
+                    <Pressable onPress={() => removePlayerRow(i)} hitSlop={8} style={styles.removeBtn}>
                       <Text style={styles.remove}>✕</Text>
                     </Pressable>
                   )}
@@ -326,12 +326,13 @@ const styles = StyleSheet.create({
   },
   multiline: { minHeight: 80, textAlignVertical: 'top' },
   flex1: { flex: 1 },
-  playerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-  winnerCol: { alignItems: 'center' },
-  scoreCol: { alignItems: 'center' },
-  scoreInput: { width: 56, textAlign: 'center', paddingVertical: 6 },
+  playerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginBottom: spacing.sm },
+  winnerCol: { alignItems: 'center', gap: 4 },
+  scoreCol: { alignItems: 'center', gap: 4 },
+  scoreInput: { width: 56, textAlign: 'center' },
   winnerLabel: { color: colors.textMuted, fontSize: 11 },
   remove: { color: colors.danger, fontSize: 18, paddingHorizontal: 4 },
+  removeBtn: { paddingBottom: 10 },
   suggestRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: spacing.sm },
   suggestChip: {
     backgroundColor: colors.surfaceAlt,
