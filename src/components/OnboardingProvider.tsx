@@ -32,26 +32,31 @@ const SLIDES: Slide[] = [
   {
     emoji: '🎲',
     title: 'Your Collection',
-    body: 'Add games with a photo, rating, location and tags. Swipe a game → to edit, ← to loan, or hold to log a play. Use the buttons up top to filter:',
+    body: 'Add games with a photo, rating, location and tags. Swipe a game → to edit, ← to loan, or hold to log a play. Switch between a list and a photo grid, and filter up top:',
     hints: [
       { icon: '📍', label: 'Filter by storage location' },
       { icon: '♥', label: 'Show only your favourites' },
     ],
   },
   {
+    emoji: '⭐',
+    title: 'Keep a Wishlist',
+    body: 'Flip the toggle at the top of your Collection to your Wishlist — games you’d love to own. If a friend’s shared library has one, you’ll see who can lend it, plus suggestions from friends whose ratings match yours. Bought it? One tap moves it into your collection.',
+  },
+  {
     emoji: '🔍',
     title: 'Find the right game',
-    body: 'Filter by players, play time, age, rating and category. Tap “Feeling lucky” to let the app pick a game for tonight.',
+    body: 'Filter by players, play time, age, rating and complexity. “At home” hides games that are out on loan, and “Feeling lucky” picks one for tonight.',
   },
   {
     emoji: '📊',
-    title: 'Plays & Stats',
-    body: 'Log who played and who won. See per-game winners, top players and your most-played games.',
+    title: 'Plays, groups & stats',
+    body: 'Log who played and who won — even games you don’t own. Create gaming groups for a regular game night, and tap any top player or most-played game to see their full stats.',
   },
   {
     emoji: '👥',
-    title: 'Library & Backups',
-    body: 'Share your collection with friends using a code, and export a backup any time to keep your data safe (⚙️ top-right).',
+    title: 'Share with friends',
+    body: 'Publish your collection to get a share code, and add friends’ codes to browse everyone’s games together. Export a backup any time to keep your data safe (⚙️ top-right).',
   },
 ];
 
