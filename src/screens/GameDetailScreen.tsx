@@ -3,12 +3,21 @@ import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'rea
 import { useFocusEffect } from '@react-navigation/native';
 import { RootStackProps } from '../navigation';
 import { getGame, toggleFavorite, getLoanHistory, getExpansions, setWishlist } from '../db/games';
+import { getFriendOwnersByGame } from '../lib/onlineLibrary';
 import { getPlaysForGame, deletePlay } from '../db/plays';
 import { Expansion, Game, LoanRecord, Play } from '../types';
 import { colors, radius, spacing } from '../theme';
 import { isoToUk } from '../lib/dates';
 import { round2 } from '../lib/format';
 import StarRating from '../components/StarRating';
+
+// "Sarah" / "Sarah & Tom" / "Sarah, Tom & Amy" / "Sarah, Tom & 2 others".
+function friendsList(names: string[]): string {
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} & ${names[1]}`;
+  if (names.length === 3) return `${names[0]}, ${names[1]} & ${names[2]}`;
+  return `${names[0]}, ${names[1]} & ${names.length - 2} others`;
+}
 
 function playersText(g: Game): string | null {
   if (g.minPlayers && g.maxPlayers) {
@@ -26,11 +35,20 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
   const [plays, setPlays] = useState<Play[]>([]);
   const [loans, setLoans] = useState<LoanRecord[]>([]);
   const [expansions, setExpansions] = useState<Expansion[]>([]);
+  const [friendsWithGame, setFriendsWithGame] = useState<string[]>([]);
 
   const load = useCallback(() => {
     getGame(gameId).then((g) => {
       setGame(g);
       if (g) navigation.setOptions({ title: g.name });
+      // For wishlist games, flag any friends (linked libraries) who own it.
+      if (g?.isWishlist) {
+        getFriendOwnersByGame()
+          .then((m) => setFriendsWithGame(m.get(g.name.trim().toLowerCase()) ?? []))
+          .catch(() => setFriendsWithGame([]));
+      } else {
+        setFriendsWithGame([]);
+      }
     });
     getPlaysForGame(gameId).then(setPlays);
     getLoanHistory(gameId).then(setLoans);
@@ -137,6 +155,15 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
           </View>
         )}
       </View>
+
+      {game.isWishlist && friendsWithGame.length > 0 && (
+        <View style={styles.friendsBanner}>
+          <Text style={styles.friendsText}>
+            👥 <Text style={styles.friendsBold}>{friendsList(friendsWithGame)}</Text>{' '}
+            {friendsWithGame.length === 1 ? 'has' : 'have'} this — you could borrow it.
+          </Text>
+        </View>
+      )}
 
       {game.isWishlist && (
         <Pressable style={styles.wishBtn} onPress={onMoveToCollection}>
@@ -338,6 +365,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.success,
   },
   wishBtnText: { color: colors.primaryText, fontSize: 15, fontWeight: '700' },
+  friendsBanner: {
+    marginTop: spacing.md,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.success,
+    padding: spacing.md,
+  },
+  friendsText: { color: colors.text, fontSize: 14, lineHeight: 20 },
+  friendsBold: { color: colors.success, fontWeight: '700' },
   infoRow: { marginTop: spacing.md, fontSize: 14, lineHeight: 20 },
   infoLabel: { color: colors.textMuted, fontSize: 14 },
   infoValue: { color: colors.text, fontSize: 14, fontWeight: '600' },

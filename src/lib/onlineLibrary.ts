@@ -77,6 +77,19 @@ export async function fetchLibrary(code: string, countView = true): Promise<Shar
   };
 }
 
+// Map of game name (lowercased) -> distinct friend names who own it, across all
+// linked friend libraries. Used to flag wishlist games a friend already has.
+// Returns an empty map when no libraries are linked or the fetch fails.
+export async function getFriendOwnersByGame(): Promise<Map<string, string[]>> {
+  const map = new Map<string, string[]>();
+  const all = await fetchAllGames(false);
+  for (const g of all) {
+    const owners = Array.from(new Set(g.owners.map((o) => o.owner)));
+    if (owners.length) map.set(g.name.trim().toLowerCase(), owners);
+  }
+  return map;
+}
+
 // Merge every game across linked libraries (+ optionally your own) into one
 // de-duplicated list for the "browse all games" view.
 export async function fetchAllGames(includeOwn: boolean): Promise<AggregatedGame[]> {

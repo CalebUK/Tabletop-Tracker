@@ -8,6 +8,15 @@ interface Props {
   onPress: () => void;
   onLongPress?: () => void;
   onToggleFavorite?: () => void;
+  // For wishlist cards: names of friends (linked libraries) who own this game.
+  friendsWithGame?: string[];
+}
+
+// "Sarah has this" / "Sarah & Tom have this" / "Sarah, Tom +2 have this".
+function friendsLine(names: string[]): string {
+  if (names.length === 1) return `${names[0]} has this`;
+  if (names.length === 2) return `${names[0]} & ${names[1]} have this`;
+  return `${names[0]}, ${names[1]} +${names.length - 2} have this`;
 }
 
 // A loaned-out game shows "Loaned to X" in place of its shelf location.
@@ -22,9 +31,16 @@ function fmt(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
-export default function GameCard({ game, onPress, onLongPress, onToggleFavorite }: Props) {
+export default function GameCard({
+  game,
+  onPress,
+  onLongPress,
+  onToggleFavorite,
+  friendsWithGame,
+}: Props) {
   const loc = locationLine(game);
   const hasRating = game.rating != null && game.rating > 0;
+  const friends = friendsWithGame ?? [];
 
   return (
     <Pressable style={styles.card} onPress={onPress} onLongPress={onLongPress} delayLongPress={300}>
@@ -57,13 +73,23 @@ export default function GameCard({ game, onPress, onLongPress, onToggleFavorite 
           )}
         </View>
 
-        {hasRating && <Text style={styles.myRating}>★ {fmt(game.rating as number)}/10</Text>}
+        {game.isWishlist ? (
+          friends.length > 0 ? (
+            <Text style={styles.friends} numberOfLines={1}>
+              👥 {friendsLine(friends)}
+            </Text>
+          ) : null
+        ) : (
+          <>
+            {hasRating && <Text style={styles.myRating}>★ {fmt(game.rating as number)}/10</Text>}
 
-        {loc ? (
-          <Text style={[styles.location, game.loanedTo && styles.loaned]} numberOfLines={1}>
-            {loc.icon} {loc.text}
-          </Text>
-        ) : null}
+            {loc ? (
+              <Text style={[styles.location, game.loanedTo && styles.loaned]} numberOfLines={1}>
+                {loc.icon} {loc.text}
+              </Text>
+            ) : null}
+          </>
+        )}
       </View>
     </Pressable>
   );
@@ -94,5 +120,6 @@ const styles = StyleSheet.create({
   myRating: { color: colors.star, fontSize: 13, fontWeight: '700' },
   location: { color: colors.textMuted, fontSize: 13 },
   loaned: { color: colors.favorite },
+  friends: { color: colors.success, fontSize: 13, fontWeight: '600' },
   expansions: { color: colors.textMuted, fontSize: 12 },
 });
