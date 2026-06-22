@@ -45,6 +45,13 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
       .catch((e: any) => setError(e?.message ?? 'Could not load libraries.'));
   }, []);
 
+  // Conservative count (assume the widest spines) so a shelf never overflows;
+  // narrower books just leave a little realistic gap at the end.
+  const perShelf = Math.max(
+    1,
+    Math.floor((Dimensions.get('window').width - spacing.lg * 2 - 28) / (SPINE_MAX_W + SPINE_GAP))
+  );
+
   const shelves = useMemo(() => {
     if (!games) return [];
     const q = query.trim().toLowerCase();
@@ -54,16 +61,10 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
         ? (b.bestRating ?? -1) - (a.bestRating ?? -1) || a.name.localeCompare(b.name)
         : a.name.localeCompare(b.name)
     );
-    // Conservative count (assume the widest spines) so a shelf never overflows;
-    // narrower books just leave a little realistic gap at the end.
-    const perShelf = Math.max(
-      1,
-      Math.floor((Dimensions.get('window').width - spacing.lg * 2 - 28) / (SPINE_MAX_W + SPINE_GAP))
-    );
     const rows: AggregatedGame[][] = [];
     for (let i = 0; i < filtered.length; i += perShelf) rows.push(filtered.slice(i, i + perShelf));
     return rows;
-  }, [games, query, sortBy]);
+  }, [games, query, sortBy, perShelf]);
 
   if (error) {
     return (
@@ -93,13 +94,17 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
     const color = SPINE_COLORS[seed % SPINE_COLORS.length];
     const style = seed % 3; // 0 = bands, 1 = parchment label, 2 = cloth accents
     const onLabel = style === 1;
+    // Gold-foil title on about half the dark-cover books.
+    const gold = !onLabel && seed % 2 === 0;
+    const textStyle = onLabel ? styles.spineTextDark : gold ? styles.spineTextGold : styles.spineText;
     return (
       <Pressable
         key={g.name}
         style={[
           styles.spine,
           { height: h, width: w, backgroundColor: color },
-          lean ? { transform: [{ rotate: `${lean}deg` }], transformOrigin: 'right bottom' } : null,
+          // Lean left, into the neighbouring books, so it looks supported.
+          lean ? { transform: [{ rotate: `-${lean}deg` }], transformOrigin: 'left bottom' } : null,
         ]}
         onPress={() => setSelected(g)}
       >
@@ -113,13 +118,21 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
         <View style={styles.pageTop} />
         <View style={styles.pageTopLine} />
         <View style={styles.spineFoot} />
-        <Text
-          style={[styles.spineText, onLabel && styles.spineTextDark, { width: h - (onLabel ? 52 : 42) }]}
-          numberOfLines={1}
-        >
+        <Text style={[textStyle, { width: h - (onLabel ? 52 : 42) }]} numberOfLines={1}>
           {g.name}
         </Text>
       </Pressable>
+    );
+  }
+
+  // A small pile of flat books to fill a gap at the end of a shelf.
+  function renderStack() {
+    return (
+      <View style={styles.stack} pointerEvents="none">
+        <View style={[styles.stackBook, { width: 46, bottom: 0, left: 0, backgroundColor: '#8a6a4a' }]} />
+        <View style={[styles.stackBook, { width: 42, bottom: 7, left: 3, backgroundColor: '#4e7a6a' }]} />
+        <View style={[styles.stackBook, { width: 44, bottom: 14, left: 1, backgroundColor: '#9c5b52' }]} />
+      </View>
     );
   }
 
@@ -150,7 +163,12 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
       ) : (
         <ScrollView contentContainerStyle={styles.shelfScroll}>
           <View style={styles.cabinet}>
-            <View style={styles.cabinetTop} />
+            <View style={styles.postLeft} />
+            <View style={styles.postRight} />
+            <View style={styles.cabinetTop}>
+              <View style={styles.grainH1} />
+              <View style={styles.grainH2} />
+            </View>
             {shelves.map((shelf, si) => (
               <View key={si} style={styles.shelf}>
                 <View style={styles.shelfInner}>
@@ -158,12 +176,18 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
                   <View style={styles.shelfBackShade} />
                   <View style={styles.shelfSpines}>
                     {shelf.map((g, idx, arr) =>
-                      // The last book on a not-quite-full shelf leans into the gap.
+                      // The last book on a not-quite-full shelf leans against its
+                      // neighbours (to the left), so it looks supported.
                       renderSpine(g, idx === arr.length - 1 && arr.length > 2 ? 4 + (hash(g.name) % 5) : 0)
                     )}
                   </View>
+                  {si === shelves.length - 1 && shelf.length < perShelf && renderStack()}
                 </View>
-                <View style={styles.plankTop} />
+                <View style={styles.plankTop}>
+                  <View style={styles.grainHi} />
+                  <View style={styles.grainH1} />
+                  <View style={styles.grainH2} />
+                </View>
                 <View style={styles.plankFront} />
               </View>
             ))}
@@ -264,7 +288,15 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     borderBottomWidth: 1,
     borderBottomColor: '#3f2f22',
+    overflow: 'hidden',
   },
+  // Subtle wood grain (dark + light hairlines) reused on the top board + planks.
+  grainH1: { position: 'absolute', left: 0, right: 0, top: 2, height: 1, backgroundColor: 'rgba(0,0,0,0.10)' },
+  grainH2: { position: 'absolute', left: 0, right: 0, top: 5, height: 1, backgroundColor: 'rgba(255,255,255,0.06)' },
+  grainHi: { position: 'absolute', left: 0, right: 0, top: 0, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' },
+  // Faint vertical grain on the cabinet's side posts.
+  postLeft: { position: 'absolute', left: 3, top: 12, bottom: 6, width: 1, backgroundColor: 'rgba(0,0,0,0.16)' },
+  postRight: { position: 'absolute', right: 3, top: 12, bottom: 6, width: 1, backgroundColor: 'rgba(0,0,0,0.16)' },
   shelf: { marginBottom: 2 },
   shelfInner: { position: 'relative', paddingHorizontal: 4, paddingTop: 12 },
   // Recessed dark interior so you "see into" the bookcase behind the books.
@@ -280,7 +312,7 @@ const styles = StyleSheet.create({
   },
   shelfSpines: { flexDirection: 'row', alignItems: 'flex-end', gap: SPINE_GAP, minHeight: 116 },
   // The shelf board: a lit top surface over a darker front edge (3D plank).
-  plankTop: { height: 7, backgroundColor: '#7a5c44' },
+  plankTop: { height: 7, backgroundColor: '#7a5c44', overflow: 'hidden' },
   plankFront: {
     height: 6,
     backgroundColor: '#3f2f22',
@@ -346,6 +378,24 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   spineTextDark: { color: '#3a2c1a', textShadowColor: 'transparent' },
+  spineTextGold: {
+    transform: [{ rotate: '-90deg' }],
+    color: '#e6c878',
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowRadius: 2,
+  },
+  // A little pile of flat books in a shelf's trailing gap.
+  stack: { position: 'absolute', right: 6, bottom: 0, width: 50, height: 24 },
+  stackBook: {
+    position: 'absolute',
+    height: 6,
+    borderRadius: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.35)',
+  },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   sheet: {
     width: '100%',
