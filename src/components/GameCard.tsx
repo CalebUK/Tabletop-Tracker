@@ -80,15 +80,25 @@ export default function GameCard({
             </Text>
           ) : null
         ) : (
-          <>
-            {hasRating && <Text style={styles.myRating}>★ {fmt(game.rating as number)}/10</Text>}
-
-            {loc ? (
-              <Text style={[styles.location, game.loanedTo && styles.loaned]} numberOfLines={1}>
-                {loc.icon} {loc.text}
+          <View style={styles.infoRow}>
+            <View style={styles.infoLeft}>
+              {hasRating && <Text style={styles.myRating}>★ {fmt(game.rating as number)}/10</Text>}
+              {loc ? (
+                <Text style={[styles.location, game.loanedTo && styles.loaned]} numberOfLines={1}>
+                  {loc.icon} {loc.text}
+                </Text>
+              ) : null}
+            </View>
+            <View style={styles.infoRight}>
+              {game.playTimeMin ? <Text style={styles.metaRight}>⏱ {game.playTimeMin} min</Text> : null}
+              <Text style={styles.metaRight}>
+                🎲{' '}
+                {game.playCount > 0
+                  ? `${game.playCount} play${game.playCount === 1 ? '' : 's'}`
+                  : 'Unplayed'}
               </Text>
-            ) : null}
-          </>
+            </View>
+          </View>
         )}
       </View>
     </Pressable>
@@ -121,5 +131,9 @@ const styles = StyleSheet.create({
   location: { color: colors.textMuted, fontSize: 13 },
   loaned: { color: colors.favorite },
   friends: { color: colors.success, fontSize: 13, fontWeight: '600' },
+  infoRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: spacing.sm },
+  infoLeft: { flex: 1, gap: 4 },
+  infoRight: { alignItems: 'flex-end', gap: 4 },
+  metaRight: { color: colors.textMuted, fontSize: 12 },
   expansions: { color: colors.textMuted, fontSize: 12 },
 });
