@@ -31,6 +31,16 @@ function fmt(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
+// "2–4" / "2" / "up to 4" / "2+" — the player count for the card, or null.
+function playersText(g: Game): string | null {
+  if (g.minPlayers && g.maxPlayers) {
+    return g.minPlayers === g.maxPlayers ? `${g.minPlayers}` : `${g.minPlayers}–${g.maxPlayers}`;
+  }
+  if (g.maxPlayers) return `up to ${g.maxPlayers}`;
+  if (g.minPlayers) return `${g.minPlayers}+`;
+  return null;
+}
+
 export default function GameCard({
   game,
   onPress,
@@ -41,6 +51,7 @@ export default function GameCard({
   const loc = locationLine(game);
   const hasRating = game.rating != null && game.rating > 0;
   const friends = friendsWithGame ?? [];
+  const players = playersText(game);
 
   return (
     <Pressable style={styles.card} onPress={onPress} onLongPress={onLongPress} delayLongPress={300}>
@@ -90,13 +101,8 @@ export default function GameCard({
               ) : null}
             </View>
             <View style={styles.infoRight}>
+              {players ? <Text style={styles.metaRight}>👥 {players}</Text> : null}
               {game.playTimeMin ? <Text style={styles.metaRight}>⏱ {game.playTimeMin} min</Text> : null}
-              <Text style={styles.metaRight}>
-                🎲{' '}
-                {game.playCount > 0
-                  ? `${game.playCount} play${game.playCount === 1 ? '' : 's'}`
-                  : 'Unplayed'}
-              </Text>
             </View>
           </View>
         )}
