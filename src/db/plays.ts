@@ -255,14 +255,14 @@ export async function getStats(): Promise<CollectionStats> {
        FROM play_players
       GROUP BY player_name COLLATE NOCASE
       ORDER BY wins DESC, plays DESC
-      LIMIT 10`
+      LIMIT 5`
   );
   const mostPlayed = await db.getAllAsync<GameRanking>(
     `SELECT g.id AS id, g.name AS name, count(p.id) AS plays
        FROM games g JOIN plays p ON p.game_id = g.id
       GROUP BY g.id
       ORDER BY plays DESC
-      LIMIT 10`
+      LIMIT 5`
   );
   const playerCount = await db.getFirstAsync<{ c: number }>(
     'SELECT count(DISTINCT player_name COLLATE NOCASE) AS c FROM play_players'
