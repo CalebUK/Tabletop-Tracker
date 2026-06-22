@@ -15,11 +15,6 @@ export async function getGroups(): Promise<Group[]> {
   return rows.map((r) => ({ id: r.id, name: r.name }));
 }
 
-export async function renameGroup(id: number, name: string): Promise<void> {
-  const db = await getDb();
-  await db.runAsync('UPDATE groups SET name = ? WHERE id = ?', [name.trim(), id]);
-}
-
 // Deleting a group keeps its plays (group_id is set to NULL by the FK rule).
 export async function deleteGroup(id: number): Promise<void> {
   const db = await getDb();

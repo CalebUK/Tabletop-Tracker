@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { RootStackProps } from '../navigation';
 import { getGamePlayStats, GamePlayStats } from '../db/plays';
 import { isoToUk } from '../lib/dates';
-import { colors, radius, spacing } from '../theme';
+import { colors, spacing } from '../theme';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
