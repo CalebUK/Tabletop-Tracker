@@ -20,6 +20,15 @@ const SPINE_GAP = 5;
 const SPINE_MIN_W = 28;
 const SPINE_MAX_W = 48;
 const SPINE_COLORS = ['#7d5ba6', '#3a7d44', '#b0543b', '#345995', '#9c4f96', '#c9a227', '#4e8098', '#a8412e', '#2f6d5b', '#86432f'];
+// Subtle per-book tone shifts (darken/lighten) so two same-colour books differ.
+const TINTS: (string | null)[] = [
+  'rgba(0,0,0,0.12)',
+  null,
+  'rgba(255,255,255,0.07)',
+  'rgba(0,0,0,0.06)',
+  null,
+  'rgba(0,0,0,0.18)',
+];
 
 function hash(s: string): number {
   let h = 0;
@@ -97,6 +106,8 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
     // Gold-foil title on about half the dark-cover books.
     const gold = !onLabel && seed % 2 === 0;
     const textStyle = onLabel ? styles.spineTextDark : gold ? styles.spineTextGold : styles.spineText;
+    const tint = TINTS[seed % TINTS.length];
+    const worn = seed % 4 === 0; // a worn, shelf-scuffed base on some books
     return (
       <Pressable
         key={g.name}
@@ -108,8 +119,10 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
         ]}
         onPress={() => setSelected(g)}
       >
+        {tint && <View style={[styles.tint, { backgroundColor: tint }]} />}
         <View style={styles.spineHighlight} />
         <View style={styles.spineShadow} />
+        {worn && <View style={styles.wornBase} />}
         {style === 2 && <View style={[styles.coverAccent, styles.coverAccentTop]} />}
         {style === 2 && <View style={[styles.coverAccent, styles.coverAccentBottom]} />}
         {style === 0 && <View style={[styles.spineBand, styles.spineBandTop]} />}
@@ -125,13 +138,41 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
     );
   }
 
-  // A small pile of flat books to fill a gap at the end of a shelf.
+  // The trailing gap on the last shelf gets a stack of flat books, a framed
+  // photo, or a leaning game box — varied from the shelf's own contents.
+  function renderDecoration(seedStr: string) {
+    const seed = hash(seedStr);
+    const kind = seed % 3;
+    if (kind === 1) return renderFrame();
+    if (kind === 2) return renderGameBox(seed);
+    return renderStack();
+  }
+
   function renderStack() {
     return (
       <View style={styles.stack} pointerEvents="none">
         <View style={[styles.stackBook, { width: 46, bottom: 0, left: 0, backgroundColor: '#8a6a4a' }]} />
         <View style={[styles.stackBook, { width: 42, bottom: 7, left: 3, backgroundColor: '#4e7a6a' }]} />
         <View style={[styles.stackBook, { width: 44, bottom: 14, left: 1, backgroundColor: '#9c5b52' }]} />
+      </View>
+    );
+  }
+
+  function renderFrame() {
+    return (
+      <View style={styles.frame} pointerEvents="none">
+        <View style={styles.frameMat}>
+          <View style={styles.framePhoto} />
+        </View>
+      </View>
+    );
+  }
+
+  function renderGameBox(seed: number) {
+    return (
+      <View style={[styles.gameBox, { backgroundColor: SPINE_COLORS[seed % SPINE_COLORS.length] }]} pointerEvents="none">
+        <View style={styles.gameBoxLid} />
+        <View style={styles.gameBoxLabel} />
       </View>
     );
   }
@@ -181,7 +222,7 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
                       renderSpine(g, idx === arr.length - 1 && arr.length > 2 ? 4 + (hash(g.name) % 5) : 0)
                     )}
                   </View>
-                  {si === shelves.length - 1 && shelf.length < perShelf && renderStack()}
+                  {si === shelves.length - 1 && shelf.length < perShelf && renderDecoration(shelf[0]?.name ?? 'deco')}
                 </View>
                 <View style={styles.plankTop}>
                   <View style={styles.grainHi} />
@@ -342,6 +383,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     shadowOffset: { width: 1, height: 2 },
   },
+  tint: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  wornBase: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 10, backgroundColor: 'rgba(0,0,0,0.16)' },
   spineHighlight: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: 'rgba(255,255,255,0.22)' },
   spineShadow: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 5, backgroundColor: 'rgba(0,0,0,0.32)' },
   // Cream page block on the top edge of the book.
@@ -387,7 +430,7 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.55)',
     textShadowRadius: 2,
   },
-  // A little pile of flat books in a shelf's trailing gap.
+  // Decorations that fill a shelf's trailing gap.
   stack: { position: 'absolute', right: 6, bottom: 0, width: 50, height: 24 },
   stackBook: {
     position: 'absolute',
@@ -395,6 +438,49 @@ const styles = StyleSheet.create({
     borderRadius: 1,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.35)',
+  },
+  frame: {
+    position: 'absolute',
+    right: 8,
+    bottom: 0,
+    width: 32,
+    height: 44,
+    backgroundColor: '#6e5238',
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.45)',
+    padding: 3,
+    transform: [{ rotate: '-3deg' }],
+    transformOrigin: 'left bottom',
+    elevation: 3,
+  },
+  frameMat: { flex: 1, backgroundColor: '#e9e2d2', padding: 2, borderRadius: 1 },
+  framePhoto: { flex: 1, backgroundColor: '#8fb0c4', borderRadius: 1 },
+  gameBox: {
+    position: 'absolute',
+    right: 6,
+    bottom: 0,
+    width: 42,
+    height: 38,
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.45)',
+    overflow: 'hidden',
+    transform: [{ rotate: '-6deg' }],
+    transformOrigin: 'left bottom',
+    elevation: 3,
+  },
+  gameBoxLid: { position: 'absolute', top: 0, left: 0, right: 0, height: 11, backgroundColor: 'rgba(0,0,0,0.22)' },
+  gameBoxLabel: {
+    position: 'absolute',
+    top: 14,
+    left: 9,
+    right: 9,
+    bottom: 8,
+    backgroundColor: '#f0e9d8',
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)',
   },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   sheet: {
