@@ -306,6 +306,40 @@ export async function toggleFavorite(id: number, value: boolean): Promise<void> 
   await db.runAsync('UPDATE games SET is_favorite = ? WHERE id = ?', [value ? 1 : 0, id]);
 }
 
+// Quick-add a game straight onto the wishlist (e.g. from a taste suggestion).
+// Only the basics are filled in; the user can edit / BGG-look-up afterwards.
+export async function addWishlistGame(g: {
+  name: string;
+  minPlayers: number | null;
+  maxPlayers: number | null;
+  playTimeMin: number | null;
+}): Promise<number> {
+  return saveGame({
+    name: g.name,
+    imageUri: null,
+    location: null,
+    year: null,
+    minPlayers: g.minPlayers,
+    maxPlayers: g.maxPlayers,
+    playTimeMin: g.playTimeMin,
+    rating: null,
+    notes: null,
+    houseRules: null,
+    isFavorite: false,
+    isWishlist: true,
+    bggId: null,
+    bggRating: null,
+    bggWeight: null,
+    developer: null,
+    minAge: null,
+    complexity: null,
+    edition: null,
+    tags: [],
+    categories: [],
+    expansions: [],
+  });
+}
+
 // Move a game between the wishlist and the collection (flip the flag).
 export async function setWishlist(id: number, value: boolean): Promise<void> {
   const db = await getDb();

@@ -1,8 +1,8 @@
 import { doc, setDoc, getDoc, deleteDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { getFirestoreDb, ensureSignedIn } from './firebase';
-import { getGamesForLibrary } from '../db/games';
+import { getAllGames, getGamesForLibrary } from '../db/games';
 import { getFriendLibraries } from '../db/library';
-import { AggregatedGame, LibraryGame, SharedLibrary } from '../types';
+import { AggregatedGame, LibraryGame, SharedLibrary, TasteSuggestion } from '../types';
 
 // Unambiguous code alphabet (no 0/O/1/I) — 6 chars, easy to read and type.
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -88,6 +88,76 @@ export async function getFriendOwnersByGame(): Promise<Map<string, string[]>> {
     if (owners.length) map.set(g.name.trim().toLowerCase(), owners);
   }
   return map;
+}
+
+// "Similar tastes" needs at least this many games you've both rated, and this
+// share of them must agree (ratings within CLOSE_DELTA of each other).
+const MIN_SHARED = 3;
+const CLOSE_DELTA = 1;
+const AGREE_RATIO = 0.6;
+const MAX_SUGGESTIONS = 6;
+
+// Suggest games to wishlist: for each linked friend whose ratings line up with
+// yours on the games you both own, take their top-rated game you don't already
+// own or have wishlisted. De-duplicated across friends, best first.
+export async function getTasteSuggestions(): Promise<TasteSuggestion[]> {
+  const mine = await getGamesForLibrary(); // owned games, with my ratings
+  const myRatingByName = new Map<string, number>();
+  const myOwnedNames = new Set<string>();
+  for (const g of mine) {
+    const key = g.name.trim().toLowerCase();
+    myOwnedNames.add(key);
+    if (g.rating != null) myRatingByName.set(key, g.rating);
+  }
+  const myWishNames = new Set(
+    (await getAllGames(true)).map((w) => w.name.trim().toLowerCase())
+  );
+
+  const friends = await getFriendLibraries();
+  const libs = await Promise.all(
+    friends.map((f) => fetchLibrary(f.code, false).catch(() => null))
+  );
+
+  // One candidate suggestion per "similar" friend.
+  const suggestions: TasteSuggestion[] = [];
+  friends.forEach((f, i) => {
+    const lib = libs[i];
+    if (!lib) return;
+    const friend = f.name || lib.name || f.code;
+
+    let shared = 0;
+    let close = 0;
+    for (const g of lib.games) {
+      const myR = myRatingByName.get(g.name.trim().toLowerCase());
+      if (myR != null && g.rating != null) {
+        shared++;
+        if (Math.abs(myR - g.rating) <= CLOSE_DELTA) close++;
+      }
+    }
+    if (shared < MIN_SHARED || close / shared < AGREE_RATIO) return;
+
+    // Their highest-rated game that you neither own nor have wishlisted.
+    const top = lib.games
+      .filter((g) => g.rating != null)
+      .filter((g) => {
+        const key = g.name.trim().toLowerCase();
+        return !myOwnedNames.has(key) && !myWishNames.has(key);
+      })
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))[0];
+    if (top) suggestions.push({ friend, sharedCount: shared, closeCount: close, game: top });
+  });
+
+  // De-dupe by game name (two friends may suggest the same game): keep the
+  // highest-rated. Then best games first, capped.
+  const byGame = new Map<string, TasteSuggestion>();
+  for (const s of suggestions) {
+    const key = s.game.name.trim().toLowerCase();
+    const existing = byGame.get(key);
+    if (!existing || (s.game.rating ?? 0) > (existing.game.rating ?? 0)) byGame.set(key, s);
+  }
+  return [...byGame.values()]
+    .sort((a, b) => (b.game.rating ?? 0) - (a.game.rating ?? 0))
+    .slice(0, MAX_SUGGESTIONS);
 }
 
 // Merge every game across linked libraries (+ optionally your own) into one

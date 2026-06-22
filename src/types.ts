@@ -100,6 +100,15 @@ export interface AggregatedGame {
   bestRating: number | null;
 }
 
+// A wishlist suggestion: a highly-rated game from a friend whose ratings line
+// up with yours on the games you both own.
+export interface TasteSuggestion {
+  friend: string;
+  sharedCount: number; // games you both rated
+  closeCount: number; // of those, how many ratings agree (within 1 point)
+  game: LibraryGame; // the suggested game (name + their rating + players/time)
+}
+
 export interface Play {
   id: number;
   gameId: number | null; // null when the game isn't in the collection
