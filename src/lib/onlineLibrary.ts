@@ -91,15 +91,15 @@ export async function getFriendOwnersByGame(): Promise<Map<string, string[]>> {
 }
 
 // "Similar tastes" needs at least this many games you've both rated, and this
-// share of them must agree (ratings within CLOSE_DELTA of each other).
-const MIN_SHARED = 3;
+// share of them must agree (ratings within CLOSE_DELTA of each other). Kept
+// strict for now since we don't yet know how reliable the match feels.
+const MIN_SHARED = 5;
 const CLOSE_DELTA = 1;
-const AGREE_RATIO = 0.6;
-const MAX_SUGGESTIONS = 6;
+const AGREE_RATIO = 0.8;
 
-// Suggest games to wishlist: for each linked friend whose ratings line up with
-// yours on the games you both own, take their top-rated game you don't already
-// own or have wishlisted. De-duplicated across friends, best first.
+// Suggest games to wishlist: one per linked friend whose ratings line up with
+// yours on the games you both own — that friend's top-rated game you don't
+// already own or have wishlisted. De-duplicated across friends, best first.
 export async function getTasteSuggestions(): Promise<TasteSuggestion[]> {
   const mine = await getGamesForLibrary(); // owned games, with my ratings
   const myRatingByName = new Map<string, number>();
@@ -147,17 +147,15 @@ export async function getTasteSuggestions(): Promise<TasteSuggestion[]> {
     if (top) suggestions.push({ friend, sharedCount: shared, closeCount: close, game: top });
   });
 
-  // De-dupe by game name (two friends may suggest the same game): keep the
-  // highest-rated. Then best games first, capped.
+  // One per matching friend, but if two friends top-suggest the same game show
+  // it once (keep the higher rating). Best games first.
   const byGame = new Map<string, TasteSuggestion>();
   for (const s of suggestions) {
     const key = s.game.name.trim().toLowerCase();
     const existing = byGame.get(key);
     if (!existing || (s.game.rating ?? 0) > (existing.game.rating ?? 0)) byGame.set(key, s);
   }
-  return [...byGame.values()]
-    .sort((a, b) => (b.game.rating ?? 0) - (a.game.rating ?? 0))
-    .slice(0, MAX_SUGGESTIONS);
+  return [...byGame.values()].sort((a, b) => (b.game.rating ?? 0) - (a.game.rating ?? 0));
 }
 
 // Merge every game across linked libraries (+ optionally your own) into one
