@@ -16,9 +16,10 @@ import { fetchAllGames } from '../lib/onlineLibrary';
 import { AggregatedGame } from '../types';
 import { colors, radius, spacing } from '../theme';
 
-const SPINE_W = 38;
-const SPINE_GAP = 6;
-const SPINE_COLORS = ['#7d5ba6', '#3a7d44', '#b0543b', '#345995', '#9c4f96', '#c9a227', '#4e8098', '#a8412e'];
+const SPINE_GAP = 5;
+const SPINE_MIN_W = 28;
+const SPINE_MAX_W = 48;
+const SPINE_COLORS = ['#7d5ba6', '#3a7d44', '#b0543b', '#345995', '#9c4f96', '#c9a227', '#4e8098', '#a8412e', '#2f6d5b', '#86432f'];
 
 function hash(s: string): number {
   let h = 0;
@@ -53,7 +54,12 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
         ? (b.bestRating ?? -1) - (a.bestRating ?? -1) || a.name.localeCompare(b.name)
         : a.name.localeCompare(b.name)
     );
-    const perShelf = Math.max(1, Math.floor((Dimensions.get('window').width - spacing.lg * 2) / (SPINE_W + SPINE_GAP)));
+    // Conservative count (assume the widest spines) so a shelf never overflows;
+    // narrower books just leave a little realistic gap at the end.
+    const perShelf = Math.max(
+      1,
+      Math.floor((Dimensions.get('window').width - spacing.lg * 2 - 28) / (SPINE_MAX_W + SPINE_GAP))
+    );
     const rows: AggregatedGame[][] = [];
     for (let i = 0; i < filtered.length; i += perShelf) rows.push(filtered.slice(i, i + perShelf));
     return rows;
@@ -76,6 +82,30 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
   }
 
   const total = games.length;
+
+  // One book spine, shaded to look rounded with a couple of title bands.
+  function renderSpine(g: AggregatedGame) {
+    const seed = hash(g.name);
+    const h = 116 + (seed % 60);
+    const w = SPINE_MIN_W + (Math.floor(seed / 7) % (SPINE_MAX_W - SPINE_MIN_W));
+    const color = SPINE_COLORS[seed % SPINE_COLORS.length];
+    return (
+      <Pressable
+        key={g.name}
+        style={[styles.spine, { height: h, width: w, backgroundColor: color }]}
+        onPress={() => setSelected(g)}
+      >
+        <View style={styles.spineHead} />
+        <View style={styles.spineHighlight} />
+        <View style={styles.spineShadow} />
+        <View style={[styles.spineBand, styles.spineBandTop]} />
+        <Text style={[styles.spineText, { width: h - 42 }]} numberOfLines={1}>
+          {g.name}
+        </Text>
+        <View style={[styles.spineBand, styles.spineBandBottom]} />
+      </Pressable>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
@@ -103,28 +133,20 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.shelfScroll}>
-          {shelves.map((shelf, si) => (
-            <View key={si} style={styles.shelf}>
-              <View style={styles.shelfSpines}>
-                {shelf.map((g) => {
-                  const h = 120 + (hash(g.name) % 56);
-                  const color = SPINE_COLORS[hash(g.name) % SPINE_COLORS.length];
-                  return (
-                    <Pressable
-                      key={g.name}
-                      style={[styles.spine, { height: h, backgroundColor: color }]}
-                      onPress={() => setSelected(g)}
-                    >
-                      <Text style={[styles.spineText, { width: h - 18 }]} numberOfLines={1}>
-                        {g.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+          <View style={styles.cabinet}>
+            <View style={styles.cabinetTop} />
+            {shelves.map((shelf, si) => (
+              <View key={si} style={styles.shelf}>
+                <View style={styles.shelfInner}>
+                  <View style={styles.shelfBack} />
+                  <View style={styles.shelfBackShade} />
+                  <View style={styles.shelfSpines}>{shelf.map(renderSpine)}</View>
+                </View>
+                <View style={styles.plankTop} />
+                <View style={styles.plankFront} />
               </View>
-              <View style={styles.shelfBoard} />
-            </View>
-          ))}
+            ))}
+          </View>
           {query.trim() !== '' && shelves.length === 0 && (
             <Text style={styles.muted}>No games match “{query}”.</Text>
           )}
@@ -197,29 +219,91 @@ const styles = StyleSheet.create({
   sortText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   sortTextOn: { color: colors.primaryText },
   shelfScroll: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl * 2 },
-  shelf: { marginBottom: spacing.lg },
-  shelfSpines: { flexDirection: 'row', alignItems: 'flex-end', gap: SPINE_GAP, minHeight: 120 },
-  shelfBoard: {
-    height: 10,
+
+  // The wooden cabinet that frames all the shelves.
+  cabinet: {
     backgroundColor: '#5b4636',
-    borderRadius: 3,
-    marginTop: 2,
-    elevation: 3,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingBottom: 6,
+    borderWidth: 1,
+    borderColor: '#3f2f22',
+    elevation: 8,
     shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
   },
+  cabinetTop: {
+    height: 10,
+    backgroundColor: '#6b513d',
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+    marginHorizontal: -10,
+    marginBottom: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#3f2f22',
+  },
+  shelf: { marginBottom: 2 },
+  shelfInner: { position: 'relative', paddingHorizontal: 4, paddingTop: 12 },
+  // Recessed dark interior so you "see into" the bookcase behind the books.
+  shelfBack: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#2b211a' },
+  // Soft shadow along the top inner edge of each cubby for depth.
+  shelfBackShade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 18,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  shelfSpines: { flexDirection: 'row', alignItems: 'flex-end', gap: SPINE_GAP, minHeight: 116 },
+  // The shelf board: a lit top surface over a darker front edge (3D plank).
+  plankTop: { height: 7, backgroundColor: '#7a5c44' },
+  plankFront: {
+    height: 6,
+    backgroundColor: '#3f2f22',
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 3 },
+  },
+
+  // A single book spine, shaded to look rounded.
   spine: {
-    width: SPINE_W,
     borderTopLeftRadius: 3,
     borderTopRightRadius: 3,
+    borderBottomLeftRadius: 1,
+    borderBottomRightRadius: 1,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.25)',
+    borderColor: 'rgba(0,0,0,0.4)',
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 3,
+    shadowOffset: { width: 1, height: 2 },
   },
-  spineText: { transform: [{ rotate: '-90deg' }], color: '#fff', fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  spineHighlight: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: 'rgba(255,255,255,0.22)' },
+  spineShadow: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 5, backgroundColor: 'rgba(0,0,0,0.32)' },
+  spineHead: { position: 'absolute', top: 0, left: 0, right: 0, height: 6, backgroundColor: 'rgba(255,255,255,0.13)' },
+  spineBand: { position: 'absolute', left: 0, right: 0, height: 3, backgroundColor: 'rgba(0,0,0,0.22)' },
+  spineBandTop: { top: 15 },
+  spineBandBottom: { bottom: 15 },
+  spineText: {
+    transform: [{ rotate: '-90deg' }],
+    color: '#f4ead8',
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowRadius: 2,
+  },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   sheet: {
     width: '100%',
