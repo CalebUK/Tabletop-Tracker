@@ -130,6 +130,7 @@ export interface Group {
 export interface PlayPlayer {
   name: string;
   isWinner: boolean;
+  score: number | null;
 }
 
 export interface LoanRecord {

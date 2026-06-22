@@ -21,6 +21,11 @@ import { Expansion, Group, PlayPlayer } from '../types';
 import { colors, radius, spacing } from '../theme';
 import { isoToUk, todayIso, todayUk, ukToIso } from '../lib/dates';
 
+function scoreOrNull(s: string): number | null {
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : null;
+}
+
 export default function LogPlayScreen({ route, navigation }: RootStackProps<'LogPlay'>) {
   const { gameId, groupId: groupParam, playId } = route.params;
   const headerHeight = useHeaderHeight();
@@ -33,7 +38,7 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
   const [groupId, setGroupId] = useState<number | null>(groupParam ?? null);
   const [date, setDate] = useState(todayUk());
   const [notes, setNotes] = useState('');
-  const [players, setPlayers] = useState<PlayPlayer[]>([{ name: '', isWinner: false }]);
+  const [players, setPlayers] = useState<PlayPlayer[]>([{ name: '', isWinner: false, score: null }]);
   const [allPlayers, setAllPlayers] = useState<string[]>([]);
   const [focused, setFocused] = useState<number | null>(null);
 
@@ -49,7 +54,7 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
         setGroupId(p.groupId);
         setDate(isoToUk(p.playedAt));
         setNotes(p.notes ?? '');
-        setPlayers(p.players.length ? p.players : [{ name: '', isWinner: false }]);
+        setPlayers(p.players.length ? p.players : [{ name: '', isWinner: false, score: null }]);
         setSelectedExpIds(p.expansionIds);
       });
     } else if (gameId) {
@@ -86,7 +91,7 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
   }
 
   function addPlayerRow() {
-    setPlayers((list) => [...list, { name: '', isWinner: false }]);
+    setPlayers((list) => [...list, { name: '', isWinner: false, score: null }]);
   }
 
   function removePlayerRow(i: number) {
@@ -203,6 +208,17 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
                     placeholder={`Player ${i + 1}`}
                     placeholderTextColor={colors.placeholder}
                   />
+                  <View style={styles.scoreCol}>
+                    <Text style={styles.winnerLabel}>Score</Text>
+                    <TextInput
+                      style={[styles.input, styles.scoreInput]}
+                      keyboardType="numeric"
+                      value={p.score != null ? String(p.score) : ''}
+                      onChangeText={(v) => updatePlayer(i, { score: scoreOrNull(v) })}
+                      placeholder="—"
+                      placeholderTextColor={colors.placeholder}
+                    />
+                  </View>
                   <View style={styles.winnerCol}>
                     <Text style={styles.winnerLabel}>Won</Text>
                     <Switch
@@ -312,6 +328,8 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
   playerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   winnerCol: { alignItems: 'center' },
+  scoreCol: { alignItems: 'center' },
+  scoreInput: { width: 56, textAlign: 'center', paddingVertical: 6 },
   winnerLabel: { color: colors.textMuted, fontSize: 11 },
   remove: { color: colors.danger, fontSize: 18, paddingHorizontal: 4 },
   suggestRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: spacing.sm },

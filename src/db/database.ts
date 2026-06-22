@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS play_players (
   play_id INTEGER NOT NULL,
   player_name TEXT NOT NULL,
   is_winner INTEGER NOT NULL DEFAULT 0,
+  score REAL,
   FOREIGN KEY (play_id) REFERENCES plays(id) ON DELETE CASCADE
 );
 
@@ -171,6 +172,12 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   const loanCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(loans)');
   if (!loanCols.some((c) => c.name === 'photo_uri')) {
     await db.execAsync('ALTER TABLE loans ADD COLUMN photo_uri TEXT');
+  }
+
+  // play_players.score (per-player score for a play; added later).
+  const ppCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(play_players)');
+  if (!ppCols.some((c) => c.name === 'score')) {
+    await db.execAsync('ALTER TABLE play_players ADD COLUMN score REAL');
   }
 
   // plays: make game_id nullable + add game_name/group_id (for not-owned games

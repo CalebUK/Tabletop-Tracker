@@ -61,7 +61,9 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
     .filter((g) => (hideOwned ? !ownedNames.has(g.name.trim().toLowerCase()) : true))
     .filter((g) => (q ? g.name.toLowerCase().includes(q) : true));
 
-  if (loading) {
+  // Only show the full-screen spinner on the first load. Once we have the
+  // library, a refresh (↺ or re-entering) updates it quietly in place.
+  if (loading && !lib) {
     return (
       <SafeAreaView style={[styles.safe, styles.center]} edges={['bottom']}>
         <ActivityIndicator color={colors.primary} size="large" />
@@ -69,7 +71,7 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
     );
   }
 
-  if (error) {
+  if (error && !lib) {
     return (
       <SafeAreaView style={[styles.safe, styles.center]} edges={['bottom']}>
         <Text style={styles.error}>{error}</Text>

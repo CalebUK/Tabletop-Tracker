@@ -24,6 +24,7 @@ interface PlayPlayerRow {
   play_id: number;
   player_name: string;
   is_winner: number;
+  score: number | null;
 }
 
 // Insert player + expansion rows for a play (shared by add and update).
@@ -37,8 +38,8 @@ async function writePlayChildren(
     const name = p.name.trim();
     if (!name) continue;
     await db.runAsync(
-      'INSERT INTO play_players (play_id, player_name, is_winner) VALUES (?, ?, ?)',
-      [playId, name, p.isWinner ? 1 : 0]
+      'INSERT INTO play_players (play_id, player_name, is_winner, score) VALUES (?, ?, ?, ?)',
+      [playId, name, p.isWinner ? 1 : 0, p.score ?? null]
     );
   }
   for (const id of expansionIds) {
@@ -59,7 +60,7 @@ export async function getPlaysForGame(gameId: number): Promise<Play[]> {
   if (playRows.length === 0) return [];
 
   const playerRows = await db.getAllAsync<PlayPlayerRow>(
-    `SELECT pp.play_id, pp.player_name, pp.is_winner
+    `SELECT pp.play_id, pp.player_name, pp.is_winner, pp.score
        FROM play_players pp
        JOIN plays p ON p.id = pp.play_id
       WHERE p.game_id = ?`,
@@ -77,7 +78,7 @@ export async function getPlaysForGame(gameId: number): Promise<Play[]> {
   const playersByPlay = new Map<number, PlayPlayer[]>();
   for (const r of playerRows) {
     const list = playersByPlay.get(r.play_id) ?? [];
-    list.push({ name: r.player_name, isWinner: r.is_winner === 1 });
+    list.push({ name: r.player_name, isWinner: r.is_winner === 1, score: r.score });
     playersByPlay.set(r.play_id, list);
   }
   const expsByPlay = new Map<number, string[]>();
@@ -119,7 +120,7 @@ export async function getPlay(playId: number): Promise<Play | null> {
   const p = await db.getFirstAsync<PlayRow>('SELECT * FROM plays WHERE id = ?', [playId]);
   if (!p) return null;
   const players = await db.getAllAsync<PlayPlayerRow>(
-    'SELECT play_id, player_name, is_winner FROM play_players WHERE play_id = ?',
+    'SELECT play_id, player_name, is_winner, score FROM play_players WHERE play_id = ?',
     [playId]
   );
   const exps = await db.getAllAsync<{ expansion_id: number; name: string }>(
@@ -135,7 +136,7 @@ export async function getPlay(playId: number): Promise<Play | null> {
     groupId: p.group_id,
     playedAt: p.played_at,
     notes: p.notes,
-    players: players.map((r) => ({ name: r.player_name, isWinner: r.is_winner === 1 })),
+    players: players.map((r) => ({ name: r.player_name, isWinner: r.is_winner === 1, score: r.score })),
     expansions: exps.map((e) => e.name),
     expansionIds: exps.map((e) => e.expansion_id),
   };
@@ -191,14 +192,16 @@ export async function getPlayerStats(name: string, groupId?: number): Promise<Pl
       WHERE pp.player_name = ? COLLATE NOCASE${groupFilter}`,
     [name, ...gp]
   );
+  // COALESCE so guest games (no game_id, just a game_name) are included too.
   const perGame = await db.getAllAsync<{ name: string; plays: number; wins: number }>(
-    `SELECT g.name AS name, count(*) AS plays, sum(pp.is_winner) AS wins
+    `SELECT COALESCE(g.name, p.game_name) AS name, count(*) AS plays, sum(pp.is_winner) AS wins
        FROM play_players pp
        JOIN plays p ON p.id = pp.play_id
-       JOIN games g ON g.id = p.game_id
+       LEFT JOIN games g ON g.id = p.game_id
       WHERE pp.player_name = ? COLLATE NOCASE${groupFilter}
-      GROUP BY g.id
-      ORDER BY plays DESC, g.name COLLATE NOCASE ASC`,
+        AND COALESCE(g.name, p.game_name) IS NOT NULL
+      GROUP BY name COLLATE NOCASE
+      ORDER BY plays DESC, name COLLATE NOCASE ASC`,
     [name, ...gp]
   );
   const plays = totals?.plays ?? 0;
@@ -304,10 +307,17 @@ export async function getGameRankings(): Promise<GameRanking[]> {
   );
 }
 
+export interface TopScore {
+  name: string;
+  score: number;
+  playedAt: string; // ISO date
+}
+
 export interface GamePlayStats {
   name: string;
   totalPlays: number;
   players: { name: string; wins: number; plays: number }[];
+  topScores: TopScore[];
 }
 
 // Stats for a single game: total plays and a per-player win/play leaderboard.
@@ -332,9 +342,20 @@ export async function getGamePlayStats(gameId: number, groupId?: number): Promis
       ORDER BY wins DESC, plays DESC`,
     [gameId, ...gp]
   );
+  // Top 3 individual scores ever recorded for this game (who and when).
+  const topScores = await db.getAllAsync<TopScore>(
+    `SELECT pp.player_name AS name, pp.score AS score, p.played_at AS playedAt
+       FROM play_players pp
+       JOIN plays p ON p.id = pp.play_id
+      WHERE p.game_id = ?${groupFilter} AND pp.score IS NOT NULL
+      ORDER BY pp.score DESC, p.played_at DESC
+      LIMIT 3`,
+    [gameId, ...gp]
+  );
   return {
     name: g?.name ?? 'Game',
     totalPlays: total?.c ?? 0,
     players,
+    topScores,
   };
 }
