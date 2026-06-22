@@ -117,6 +117,9 @@ export async function searchGames(filters: SearchFilters): Promise<Game[]> {
   if (filters.unplayedOnly) {
     where.push('(SELECT count(*) FROM plays p WHERE p.game_id = g.id) = 0');
   }
+  if (filters.atHomeOnly) {
+    where.push('g.loaned_to IS NULL');
+  }
   if (filters.maxPlayTime != null) {
     where.push('g.play_time_min IS NOT NULL AND g.play_time_min <= ?');
     params.push(filters.maxPlayTime);

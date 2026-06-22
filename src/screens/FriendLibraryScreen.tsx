@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackProps } from '../navigation';
 import { fetchLibrary } from '../lib/onlineLibrary';
 import { saveFriendLibrary } from '../db/library';
+import { getGamesForLibrary } from '../db/games';
 import { LibraryGame, SharedLibrary } from '../types';
 import { colors, radius, spacing } from '../theme';
 
@@ -25,6 +26,8 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [hideOwned, setHideOwned] = useState(false);
+  const [ownedNames, setOwnedNames] = useState<Set<string>>(new Set());
 
   const load = useCallback(() => {
     setLoading(true);
@@ -45,11 +48,18 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
   useEffect(() => {
     navigation.setOptions({ title: name ?? 'Library' });
     load();
+    // Names of games I own, to optionally hide them from a friend's list.
+    getGamesForLibrary()
+      .then((mine) => setOwnedNames(new Set(mine.map((g) => g.name.trim().toLowerCase()))))
+      .catch(() => {});
   }, [code]);
 
   const games = lib?.games ?? [];
+  const ownedCount = games.filter((g) => ownedNames.has(g.name.trim().toLowerCase())).length;
   const q = query.trim().toLowerCase();
-  const filtered = q ? games.filter((g) => g.name.toLowerCase().includes(q)) : games;
+  const filtered = games
+    .filter((g) => (hideOwned ? !ownedNames.has(g.name.trim().toLowerCase()) : true))
+    .filter((g) => (q ? g.name.toLowerCase().includes(q) : true));
 
   if (loading) {
     return (
@@ -94,6 +104,16 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
                 <Text style={styles.refreshText}>↺</Text>
               </Pressable>
             </View>
+            {ownedCount > 0 && (
+              <Pressable
+                style={[styles.ownedToggle, hideOwned && styles.ownedToggleOn]}
+                onPress={() => setHideOwned((v) => !v)}
+              >
+                <Text style={[styles.ownedToggleText, hideOwned && styles.ownedToggleTextOn]}>
+                  {hideOwned ? `👀 Show all (${ownedCount} I own)` : `🙈 Hide ${ownedCount} I already own`}
+                </Text>
+              </Pressable>
+            )}
           </View>
         }
         renderItem={({ item }) => {
@@ -143,6 +163,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   refreshText: { color: colors.primary, fontSize: 20 },
+  ownedToggle: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: spacing.md,
+  },
+  ownedToggleOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  ownedToggleText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+  ownedToggleTextOn: { color: colors.primaryText },
   gameRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

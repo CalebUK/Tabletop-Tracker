@@ -39,6 +39,7 @@ const EMPTY_FILTERS: SearchFilters = {
   tags: [],
   favoritesOnly: false,
   unplayedOnly: false,
+  atHomeOnly: false,
   maxPlayTime: null,
   minPlayTime: null,
   playerCount: null,
@@ -137,7 +138,7 @@ export default function SearchScreen() {
 
   const active =
     filters.text || filters.tags.length || filters.favoritesOnly ||
-    filters.unplayedOnly || filters.maxPlayTime != null || filters.minPlayTime != null ||
+    filters.unplayedOnly || filters.atHomeOnly || filters.maxPlayTime != null || filters.minPlayTime != null ||
     filters.playerCount != null || filters.minRating != null || filters.minBggRating != null ||
     filters.ageBands.length > 0 || filters.complexity != null || filters.category != null;
 
@@ -156,6 +157,7 @@ export default function SearchScreen() {
       <View style={styles.toggleRow}>
         <Toggle label="⭐ Favorites" on={filters.favoritesOnly} onPress={() => patch({ favoritesOnly: !filters.favoritesOnly })} />
         <Toggle label="🆕 Unplayed" on={filters.unplayedOnly} onPress={() => patch({ unplayedOnly: !filters.unplayedOnly })} />
+        <Toggle label="🏠 At home" on={filters.atHomeOnly} onPress={() => patch({ atHomeOnly: !filters.atHomeOnly })} />
       </View>
 
       <Text style={styles.groupLabel}>Play time</Text>
@@ -369,7 +371,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
   },
-  toggleRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  toggleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
   groupLabel: { color: colors.textMuted, fontSize: 13, fontWeight: '600', marginTop: spacing.sm },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   toggle: {

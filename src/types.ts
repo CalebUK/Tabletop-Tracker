@@ -144,6 +144,7 @@ export interface SearchFilters {
   tags: string[];
   favoritesOnly: boolean;
   unplayedOnly: boolean;
+  atHomeOnly: boolean; // hide games currently loaned out
   maxPlayTime: number | null; // minutes; e.g. 30 for "quick games"
   minPlayTime: number | null; // minutes; e.g. 60 for "60+ min" (longer games)
   // Game must support this many players. A value of 7 means "7 or more".
