@@ -207,13 +207,27 @@ export async function getPlayerStats(name: string): Promise<PlayerStats> {
 }
 
 // Aggregate stats for the Stats tab.
+export interface PlayerRanking {
+  name: string;
+  wins: number;
+  plays: number;
+}
+
+export interface GameRanking {
+  id: number;
+  name: string;
+  plays: number;
+}
+
 export interface CollectionStats {
   totalGames: number;
   totalPlays: number;
   favorites: number;
   unplayed: number;
-  topPlayers: { name: string; wins: number; plays: number }[];
-  mostPlayed: { id: number; name: string; plays: number }[];
+  topPlayers: PlayerRanking[];
+  mostPlayed: GameRanking[];
+  playerCount: number; // distinct players ever recorded
+  playedGamesCount: number; // distinct owned games that have plays
 }
 
 export async function getStats(): Promise<CollectionStats> {
@@ -228,21 +242,27 @@ export async function getStats(): Promise<CollectionStats> {
   const unplayed = await db.getFirstAsync<{ c: number }>(
     'SELECT count(*) AS c FROM games g WHERE g.is_wishlist = 0 AND (SELECT count(*) FROM plays p WHERE p.game_id = g.id) = 0'
   );
-  const topPlayers = await db.getAllAsync<{ name: string; wins: number; plays: number }>(
+  const topPlayers = await db.getAllAsync<PlayerRanking>(
     `SELECT player_name AS name,
             sum(is_winner) AS wins,
             count(*) AS plays
        FROM play_players
       GROUP BY player_name COLLATE NOCASE
       ORDER BY wins DESC, plays DESC
-      LIMIT 5`
+      LIMIT 10`
   );
-  const mostPlayed = await db.getAllAsync<{ id: number; name: string; plays: number }>(
+  const mostPlayed = await db.getAllAsync<GameRanking>(
     `SELECT g.id AS id, g.name AS name, count(p.id) AS plays
        FROM games g JOIN plays p ON p.game_id = g.id
       GROUP BY g.id
       ORDER BY plays DESC
-      LIMIT 5`
+      LIMIT 10`
+  );
+  const playerCount = await db.getFirstAsync<{ c: number }>(
+    'SELECT count(DISTINCT player_name COLLATE NOCASE) AS c FROM play_players'
+  );
+  const playedGamesCount = await db.getFirstAsync<{ c: number }>(
+    'SELECT count(DISTINCT game_id) AS c FROM plays WHERE game_id IS NOT NULL'
   );
 
   return {
@@ -252,7 +272,30 @@ export async function getStats(): Promise<CollectionStats> {
     unplayed: unplayed?.c ?? 0,
     topPlayers,
     mostPlayed,
+    playerCount: playerCount?.c ?? 0,
+    playedGamesCount: playedGamesCount?.c ?? 0,
   };
+}
+
+// Full leaderboards (no limit) for the "see all" screens.
+export async function getPlayerRankings(): Promise<PlayerRanking[]> {
+  const db = await getDb();
+  return db.getAllAsync<PlayerRanking>(
+    `SELECT player_name AS name, sum(is_winner) AS wins, count(*) AS plays
+       FROM play_players
+      GROUP BY player_name COLLATE NOCASE
+      ORDER BY wins DESC, plays DESC, name COLLATE NOCASE ASC`
+  );
+}
+
+export async function getGameRankings(): Promise<GameRanking[]> {
+  const db = await getDb();
+  return db.getAllAsync<GameRanking>(
+    `SELECT g.id AS id, g.name AS name, count(p.id) AS plays
+       FROM games g JOIN plays p ON p.game_id = g.id
+      GROUP BY g.id
+      ORDER BY plays DESC, g.name COLLATE NOCASE ASC`
+  );
 }
 
 export interface GamePlayStats {

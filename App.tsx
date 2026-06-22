@@ -22,6 +22,7 @@ import LoanScreen from './src/screens/LoanScreen';
 import PlayerStatsScreen from './src/screens/PlayerStatsScreen';
 import GameStatsScreen from './src/screens/GameStatsScreen';
 import GroupStatsScreen from './src/screens/GroupStatsScreen';
+import LeaderboardScreen from './src/screens/LeaderboardScreen';
 import BackupScreen from './src/screens/BackupScreen';
 import AboutScreen from './src/screens/AboutScreen';
 
@@ -102,6 +103,7 @@ export default function App() {
           <Stack.Screen name="PlayerStats" component={PlayerStatsScreen} options={{ title: '' }} />
           <Stack.Screen name="GameStats" component={GameStatsScreen} options={{ title: '' }} />
           <Stack.Screen name="GroupStats" component={GroupStatsScreen} options={{ title: '' }} />
+          <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: '' }} />
           <Stack.Screen name="Backup" component={BackupScreen} options={{ title: 'Backup & Export' }} />
           <Stack.Screen name="About" component={AboutScreen} options={{ title: 'About & Privacy' }} />
           <Stack.Screen name="FriendLibrary" component={FriendLibraryScreen} options={{ title: '' }} />

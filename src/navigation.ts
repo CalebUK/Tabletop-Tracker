@@ -13,6 +13,7 @@ export type RootStackParamList = {
   PlayerStats: { name: string };
   GameStats: { gameId: number };
   GroupStats: { groupId: number };
+  Leaderboard: { kind: 'players' | 'games' }; // full ranked list (see all)
   Backup: undefined;
   About: undefined;
   FriendLibrary: { code: string; name?: string };

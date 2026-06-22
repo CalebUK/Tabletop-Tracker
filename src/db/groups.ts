@@ -30,7 +30,7 @@ export interface GroupStats {
   name: string;
   totalPlays: number;
   players: { name: string; wins: number; plays: number }[];
-  games: { name: string; plays: number }[];
+  games: { name: string; plays: number; gameId: number | null }[];
 }
 
 export async function getGroupStats(groupId: number): Promise<GroupStats> {
@@ -51,8 +51,9 @@ export async function getGroupStats(groupId: number): Promise<GroupStats> {
       ORDER BY wins DESC, plays DESC`,
     [groupId]
   );
-  const games = await db.getAllAsync<{ name: string; plays: number }>(
-    `SELECT COALESCE(game_name, '(unknown)') AS name, count(*) AS plays
+  const games = await db.getAllAsync<{ name: string; plays: number; gameId: number | null }>(
+    `SELECT COALESCE(game_name, '(unknown)') AS name, count(*) AS plays,
+            MAX(game_id) AS gameId
        FROM plays
       WHERE group_id = ?
       GROUP BY name COLLATE NOCASE

@@ -96,6 +96,14 @@ export default function StatsScreen() {
               </Pressable>
             ))
           )}
+          {stats.playerCount > stats.topPlayers.length && (
+            <Pressable
+              style={styles.seeAll}
+              onPress={() => navigation.navigate('Leaderboard', { kind: 'players' })}
+            >
+              <Text style={styles.seeAllText}>See all {stats.playerCount} players ›</Text>
+            </Pressable>
+          )}
         </Section>
 
         <Section title="🔥 Most played">
@@ -112,6 +120,14 @@ export default function StatsScreen() {
                 <Text style={styles.listValue}>{g.plays} play{g.plays === 1 ? '' : 's'}</Text>
               </Pressable>
             ))
+          )}
+          {stats.playedGamesCount > stats.mostPlayed.length && (
+            <Pressable
+              style={styles.seeAll}
+              onPress={() => navigation.navigate('Leaderboard', { kind: 'games' })}
+            >
+              <Text style={styles.seeAllText}>See all {stats.playedGamesCount} games ›</Text>
+            </Pressable>
           )}
         </Section>
 
@@ -172,6 +188,8 @@ const styles = StyleSheet.create({
   },
   listName: { color: colors.text, fontSize: 15 },
   listValue: { color: colors.textMuted, fontSize: 14 },
+  seeAll: { paddingVertical: spacing.sm },
+  seeAllText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   muted: { color: colors.textMuted, fontSize: 14, marginBottom: spacing.sm },
   newGroupRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   newGroupInput: {

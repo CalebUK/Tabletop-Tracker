@@ -52,11 +52,15 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
         stats.players.map((p, i) => {
           const rate = p.plays > 0 ? Math.round((p.wins / p.plays) * 100) : 0;
           return (
-            <View key={p.name} style={styles.row}>
+            <Pressable
+              key={p.name}
+              style={styles.row}
+              onPress={() => navigation.navigate('PlayerStats', { name: p.name })}
+            >
               <Text style={styles.rank}>{i + 1}</Text>
-              <Text style={styles.name}>{p.name}</Text>
+              <Text style={styles.name}>{p.name} ›</Text>
               <Text style={styles.record}>{p.wins}/{p.plays} · {rate}%</Text>
-            </View>
+            </Pressable>
           );
         })
       )}
@@ -65,12 +69,23 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
       {stats.games.length === 0 ? (
         <Text style={styles.muted}>No games logged yet.</Text>
       ) : (
-        stats.games.map((g) => (
-          <View key={g.name} style={styles.row}>
-            <Text style={styles.name}>{g.name}</Text>
-            <Text style={styles.record}>{g.plays} play{g.plays === 1 ? '' : 's'}</Text>
-          </View>
-        ))
+        stats.games.map((g) =>
+          g.gameId != null ? (
+            <Pressable
+              key={g.name}
+              style={styles.row}
+              onPress={() => navigation.navigate('GameStats', { gameId: g.gameId as number })}
+            >
+              <Text style={styles.name}>{g.name} ›</Text>
+              <Text style={styles.record}>{g.plays} play{g.plays === 1 ? '' : 's'}</Text>
+            </Pressable>
+          ) : (
+            <View key={g.name} style={styles.row}>
+              <Text style={styles.name}>{g.name}</Text>
+              <Text style={styles.record}>{g.plays} play{g.plays === 1 ? '' : 's'}</Text>
+            </View>
+          )
+        )
       )}
 
       <Pressable style={styles.deleteBtn} onPress={onDelete}>
