@@ -73,13 +73,15 @@ export interface GameInput {
 
 export type Complexity = 'easy' | 'medium' | 'high';
 
-// A game as it appears in a shared online library (no photos / personal info).
+// A game as it appears in a shared online library. No personal photos — only a
+// public BoardGameGeek cover URL (when the game has one).
 export interface LibraryGame {
   name: string;
   rating: number | null;
   minPlayers: number | null;
   maxPlayers: number | null;
   playTimeMin: number | null;
+  image: string | null; // public BGG cover URL, or null
 }
 
 export interface SharedLibrary {
@@ -97,6 +99,7 @@ export interface AggregatedGame {
   minPlayers: number | null;
   maxPlayers: number | null;
   playTimeMin: number | null;
+  image: string | null; // first public cover URL found among owners
   owners: { owner: string; rating: number | null }[];
   bestRating: number | null;
 }

@@ -223,6 +223,7 @@ export async function fetchAllGames(includeOwn: boolean): Promise<AggregatedGame
           minPlayers: g.minPlayers,
           maxPlayers: g.maxPlayers,
           playTimeMin: g.playTimeMin,
+          image: g.image ?? null,
           owners: [],
           bestRating: null,
         };
@@ -230,6 +231,7 @@ export async function fetchAllGames(includeOwn: boolean): Promise<AggregatedGame
       }
       agg.owners.push({ owner: src.owner, rating: g.rating });
       if (g.rating != null) agg.bestRating = Math.max(agg.bestRating ?? 0, g.rating);
+      if (agg.image == null && g.image) agg.image = g.image;
       if (agg.minPlayers == null) agg.minPlayers = g.minPlayers;
       if (agg.maxPlayers == null) agg.maxPlayers = g.maxPlayers;
       if (agg.playTimeMin == null) agg.playTimeMin = g.playTimeMin;

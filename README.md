@@ -37,8 +37,9 @@ GitHub: https://github.com/CalebUK/Tabletop-Tracker
   (deleted on return) and a full loan history.
 - **Online library (opt-in)** — publish your collection to get a share code;
   friends enter the code to view it. "Browse all games" merges everyone's
-  collections into a **realistic bookcase** you can search and sort. No photos or
-  personal info are shared. See `FIREBASE_SETUP.md`.
+  collections into a **realistic bookcase** you can search and sort (tap a book
+  for its cover and who owns it). Only public game covers are shared — never your
+  own photos or personal info. See `FIREBASE_SETUP.md`.
 - **Backup & export** — full JSON backup (incl. photos) to move devices, plus a
   CSV export. A first-run **walkthrough** introduces the app.
 

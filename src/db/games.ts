@@ -1,6 +1,6 @@
 import type * as SQLite from 'expo-sqlite';
 import { getDb } from './database';
-import { Complexity, Expansion, Game, GameInput, LoanRecord, SearchFilters } from '../types';
+import { Complexity, Expansion, Game, GameInput, LibraryGame, LoanRecord, SearchFilters } from '../types';
 
 // Separator used inside group_concat for tags (an unlikely-to-appear char).
 const TAG_SEP = '';
@@ -458,10 +458,9 @@ export async function getExpansions(gameId: number): Promise<Expansion[]> {
   }));
 }
 
-// Lightweight game list for publishing to an online library (no photos).
-export async function getGamesForLibrary(): Promise<
-  { name: string; rating: number | null; minPlayers: number | null; maxPlayers: number | null; playTimeMin: number | null }[]
-> {
+// Lightweight game list for publishing to an online library. Includes a public
+// BGG cover URL when present, but never the user's own (local) photo.
+export async function getGamesForLibrary(): Promise<LibraryGame[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<{
     name: string;
@@ -469,8 +468,9 @@ export async function getGamesForLibrary(): Promise<
     min_players: number | null;
     max_players: number | null;
     play_time_min: number | null;
+    image_uri: string | null;
   }>(
-    'SELECT name, rating, min_players, max_players, play_time_min FROM games WHERE is_wishlist = 0 ORDER BY name COLLATE NOCASE ASC'
+    'SELECT name, rating, min_players, max_players, play_time_min, image_uri FROM games WHERE is_wishlist = 0 ORDER BY name COLLATE NOCASE ASC'
   );
   return rows.map((r) => ({
     name: r.name,
@@ -478,6 +478,8 @@ export async function getGamesForLibrary(): Promise<
     minPlayers: r.min_players,
     maxPlayers: r.max_players,
     playTimeMin: r.play_time_min,
+    // Only share a remote (BGG) cover; local file:// photos stay private.
+    image: r.image_uri && r.image_uri.startsWith('http') ? r.image_uri : null,
   }));
 }
 

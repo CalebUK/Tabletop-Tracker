@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -207,6 +208,9 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
           <Pressable style={styles.sheet} onPress={() => {}}>
             {selected && (
               <>
+                {selected.image ? (
+                  <Image source={{ uri: selected.image }} style={styles.cover} resizeMode="contain" />
+                ) : null}
                 <Text style={styles.sheetTitle}>{selected.name}</Text>
                 <Text style={styles.sheetMeta}>
                   {[
@@ -408,6 +412,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
+  },
+  cover: {
+    width: '100%',
+    height: 160,
+    borderRadius: radius.md,
+    marginBottom: spacing.md,
+    backgroundColor: colors.surfaceAlt,
   },
   sheetTitle: { color: colors.text, fontSize: 20, fontWeight: '700' },
   sheetMeta: { color: colors.textMuted, fontSize: 14, marginTop: 2, marginBottom: spacing.md },

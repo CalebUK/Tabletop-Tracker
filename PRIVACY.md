@@ -28,8 +28,9 @@ Data only leaves your device when **you** choose an action that sends it:
 - **Online Library (optional).** If you choose to create an online library, the
   app uploads a list of your games to a cloud database (Google Firebase) so
   friends with your **share code** can view it. Only the **game name, your
-  rating, player count and play time** are shared — **no photos or personal
-  information** — along with a library name you choose. Access is by share code
+  rating, player count, play time**, and a game's **public BoardGameGeek cover
+  image link** (when it has one) are shared — **never your own photos** and no
+  personal information — along with a library name you choose. Access is by share code
   only; libraries are not publicly searchable. You can delete your online
   library at any time from the Library tab, which removes it from the cloud. The
   feature is entirely opt-in; if you never create a library, nothing is

@@ -59,7 +59,7 @@ FIND THE RIGHT GAME
 
 SHARE WITH FRIENDS
 • Create an online library to get a share code, so friends can see what you
-  have and your ratings — just a game list, no photos or personal info.
+  have and your ratings — just a game list and public game covers, no personal info.
 • Add friends' codes to browse their games, and view everyone's collections
   together on one shelf.
 
@@ -118,7 +118,8 @@ truthfully:
   optional online library; if a user never creates one, nothing is uploaded).
 - **Data collected (when the user creates an online library):**
   - **App activity / other user-generated content** — the user's game list and
-    their ratings (game name, rating, player count, play time). **No photos.**
+    their ratings (game name, rating, player count, play time). **No personal
+    photos** (a public BoardGameGeek cover image link may be included).
   - **Device or other IDs** — an anonymous sign-in ID (used so only the owner can
     edit their own library; no name, email or account).
 - **Is data shared with third parties?** → **No** (not sold or shared for ads;
