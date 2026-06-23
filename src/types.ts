@@ -14,6 +14,9 @@ export interface Game {
   houseRules: string | null;
   isFavorite: boolean;
   isWishlist: boolean; // true = a game the user wants but doesn't own yet
+  isDuel: boolean; // strictly 2 players
+  isParty: boolean;
+  isCoop: boolean;
   bggId: number | null;
   bggRating: number | null;
   bggWeight: number | null; // BGG complexity / "weight", 0-5
@@ -59,6 +62,9 @@ export interface GameInput {
   houseRules: string | null;
   isFavorite: boolean;
   isWishlist: boolean;
+  isDuel: boolean;
+  isParty: boolean;
+  isCoop: boolean;
   bggId: number | null;
   bggRating: number | null;
   bggWeight: number | null;
@@ -72,6 +78,9 @@ export interface GameInput {
 }
 
 export type Complexity = 'easy' | 'medium' | 'high';
+
+// Fixed "what kind of game" tags. Duel = strictly 2 players (not just supports 2).
+export type GameType = 'duel' | 'party' | 'coop';
 
 // A game as it appears in a shared online library. No personal photos — only a
 // public BoardGameGeek cover URL (when the game has one).
@@ -161,4 +170,5 @@ export interface SearchFilters {
   ageBands: { lo: number; hi: number | null }[];
   complexity: Complexity | null;
   category: string | null; // game must have this category
+  types: GameType[]; // match any of these game types (OR)
 }

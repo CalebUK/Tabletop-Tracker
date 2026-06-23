@@ -20,6 +20,9 @@ interface GameRow {
   house_rules: string | null;
   is_favorite: number;
   is_wishlist: number;
+  is_duel: number;
+  is_party: number;
+  is_coop: number;
   bgg_id: number | null;
   bgg_rating: number | null;
   bgg_weight: number | null;
@@ -53,6 +56,9 @@ function rowToGame(row: GameRow): Game {
     houseRules: row.house_rules,
     isFavorite: row.is_favorite === 1,
     isWishlist: row.is_wishlist === 1,
+    isDuel: row.is_duel === 1,
+    isParty: row.is_party === 1,
+    isCoop: row.is_coop === 1,
     bggId: row.bgg_id,
     bggRating: row.bgg_rating,
     bggWeight: row.bgg_weight,
@@ -171,6 +177,11 @@ export async function searchGames(filters: SearchFilters): Promise<Game[]> {
     where.push('g.complexity = ?');
     params.push(filters.complexity);
   }
+  if (filters.types.length > 0) {
+    const cols: Record<string, string> = { duel: 'g.is_duel', party: 'g.is_party', coop: 'g.is_coop' };
+    const ors = filters.types.map((t) => `${cols[t]} = 1`);
+    where.push(`(${ors.join(' OR ')})`);
+  }
   if (filters.category != null) {
     where.push(
       'EXISTS (SELECT 1 FROM game_categories gc JOIN categories c ON c.id = gc.category_id WHERE gc.game_id = g.id AND c.name = ? COLLATE NOCASE)'
@@ -203,14 +214,16 @@ export async function saveGame(input: GameInput): Promise<number> {
         `UPDATE games SET
            name = ?, image_uri = ?, location = ?, year = ?,
            min_players = ?, max_players = ?, play_time_min = ?, rating = ?,
-           notes = ?, house_rules = ?, is_favorite = ?, is_wishlist = ?, bgg_id = ?,
+           notes = ?, house_rules = ?, is_favorite = ?, is_wishlist = ?,
+           is_duel = ?, is_party = ?, is_coop = ?, bgg_id = ?,
            bgg_rating = ?, bgg_weight = ?, developer = ?, min_age = ?, complexity = ?, edition = ?,
            updated_at = datetime('now')
          WHERE id = ?`,
         [
           input.name, input.imageUri, input.location, input.year,
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
-          input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.isWishlist ? 1 : 0, input.bggId,
+          input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.isWishlist ? 1 : 0,
+          input.isDuel ? 1 : 0, input.isParty ? 1 : 0, input.isCoop ? 1 : 0, input.bggId,
           input.bggRating, input.bggWeight, input.developer, input.minAge, input.complexity,
           input.edition, input.id,
         ]
@@ -221,12 +234,14 @@ export async function saveGame(input: GameInput): Promise<number> {
         `INSERT INTO games
            (name, image_uri, location, year, min_players, max_players,
             play_time_min, rating, notes, house_rules, is_favorite, is_wishlist,
+            is_duel, is_party, is_coop,
             bgg_id, bgg_rating, bgg_weight, developer, min_age, complexity, edition)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           input.name, input.imageUri, input.location, input.year,
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
           input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.isWishlist ? 1 : 0,
+          input.isDuel ? 1 : 0, input.isParty ? 1 : 0, input.isCoop ? 1 : 0,
           input.bggId, input.bggRating, input.bggWeight, input.developer, input.minAge,
           input.complexity, input.edition,
         ]
@@ -333,6 +348,9 @@ export async function addWishlistGame(g: {
     houseRules: null,
     isFavorite: false,
     isWishlist: true,
+    isDuel: false,
+    isParty: false,
+    isCoop: false,
     bggId: null,
     bggRating: null,
     bggWeight: null,

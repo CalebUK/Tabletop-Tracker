@@ -48,7 +48,14 @@ const EMPTY_FILTERS: SearchFilters = {
   ageBands: [],
   complexity: null,
   category: null,
+  types: [],
 };
+
+const GAME_TYPES: { key: 'duel' | 'party' | 'coop'; label: string }[] = [
+  { key: 'duel', label: 'Duel' },
+  { key: 'party', label: 'Party' },
+  { key: 'coop', label: 'Co-Op' },
+];
 
 const AGE_BANDS: { label: string; band: { lo: number; hi: number | null } }[] = [
   { label: '2–5', band: { lo: 2, hi: 5 } },
@@ -138,7 +145,8 @@ export default function SearchScreen() {
     filters.text || filters.tags.length || filters.favoritesOnly ||
     filters.unplayedOnly || filters.atHomeOnly || filters.maxPlayTime != null || filters.minPlayTime != null ||
     filters.playerCount != null || filters.minRating != null || filters.minBggRating != null ||
-    filters.ageBands.length > 0 || filters.complexity != null || filters.category != null;
+    filters.ageBands.length > 0 || filters.complexity != null || filters.category != null ||
+    filters.types.length > 0;
 
   const header = (
     <View style={styles.filters}>
@@ -192,6 +200,27 @@ export default function SearchScreen() {
             onPress={() => patch({ complexity: filters.complexity === c ? null : c })}
           />
         ))}
+      </View>
+
+      <Text style={styles.groupLabel}>Game type</Text>
+      <View style={styles.chipWrap}>
+        {GAME_TYPES.map((t) => {
+          const on = filters.types.includes(t.key);
+          return (
+            <Toggle
+              key={t.key}
+              label={t.label}
+              on={on}
+              onPress={() =>
+                patch({
+                  types: on
+                    ? filters.types.filter((x) => x !== t.key)
+                    : [...filters.types, t.key],
+                })
+              }
+            />
+          );
+        })}
       </View>
 
       <Text style={styles.groupLabel}>My rating</Text>

@@ -48,6 +48,9 @@ const EMPTY: GameInput = {
   houseRules: null,
   isFavorite: false,
   isWishlist: false,
+  isDuel: false,
+  isParty: false,
+  isCoop: false,
   bggId: null,
   bggRating: null,
   bggWeight: null,
@@ -119,6 +122,9 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
           houseRules: g.houseRules,
           isFavorite: g.isFavorite,
           isWishlist: g.isWishlist,
+          isDuel: g.isDuel,
+          isParty: g.isParty,
+          isCoop: g.isCoop,
           bggId: g.bggId,
           bggRating: g.bggRating,
           bggWeight: g.bggWeight,
@@ -501,6 +507,30 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                 </Pressable>
               ))}
             </View>
+          </Field>
+
+          <Field label="Game type">
+            <View style={styles.segment}>
+              <Pressable
+                style={[styles.segmentItem, form.isDuel && styles.segmentItemOn]}
+                onPress={() => patch({ isDuel: !form.isDuel })}
+              >
+                <Text style={[styles.segmentText, form.isDuel && styles.segmentTextOn]}>Duel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.segmentItem, form.isParty && styles.segmentItemOn]}
+                onPress={() => patch({ isParty: !form.isParty })}
+              >
+                <Text style={[styles.segmentText, form.isParty && styles.segmentTextOn]}>Party</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.segmentItem, form.isCoop && styles.segmentItemOn]}
+                onPress={() => patch({ isCoop: !form.isCoop })}
+              >
+                <Text style={[styles.segmentText, form.isCoop && styles.segmentTextOn]}>Co-Op</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.fieldHint}>Duel = strictly 2 players (not just supports 2).</Text>
           </Field>
 
           <View style={styles.row}>

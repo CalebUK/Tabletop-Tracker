@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackProps } from '../navigation';
 import { fetchLibrary } from '../lib/onlineLibrary';
-import { saveFriendLibrary } from '../db/library';
+import { saveFriendLibrary, removeFriendLibrary } from '../db/library';
 import { getGamesForLibrary } from '../db/games';
 import { LibraryGame, SharedLibrary } from '../types';
 import { colors, radius, spacing } from '../theme';
@@ -53,6 +53,21 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
       .then((mine) => setOwnedNames(new Set(mine.map((g) => g.name.trim().toLowerCase()))))
       .catch(() => {});
   }, [code]);
+
+  function onRemove() {
+    Alert.alert(
+      'Remove this library?',
+      `${name ?? lib?.name ?? 'This library'} will be removed from your saved libraries.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => removeFriendLibrary(code).then(() => navigation.goBack()),
+        },
+      ]
+    );
+  }
 
   const games = lib?.games ?? [];
   const ownedCount = games.filter((g) => ownedNames.has(g.name.trim().toLowerCase())).length;
@@ -133,6 +148,11 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
           );
         }}
         ListEmptyComponent={<Text style={styles.empty}>No games to show.</Text>}
+        ListFooterComponent={
+          <Pressable style={styles.removeBtn} onPress={onRemove}>
+            <Text style={styles.removeBtnText}>🗑  Remove this library</Text>
+          </Pressable>
+        }
       />
     </SafeAreaView>
   );
@@ -195,6 +215,15 @@ const styles = StyleSheet.create({
   rating: { color: colors.star, fontSize: 13, fontWeight: '700' },
   metaText: { color: colors.textMuted, fontSize: 12 },
   empty: { color: colors.textMuted, textAlign: 'center', marginTop: spacing.xl },
+  removeBtn: {
+    marginTop: spacing.xl,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.danger,
+  },
+  removeBtnText: { color: colors.danger, fontSize: 15, fontWeight: '600' },
   error: { color: colors.textMuted, fontSize: 15, textAlign: 'center', lineHeight: 21 },
   retry: { paddingVertical: 12, paddingHorizontal: spacing.xl, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary },
   retryText: { color: colors.primary, fontSize: 15, fontWeight: '600' },

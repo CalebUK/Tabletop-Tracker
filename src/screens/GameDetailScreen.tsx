@@ -83,6 +83,11 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
     ? game.complexity[0].toUpperCase() + game.complexity.slice(1)
     : null;
 
+  const typeLabel =
+    [game.isDuel && 'Duel', game.isParty && 'Party', game.isCoop && 'Co-Op']
+      .filter(Boolean)
+      .join(', ') || null;
+
   async function onToggleFav() {
     if (!game) return;
     await toggleFavorite(game.id, !game.isFavorite);
@@ -183,6 +188,7 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
         <Row label="📍 Location" value={game.location} />
       ) : null}
       {game.developer ? <Row label="✍️ Publisher/Designer" value={game.developer} /> : null}
+      {typeLabel ? <Row label="🎮 Type" value={typeLabel} /> : null}
       {complexityLabel ? <Row label="🎯 Complexity" value={complexityLabel} /> : null}
       {game.year ? <Row label="📅 Year" value={String(game.year)} /> : null}
       {game.edition ? <Row label="📖 Edition" value={game.edition} /> : null}
