@@ -225,21 +225,25 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
   async function applyBggId(id: number) {
     const d = await bggDetails(id);
     if (!d) return;
-    setForm((f) => ({
-      ...f,
-      name: d.name || f.name,
-      year: d.year ?? f.year,
-      minPlayers: d.minPlayers ?? f.minPlayers,
-      maxPlayers: d.maxPlayers ?? f.maxPlayers,
-      playTimeMin: d.playTimeMin ?? f.playTimeMin,
-      minAge: d.minAge ?? f.minAge,
-      developer: d.developer ?? f.developer,
-      bggId: d.id,
-      bggRating: d.bggRating != null ? round2num(d.bggRating) : f.bggRating,
-      bggWeight: d.bggWeight != null ? round2num(d.bggWeight) : f.bggWeight,
-      // Use the BGG cover only if the user hasn't added their own photo.
-      imageUri: f.imageUri ?? d.imageUrl,
-    }));
+    setForm((f) => {
+      // Keep the user's own photo (a local file). Otherwise take the BGG cover —
+      // including replacing a previous BGG cover when re-syncing to another game.
+      const userPhoto = !!f.imageUri && f.imageUri.startsWith('file');
+      return {
+        ...f,
+        name: d.name || f.name,
+        year: d.year ?? f.year,
+        minPlayers: d.minPlayers ?? f.minPlayers,
+        maxPlayers: d.maxPlayers ?? f.maxPlayers,
+        playTimeMin: d.playTimeMin ?? f.playTimeMin,
+        minAge: d.minAge ?? f.minAge,
+        developer: d.developer ?? f.developer,
+        bggId: d.id,
+        bggRating: d.bggRating != null ? round2num(d.bggRating) : f.bggRating,
+        bggWeight: d.bggWeight != null ? round2num(d.bggWeight) : f.bggWeight,
+        imageUri: userPhoto ? f.imageUri : d.imageUrl ?? null,
+      };
+    });
   }
 
   // Pull full details for a chosen BGG result and fill the empty fields.
