@@ -188,7 +188,7 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
         <Row label="📍 Location" value={game.location} />
       ) : null}
       {game.developer ? <Row label="✍️ Publisher/Designer" value={game.developer} /> : null}
-      {typeLabel ? <Row label="🎮 Type" value={typeLabel} /> : null}
+      {typeLabel ? <Row label="🎮 Play style" value={typeLabel} /> : null}
       {complexityLabel ? <Row label="🎯 Complexity" value={complexityLabel} /> : null}
       {game.year ? <Row label="📅 Year" value={String(game.year)} /> : null}
       {game.edition ? <Row label="📖 Edition" value={game.edition} /> : null}

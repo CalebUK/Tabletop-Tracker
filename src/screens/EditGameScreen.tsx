@@ -509,7 +509,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
             </View>
           </Field>
 
-          <Field label="Game type">
+          <Field label="Play style">
             <View style={styles.segment}>
               <Pressable
                 style={[styles.segmentItem, form.isDuel && styles.segmentItemOn]}

@@ -202,7 +202,7 @@ export default function SearchScreen() {
         ))}
       </View>
 
-      <Text style={styles.groupLabel}>Game type</Text>
+      <Text style={styles.groupLabel}>Play style</Text>
       <View style={styles.chipWrap}>
         {GAME_TYPES.map((t) => {
           const on = filters.types.includes(t.key);
