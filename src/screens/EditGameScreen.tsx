@@ -478,28 +478,6 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
             </Field>
           </View>
 
-          <View style={styles.row}>
-            <Field label="Year" style={styles.flex1}>
-              <TextInput
-                style={styles.input}
-                keyboardType="number-pad"
-                value={form.year?.toString() ?? ''}
-                onChangeText={(v) => patch({ year: numOrNull(v) })}
-                placeholder="2019"
-                placeholderTextColor={colors.placeholder}
-              />
-            </Field>
-            <Field label="Edition" style={styles.flex1}>
-              <TextInput
-                style={styles.input}
-                value={form.edition ?? ''}
-                onChangeText={(v) => patch({ edition: v || null })}
-                placeholder="e.g. 2nd Edition"
-                placeholderTextColor={colors.placeholder}
-              />
-            </Field>
-          </View>
-
           <Field label={`Teachability${form.teachRating ? ` · ${form.teachRating}/5` : ''}`}>
             <View style={styles.teachRow}>
               {[1, 2, 3, 4, 5].map((n) => {
@@ -560,6 +538,28 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                 value={form.bggWeight != null ? String(form.bggWeight) : ''}
                 onChangeText={(v) => patch({ bggWeight: weightOrNull(v) })}
                 placeholder="—"
+                placeholderTextColor={colors.placeholder}
+              />
+            </Field>
+          </View>
+
+          <View style={styles.row}>
+            <Field label="Year" style={styles.flex1}>
+              <TextInput
+                style={styles.input}
+                keyboardType="number-pad"
+                value={form.year?.toString() ?? ''}
+                onChangeText={(v) => patch({ year: numOrNull(v) })}
+                placeholder="2019"
+                placeholderTextColor={colors.placeholder}
+              />
+            </Field>
+            <Field label="Edition" style={styles.flex1}>
+              <TextInput
+                style={styles.input}
+                value={form.edition ?? ''}
+                onChangeText={(v) => patch({ edition: v || null })}
+                placeholder="e.g. 2nd Edition"
                 placeholderTextColor={colors.placeholder}
               />
             </Field>
