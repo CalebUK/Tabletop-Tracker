@@ -1,6 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { getDb } from './database';
 import { getAllGames, getExpansions } from './games';
+import { isoToUk } from '../lib/dates';
 
 // Tables in dependency order (parents first) so a restore satisfies foreign keys.
 // (Restore deletes in reverse — children first — before re-inserting.)
@@ -133,21 +134,36 @@ function csvCell(value: unknown): string {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+function cap(s: string | null): string {
+  return s ? s[0].toUpperCase() + s.slice(1) : '';
+}
+
 export async function exportCsv(): Promise<string> {
   const games = await getAllGames();
   const headers = [
-    'Name', 'Location', 'Min Players', 'Max Players', 'Play Time (min)', 'Min Age',
-    'Complexity', 'My Rating', 'BGG Rating', 'Publisher/Designer', 'Favourite',
-    'Tags', 'Expansions', 'Plays', 'Loaned To',
+    'Name', 'Year', 'Edition', 'Location', 'Min Players', 'Max Players',
+    'Max with Expansions', 'Play Time (min)', 'Min Age', 'Complexity', 'Play Style',
+    'My Rating', 'BGG Rating', 'BGG Weight', 'Publisher/Designer', 'Favourite',
+    'Categories', 'Tags', 'Expansions', 'Plays', 'Last Played', 'Loaned To', 'Notes',
   ];
   const lines = [headers.join(',')];
 
   for (const g of games) {
     const exps = await getExpansions(g.id);
+    const playStyle = [g.isDuel && 'Duel', g.isParty && 'Party', g.isCoop && 'Co-Op']
+      .filter(Boolean)
+      .join('; ');
+    const maxWithExp =
+      g.maxPlayers != null ? g.maxPlayers + g.expansionPlayers : '';
+    const expansions = exps
+      .map((e) => (e.additionalPlayers ? `${e.name} (+${e.additionalPlayers})` : e.name))
+      .join('; ');
     const row = [
-      g.name, g.location, g.minPlayers, g.maxPlayers, g.playTimeMin, g.minAge,
-      g.complexity, g.rating, g.bggRating, g.developer, g.isFavorite ? 'Yes' : 'No',
-      g.tags.join('; '), exps.map((e) => e.name).join('; '), g.playCount, g.loanedTo,
+      g.name, g.year, g.edition, g.location, g.minPlayers, g.maxPlayers,
+      maxWithExp, g.playTimeMin, g.minAge, cap(g.complexity), playStyle,
+      g.rating, g.bggRating, g.bggWeight, g.developer, g.isFavorite ? 'Yes' : 'No',
+      g.categories.join('; '), g.tags.join('; '), expansions, g.playCount,
+      g.lastPlayedAt ? isoToUk(g.lastPlayedAt) : '', g.loanedTo, g.notes,
     ];
     lines.push(row.map(csvCell).join(','));
   }
