@@ -51,14 +51,15 @@ Google requires personal developer accounts (created after ~Nov 2023) to run a
 - ⬜ **Firebase App Check** — enable to stop abuse of the public Firebase config
   (someone spamming junk libraries). Negligible risk at tester scale; do before
   a wide public launch.
-- ⬜ **Restrict the Firebase API key** — Google Cloud Console → APIs & Services →
-  Credentials → "Browser key (auto created by Firebase)". Add **API
-  restrictions** (limit to Identity Toolkit / Token Service / Cloud Firestore
-  API) and optionally an **Android app restriction** (package + signing SHA-1).
-  NB: the web API key in `src/lib/firebaseConfig.ts` is *meant* to be public
-  (it's a project identifier, not a secret — access is enforced by Firestore
-  rules), so a GitHub "leaked secret" alert on it is expected: restrict the key,
-  don't revoke it, then dismiss the alert as a false positive.
+- ✅ **Restrict the Firebase API key** — checked 2026-06-24: the "Browser key
+  (auto created by Firebase)" was **already API-restricted** by Firebase to its
+  ~25 managed APIs, which include the ones the app uses (Identity Toolkit, Token
+  Service, Cloud Firestore, Firebase Installations). No change needed. Left the
+  optional **Android app restriction** off (risky with Play App Signing — would
+  need the Play App Signing SHA-1). NB: the web API key in
+  `src/lib/firebaseConfig.ts` is *meant* to be public (a project identifier, not
+  a secret — access is enforced by Firestore rules), so the GitHub "leaked
+  secret" alert can be dismissed as a false positive.
 - ⬜ **Firebase budget alert** — set a billing/usage alert so a usage spike
   can't surprise you (free tier is generous, but be safe).
 - ⬜ **BGG token** — confirm it's still valid and not rate-limited as usage grows.
@@ -95,4 +96,4 @@ Google requires personal developer accounts (created after ~Nov 2023) to run a
 
 ---
 
-_Last reviewed: 2026-06-22 (v1.2.0)._
+_Last reviewed: 2026-06-24 (v1.3.0)._
