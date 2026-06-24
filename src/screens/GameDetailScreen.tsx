@@ -212,7 +212,10 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
           <Text style={styles.sectionTitle}>Expansions ({expansions.length})</Text>
           {expansions.map((e) => (
             <View key={e.id} style={styles.expansionRow}>
-              <Text style={styles.expansionName}>{e.name}</Text>
+              <View style={styles.expansionInfo}>
+                <Text style={styles.expansionName}>{e.name}</Text>
+                {e.location ? <Text style={styles.expansionLoc}>📍 {e.location}</Text> : null}
+              </View>
               {e.additionalPlayers > 0 && (
                 <Text style={styles.expansionPlus}>+{e.additionalPlayers} players</Text>
               )}
@@ -419,7 +422,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  expansionName: { color: colors.text, fontSize: 15, flex: 1, marginRight: spacing.sm },
+  expansionInfo: { flex: 1, marginRight: spacing.sm },
+  expansionName: { color: colors.text, fontSize: 15 },
+  expansionLoc: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
   expansionPlus: { color: colors.success, fontSize: 13, fontWeight: '600' },
   expansionNote: { color: colors.textMuted, fontSize: 13, marginTop: spacing.sm, fontStyle: 'italic' },
   editLink: { color: colors.primary, fontSize: 15, fontWeight: '600' },

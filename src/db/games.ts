@@ -39,6 +39,7 @@ interface GameRow {
   play_count: number;
   last_played: string | null;
   expansion_count: number;
+  expansion_players: number;
 }
 
 function rowToGame(row: GameRow): Game {
@@ -75,6 +76,7 @@ function rowToGame(row: GameRow): Game {
     playCount: row.play_count ?? 0,
     lastPlayedAt: row.last_played ?? null,
     expansionCount: row.expansion_count ?? 0,
+    expansionPlayers: row.expansion_players ?? 0,
   };
 }
 
@@ -88,7 +90,8 @@ const BASE_SELECT = `
       WHERE gc.game_id = g.id) AS categories,
     (SELECT count(*) FROM plays p WHERE p.game_id = g.id) AS play_count,
     (SELECT max(p.played_at) FROM plays p WHERE p.game_id = g.id) AS last_played,
-    (SELECT count(*) FROM expansions e WHERE e.game_id = g.id) AS expansion_count
+    (SELECT count(*) FROM expansions e WHERE e.game_id = g.id) AS expansion_count,
+    (SELECT COALESCE(SUM(additional_players), 0) FROM expansions e WHERE e.game_id = g.id) AS expansion_players
   FROM games g
 `;
 
@@ -290,9 +293,10 @@ export async function saveGame(input: GameInput): Promise<number> {
     for (const ex of input.expansions) {
       const name = ex.name.trim();
       if (!name) continue;
+      const loc = ex.location && ex.location.trim() ? ex.location.trim() : null;
       await db.runAsync(
-        'INSERT INTO expansions (game_id, name, additional_players) VALUES (?, ?, ?)',
-        [gameId, name, ex.additionalPlayers || 0]
+        'INSERT INTO expansions (game_id, name, additional_players, location) VALUES (?, ?, ?, ?)',
+        [gameId, name, ex.additionalPlayers || 0, loc]
       );
     }
   });
@@ -465,14 +469,15 @@ export async function getLoanHistory(gameId: number): Promise<LoanRecord[]> {
 // Expansions owned for a game.
 export async function getExpansions(gameId: number): Promise<Expansion[]> {
   const db = await getDb();
-  const rows = await db.getAllAsync<{ id: number; name: string; additional_players: number }>(
-    'SELECT id, name, additional_players FROM expansions WHERE game_id = ? ORDER BY id ASC',
+  const rows = await db.getAllAsync<{ id: number; name: string; additional_players: number; location: string | null }>(
+    'SELECT id, name, additional_players, location FROM expansions WHERE game_id = ? ORDER BY id ASC',
     [gameId]
   );
   return rows.map((r) => ({
     id: r.id,
     name: r.name,
     additionalPlayers: r.additional_players,
+    location: r.location,
   }));
 }
 

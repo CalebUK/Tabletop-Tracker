@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS expansions (
   game_id INTEGER NOT NULL,
   name TEXT NOT NULL,
   additional_players INTEGER NOT NULL DEFAULT 0,
+  location TEXT,
   FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
 );
 
@@ -187,6 +188,12 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   const ppCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(play_players)');
   if (!ppCols.some((c) => c.name === 'score')) {
     await db.execAsync('ALTER TABLE play_players ADD COLUMN score REAL');
+  }
+
+  // expansions.location (optional separate storage location; added later).
+  const expCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(expansions)');
+  if (!expCols.some((c) => c.name === 'location')) {
+    await db.execAsync('ALTER TABLE expansions ADD COLUMN location TEXT');
   }
 
   // plays: make game_id nullable + add game_name/group_id (for not-owned games

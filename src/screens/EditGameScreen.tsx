@@ -134,7 +134,11 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
           edition: g.edition,
           tags: g.tags,
           categories: g.categories,
-          expansions: exps.map((e) => ({ name: e.name, additionalPlayers: e.additionalPlayers })),
+          expansions: exps.map((e) => ({
+            name: e.name,
+            additionalPlayers: e.additionalPlayers,
+            location: e.location,
+          })),
         });
         setOriginalImage(g.imageUri);
       });
@@ -267,10 +271,13 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
 
   // Expansion editing helpers.
   function addExpansion() {
-    patch({ expansions: [...form.expansions, { name: '', additionalPlayers: 0 }] });
+    patch({ expansions: [...form.expansions, { name: '', additionalPlayers: 0, location: null }] });
   }
 
-  function updateExpansion(i: number, p: Partial<{ name: string; additionalPlayers: number }>) {
+  function updateExpansion(
+    i: number,
+    p: Partial<{ name: string; additionalPlayers: number; location: string | null }>
+  ) {
     patch({
       expansions: form.expansions.map((e, idx) => (idx === i ? { ...e, ...p } : e)),
     });
@@ -568,28 +575,37 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
 
           <Field label="Expansions owned">
             {form.expansions.map((ex, i) => (
-              <View key={i} style={styles.expansionRow}>
-                <TextInput
-                  style={[styles.input, styles.flex1]}
-                  value={ex.name}
-                  onChangeText={(v) => updateExpansion(i, { name: v })}
-                  placeholder="Expansion name"
-                  placeholderTextColor={colors.placeholder}
-                />
-                <View style={styles.expansionPlayers}>
+              <View key={i} style={styles.expansionItem}>
+                <View style={styles.expansionRow}>
                   <TextInput
-                    style={[styles.input, styles.expansionPlayersInput]}
-                    keyboardType="number-pad"
-                    value={ex.additionalPlayers ? String(ex.additionalPlayers) : ''}
-                    onChangeText={(v) => updateExpansion(i, { additionalPlayers: numOrNull(v) ?? 0 })}
-                    placeholder="0"
+                    style={[styles.input, styles.flex1]}
+                    value={ex.name}
+                    onChangeText={(v) => updateExpansion(i, { name: v })}
+                    placeholder="Expansion name"
                     placeholderTextColor={colors.placeholder}
                   />
-                  <Text style={styles.expansionPlayersLabel}>+players</Text>
+                  <View style={styles.expansionPlayers}>
+                    <TextInput
+                      style={[styles.input, styles.expansionPlayersInput]}
+                      keyboardType="number-pad"
+                      value={ex.additionalPlayers ? String(ex.additionalPlayers) : ''}
+                      onChangeText={(v) => updateExpansion(i, { additionalPlayers: numOrNull(v) ?? 0 })}
+                      placeholder="0"
+                      placeholderTextColor={colors.placeholder}
+                    />
+                    <Text style={styles.expansionPlayersLabel}>+players</Text>
+                  </View>
+                  <Pressable onPress={() => removeExpansion(i)} hitSlop={8}>
+                    <Text style={styles.expansionRemove}>✕</Text>
+                  </Pressable>
                 </View>
-                <Pressable onPress={() => removeExpansion(i)} hitSlop={8}>
-                  <Text style={styles.expansionRemove}>✕</Text>
-                </Pressable>
+                <TextInput
+                  style={[styles.input, styles.expansionLocation]}
+                  value={ex.location ?? ''}
+                  onChangeText={(v) => updateExpansion(i, { location: v || null })}
+                  placeholder="Location (optional, if stored separately)"
+                  placeholderTextColor={colors.placeholder}
+                />
               </View>
             ))}
             <Pressable style={styles.addExpansion} onPress={addExpansion}>
@@ -803,7 +819,9 @@ const styles = StyleSheet.create({
   favCol: { alignItems: 'center' },
   favSwitch: { marginTop: 6 },
   bggLinked: { color: colors.success, fontSize: 12, marginTop: 2 },
+  expansionItem: { gap: spacing.sm, marginBottom: spacing.sm },
   expansionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  expansionLocation: { fontSize: 14 },
   expansionPlayers: { alignItems: 'center' },
   expansionPlayersInput: { width: 56, textAlign: 'center' },
   expansionPlayersLabel: { color: colors.textMuted, fontSize: 10, marginTop: 2 },

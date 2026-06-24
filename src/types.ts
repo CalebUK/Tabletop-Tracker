@@ -34,17 +34,20 @@ export interface Game {
   playCount: number;
   lastPlayedAt: string | null; // ISO date of most recent play, null if never
   expansionCount: number;
+  expansionPlayers: number; // total extra players across owned expansions
 }
 
 export interface Expansion {
   id: number;
   name: string;
   additionalPlayers: number; // extra players this expansion allows
+  location: string | null; // optional separate storage location
 }
 
 export interface ExpansionInput {
   name: string;
   additionalPlayers: number;
+  location: string | null;
 }
 
 // Fields the user can edit. id is absent when creating a new game.

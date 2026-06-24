@@ -31,12 +31,14 @@ function fmt(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
-// "2–4" / "2" / "up to 4" / "2+" — the player count for the card, or null.
+// "2–6" / "2" / "up to 6" / "2+" — the player count for the card, or null.
+// Max includes extra players from owned expansions (e.g. base 2–4 + "+2" = 2–6).
 function playersText(g: Game): string | null {
-  if (g.minPlayers && g.maxPlayers) {
-    return g.minPlayers === g.maxPlayers ? `${g.minPlayers}` : `${g.minPlayers}–${g.maxPlayers}`;
+  const max = g.maxPlayers != null ? g.maxPlayers + g.expansionPlayers : null;
+  if (g.minPlayers && max) {
+    return g.minPlayers === max ? `${g.minPlayers}` : `${g.minPlayers}–${max}`;
   }
-  if (g.maxPlayers) return `up to ${g.maxPlayers}`;
+  if (max) return `up to ${max}`;
   if (g.minPlayers) return `${g.minPlayers}+`;
   return null;
 }
