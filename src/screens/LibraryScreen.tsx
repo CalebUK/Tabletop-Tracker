@@ -161,7 +161,7 @@ export default function LibraryScreen() {
             </View>
             <Text style={styles.updateNote}>
               Your shared library only refreshes when you tap Update — changes to your collection
-              aren't shared automatically.
+              are not shared automatically.
             </Text>
             <Pressable onPress={onDelete} style={styles.deleteLink}>
               <Text style={styles.deleteLinkText}>Delete online library</Text>
