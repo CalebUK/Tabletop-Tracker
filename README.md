@@ -11,11 +11,13 @@ GitHub: https://github.com/CalebUK/Tabletop-Tracker
 ## Features
 
 - **Collection** — add games with a photo (camera or library), storage location,
-  player count, play time, minimum age, complexity, edition, year,
-  publisher/designer, personal 10-star rating (half-stars), favourite flag,
-  custom tags and categories (remembered for reuse), notes and house rules.
-  Cards show player count and play time. Toggle between a **list** and a **photo
-  grid**, sort (name / rating / times-played / last-played / date-added, each
+  player count, play time, minimum age, complexity, **play style** (Duel / Party
+  / Co-Op), edition, year, publisher/designer, personal 10-star rating
+  (half-stars), favourite flag, custom tags and categories (remembered for
+  reuse), expansions (each with an optional separate location, and counted into
+  the player range), notes and house rules. Cards show player count and play
+  time. Toggle between a **list** and a **photo grid** (tiles show players/time),
+  sort (name / rating / times-played / last-played / date-added, each
   reversible), and filter by location/favourites. Swipe a card → to edit, ← to
   loan, or hold to log a play.
 - **Wishlist** — a toggle at the top of the Collection switches to games you'd
@@ -31,8 +33,9 @@ GitHub: https://github.com/CalebUK/Tabletop-Tracker
   stats too, with "see all" leaderboards and tap-through that stays group-scoped.
   You can log games you don't own (guests).
 - **Search** — by player count (counts expansions), play time, **player age**
-  (shows games that age can play), complexity, personal rating, category and
-  tags. **At home** hides games out on loan; "Feeling lucky" picks a random match.
+  (shows games that age can play), complexity, **play style** (Duel/Party/Co-Op),
+  personal rating, category and tags. **At home** hides games out on loan;
+  "Feeling lucky" picks a random match.
 - **Loans** — record who borrowed a game and when, with an optional proof photo
   (deleted on return) and a full loan history.
 - **Online library (opt-in)** — publish your collection to get a share code;
