@@ -5,7 +5,8 @@ import appConfig from '../../app.json';
 import { useOnboarding } from '../components/OnboardingProvider';
 import { colors, radius, spacing } from '../theme';
 
-const PRIVACY_URL = 'https://github.com/CalebUK/Tabletop-Tracker/blob/main/PRIVACY.md';
+const PRIVACY_URL = 'https://calebuk.github.io/Tabletop-Tracker/privacy/';
+const TERMS_URL = 'https://calebuk.github.io/Tabletop-Tracker/terms/';
 
 export default function AboutScreen() {
   const version = appConfig.expo.version;
@@ -44,6 +45,10 @@ export default function AboutScreen() {
 
         <Pressable style={styles.linkBtn} onPress={() => Linking.openURL(PRIVACY_URL)}>
           <Text style={styles.linkBtnText}>View full privacy policy ↗</Text>
+        </Pressable>
+
+        <Pressable style={styles.linkBtn} onPress={() => Linking.openURL(TERMS_URL)}>
+          <Text style={styles.linkBtnText}>Terms of Use ↗</Text>
         </Pressable>
 
         <Pressable style={styles.linkBtn} onPress={openTour}>

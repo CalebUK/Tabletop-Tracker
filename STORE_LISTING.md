@@ -16,7 +16,7 @@ use the exact answers in the forms.
 | Free or paid | **Free** |
 | Category | **Tools** (or Entertainment) |
 | Contact email | `calebthill@gmail.com` |
-| Privacy policy URL | `https://github.com/CalebUK/Tabletop-Tracker/blob/main/PRIVACY.md` |
+| Privacy policy URL | `https://calebuk.github.io/Tabletop-Tracker/privacy/` (GitHub Pages; enable Pages first) |
 
 ## Short description (max 80 chars)
 

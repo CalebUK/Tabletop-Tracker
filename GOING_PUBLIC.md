@@ -32,15 +32,14 @@ Google requires personal developer accounts (created after ~Nov 2023) to run a
 - ✅ App name, short + full description (`STORE_LISTING.md`)
 - ✅ App icon 512×512 (`assets/play-icon-512.png`)
 - ✅ Feature graphic 1024×500 (`assets/feature-graphic.png`)
-- ⬜ **Phone screenshots** — refresh to include the newer features (wishlist,
-  photo grid, the realistic bookcase, player scores, leaderboards)
+- ✅ **Phone screenshots** — 8 uploaded (2026-06-24), covering the current
+  feature set (wishlist, photo grid, bookcase, scores, leaderboards, etc.)
 - ✅ Category, contact email, tags
 
 ## 3. App content declarations (must be accurate)
 
 - ✅ **Privacy policy** — hosted (`PRIVACY.md` on GitHub) + in-app (About)
-- ⏳ **Data safety** — updated for the online library (optional cloud upload);
-  re-enter in Console using `STORE_LISTING.md`
+- ✅ **Data safety** — updated for the online library and submitted (2026-06-24)
 - ✅ **Content rating** questionnaire (Everyone / PEGI 3)
 - ✅ **Target audience** — 13+
 - ✅ **Ads** — none
@@ -62,7 +61,8 @@ Google requires personal developer accounts (created after ~Nov 2023) to run a
   secret" alert can be dismissed as a false positive.
 - ⬜ **Firebase budget alert** — set a billing/usage alert so a usage spike
   can't surprise you (free tier is generous, but be safe).
-- ⬜ **BGG token** — confirm it's still valid and not rate-limited as usage grows.
+- ✅ **BGG token** — confirmed working (2026-06-24); re-check if lookups start
+  failing as usage grows.
 - ⬜ **Crash monitoring** — watch Play Console → Android vitals; add Sentry only
   if you hit crashes you can't reproduce.
 - ⬜ Decide **pricing & countries** (Free; choose distribution countries).
@@ -71,9 +71,11 @@ Google requires personal developer accounts (created after ~Nov 2023) to run a
 
 - ✅ Privacy policy covers on-device data, BGG lookups, backups, and the online
   library; contact email present.
-- ⬜ Consider a more permanent **privacy-policy host** than a GitHub file (a
-  simple site/Pages URL) before public launch.
-- ⬜ (Optional) Add a short **Terms of Use**.
+- ⏳ **Privacy-policy host** — published via GitHub Pages from `/docs`
+  (privacy + terms). Action: enable Pages (repo Settings → Pages → Deploy from
+  branch → `main` → `/docs`), then point the Play Console privacy-policy URL at
+  `https://calebuk.github.io/Tabletop-Tracker/privacy/`.
+- ✅ **Terms of Use** — drafted (`TERMS.md`, published at `/docs/terms.md`).
 - ⬜ **GDPR**: deletion path exists (delete online library); keep it working.
 
 ## 6. Every release (🔁)
