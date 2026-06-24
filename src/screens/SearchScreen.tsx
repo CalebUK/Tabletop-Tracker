@@ -46,7 +46,7 @@ const EMPTY_FILTERS: SearchFilters = {
   minRating: null,
   minBggRating: null,
   ageBands: [],
-  teachMax: null,
+  teachRatings: [],
   category: null,
   types: [],
 };
@@ -145,7 +145,7 @@ export default function SearchScreen() {
     filters.text || filters.tags.length || filters.favoritesOnly ||
     filters.unplayedOnly || filters.atHomeOnly || filters.maxPlayTime != null || filters.minPlayTime != null ||
     filters.playerCount != null || filters.minRating != null || filters.minBggRating != null ||
-    filters.ageBands.length > 0 || filters.teachMax != null || filters.category != null ||
+    filters.ageBands.length > 0 || filters.teachRatings.length > 0 || filters.category != null ||
     filters.types.length > 0;
 
   const header = (
@@ -190,16 +190,26 @@ export default function SearchScreen() {
         ))}
       </View>
 
-      <Text style={styles.groupLabel}>Teachability (up to)</Text>
+      <Text style={styles.groupLabel}>Teachability</Text>
       <View style={styles.chipWrap}>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <Toggle
-            key={n}
-            label={`📖 ${n}`}
-            on={filters.teachMax === n}
-            onPress={() => patch({ teachMax: filters.teachMax === n ? null : n })}
-          />
-        ))}
+        <Toggle label="Any" on={filters.teachRatings.length === 0} onPress={() => patch({ teachRatings: [] })} />
+        {[1, 2, 3, 4, 5].map((n) => {
+          const on = filters.teachRatings.includes(n);
+          return (
+            <Toggle
+              key={n}
+              label={`📖 ${n}`}
+              on={on}
+              onPress={() =>
+                patch({
+                  teachRatings: on
+                    ? filters.teachRatings.filter((x) => x !== n)
+                    : [...filters.teachRatings, n],
+                })
+              }
+            />
+          );
+        })}
       </View>
 
       <Text style={styles.groupLabel}>Play style</Text>

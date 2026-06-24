@@ -169,7 +169,7 @@ export interface SearchFilters {
   // Minimum-age bands: game's min age within ANY selected [lo, hi] range
   // (hi null = open-ended). Empty = no age filter.
   ageBands: { lo: number; hi: number | null }[];
-  teachMax: number | null; // teach difficulty at or below this (1-5)
+  teachRatings: number[]; // match any of these teachability ratings (1-5)
   category: string | null; // game must have this category
   types: GameType[]; // match any of these game types (OR)
 }

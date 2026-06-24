@@ -176,9 +176,9 @@ export async function searchGames(filters: SearchFilters): Promise<Game[]> {
     }
     where.push(`g.min_age IS NOT NULL AND (${ors.join(' OR ')})`);
   }
-  if (filters.teachMax != null) {
-    where.push('g.teach_rating IS NOT NULL AND g.teach_rating <= ?');
-    params.push(filters.teachMax);
+  if (filters.teachRatings.length > 0) {
+    where.push(`g.teach_rating IN (${filters.teachRatings.map(() => '?').join(', ')})`);
+    params.push(...filters.teachRatings);
   }
   if (filters.types.length > 0) {
     const cols: Record<string, string> = { duel: 'g.is_duel', party: 'g.is_party', coop: 'g.is_coop' };
