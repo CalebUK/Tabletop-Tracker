@@ -51,7 +51,7 @@ const SLIDES: Slide[] = [
   {
     emoji: '📊',
     title: 'Plays, groups & stats',
-    body: 'Log who played, who won, and each player’s score — even games you don’t own.\n\nEvery game keeps its top three high scores (who got them and when). Create gaming groups for a regular game night, and tap any top player or most-played game to see their full stats.',
+    body: 'Log who played, who won, and each player’s score.\n\nTap through to see any player or game’s full stats. If recorded, also view the top three high scores (who got them and when) for all games.\n\nCreate gaming groups for a regular game night (including games you don’t own).',
   },
   {
     emoji: '👥',
