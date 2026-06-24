@@ -166,18 +166,6 @@ export default function SearchScreen() {
         <Toggle label="🏠 At home" on={filters.atHomeOnly} onPress={() => patch({ atHomeOnly: !filters.atHomeOnly })} />
       </View>
 
-      <Text style={styles.groupLabel}>Play time</Text>
-      <View style={styles.chipWrap}>
-        {TIME_PRESETS.map((p) => (
-          <Toggle
-            key={p.label}
-            label={p.label}
-            on={filters.maxPlayTime === p.max && filters.minPlayTime === p.min}
-            onPress={() => patch({ maxPlayTime: p.max, minPlayTime: p.min })}
-          />
-        ))}
-      </View>
-
       <Text style={styles.groupLabel}>Plays with</Text>
       <View style={styles.chipWrap}>
         {PLAYER_PRESETS.map((n) => (
@@ -186,6 +174,18 @@ export default function SearchScreen() {
             label={n == null ? 'Any' : n >= 7 ? `${n}+` : `${n}p`}
             on={filters.playerCount === n}
             onPress={() => patch({ playerCount: n })}
+          />
+        ))}
+      </View>
+
+      <Text style={styles.groupLabel}>Play time</Text>
+      <View style={styles.chipWrap}>
+        {TIME_PRESETS.map((p) => (
+          <Toggle
+            key={p.label}
+            label={p.label}
+            on={filters.maxPlayTime === p.max && filters.minPlayTime === p.min}
+            onPress={() => patch({ maxPlayTime: p.max, minPlayTime: p.min })}
           />
         ))}
       </View>
@@ -223,14 +223,6 @@ export default function SearchScreen() {
         })}
       </View>
 
-      <Text style={styles.groupLabel}>My rating</Text>
-      <View style={styles.chipWrap}>
-        <Toggle label="Any" on={filters.minRating == null} onPress={() => patch({ minRating: null })} />
-        <Toggle label="3+" on={filters.minRating === 3} onPress={() => patch({ minRating: 3 })} />
-        <Toggle label="6+" on={filters.minRating === 6} onPress={() => patch({ minRating: 6 })} />
-        <Toggle label="9+" on={filters.minRating === 9} onPress={() => patch({ minRating: 9 })} />
-      </View>
-
       <Text style={styles.groupLabel}>Player age</Text>
       <View style={styles.chipWrap}>
         <Toggle label="Any" on={filters.ageBands.length === 0} onPress={() => patch({ ageBands: [] })} />
@@ -251,6 +243,14 @@ export default function SearchScreen() {
             />
           );
         })}
+      </View>
+
+      <Text style={styles.groupLabel}>My rating</Text>
+      <View style={styles.chipWrap}>
+        <Toggle label="Any" on={filters.minRating == null} onPress={() => patch({ minRating: null })} />
+        <Toggle label="3+" on={filters.minRating === 3} onPress={() => patch({ minRating: 3 })} />
+        <Toggle label="6+" on={filters.minRating === 6} onPress={() => patch({ minRating: 6 })} />
+        <Toggle label="9+" on={filters.minRating === 9} onPress={() => patch({ minRating: 9 })} />
       </View>
 
       <View style={styles.dropRow}>
