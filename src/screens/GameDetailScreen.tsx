@@ -186,7 +186,7 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
       {game.developer ? <Row label="✍️ Publisher/Designer" value={game.developer} /> : null}
       {typeLabel ? <Row label="🎮 Play style" value={typeLabel} /> : null}
       {game.teachRating != null ? (
-        <Row label="📖 Teach difficulty" value={`${game.teachRating}/5`} />
+        <Row label="📖 Teachability" value={`${game.teachRating}/5`} />
       ) : null}
       {game.year ? <Row label="📅 Year" value={String(game.year)} /> : null}
       {game.edition ? <Row label="📖 Edition" value={game.edition} /> : null}

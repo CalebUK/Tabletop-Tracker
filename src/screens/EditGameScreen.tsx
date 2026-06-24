@@ -500,25 +500,22 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
             </Field>
           </View>
 
-          <Field label="Teach difficulty">
+          <Field label={`Teachability${form.teachRating ? ` · ${form.teachRating}/5` : ''}`}>
             <View style={styles.teachRow}>
               {[1, 2, 3, 4, 5].map((n) => {
                 const on = (form.teachRating ?? 0) >= n;
                 return (
                   <Pressable
                     key={n}
-                    hitSlop={6}
+                    hitSlop={8}
                     onPress={() => patch({ teachRating: form.teachRating === n ? null : n })}
                   >
                     <Text style={[styles.teachBook, !on && styles.teachBookOff]}>📖</Text>
                   </Pressable>
                 );
               })}
-              {form.teachRating != null && (
-                <Text style={styles.teachValue}>{form.teachRating}/5</Text>
-              )}
             </View>
-            <Text style={styles.fieldHint}>How hard to teach? 1 = a quick read · 5 = read the rulebook five times.</Text>
+            <Text style={styles.fieldHint}>How many times do you have to read the rule book? 1 = Quick Read - 5 = How long you got?</Text>
           </Field>
 
           <Field label="Play style">
@@ -906,10 +903,15 @@ const styles = StyleSheet.create({
   },
   chipActiveText: { color: colors.primaryText, fontSize: 13 },
   headerSave: { color: colors.primary, fontSize: 16, fontWeight: '700' },
-  teachRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  teachBook: { fontSize: 26 },
+  teachRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  teachBook: { fontSize: 30 },
   teachBookOff: { opacity: 0.28 },
-  teachValue: { color: colors.textMuted, fontSize: 14, marginLeft: spacing.sm },
   segment: { flexDirection: 'row', gap: spacing.sm },
   segmentItem: {
     flex: 1,

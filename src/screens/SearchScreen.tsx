@@ -190,7 +190,7 @@ export default function SearchScreen() {
         ))}
       </View>
 
-      <Text style={styles.groupLabel}>Teach difficulty (up to)</Text>
+      <Text style={styles.groupLabel}>Teachability (up to)</Text>
       <View style={styles.chipWrap}>
         {[1, 2, 3, 4, 5].map((n) => (
           <Toggle

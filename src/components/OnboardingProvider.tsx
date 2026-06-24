@@ -46,7 +46,7 @@ const SLIDES: Slide[] = [
   {
     emoji: '🔍',
     title: 'Find the right game',
-    body: 'Filter by players, play time, age, rating, play style and teach difficulty. “At home” hides games that are out on loan, and “Feeling lucky” picks one for tonight.',
+    body: 'Filter by players, play time, age, rating, play style and teachability. “At home” hides games that are out on loan, and “Feeling lucky” picks one for tonight.',
   },
   {
     emoji: '📊',

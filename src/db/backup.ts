@@ -138,7 +138,7 @@ export async function exportCsv(): Promise<string> {
   const games = await getAllGames();
   const headers = [
     'Name', 'Year', 'Edition', 'Location', 'Min Players', 'Max Players',
-    'Max with Expansions', 'Play Time (min)', 'Min Age', 'Teach Difficulty (1-5)', 'BGG Complexity',
+    'Max with Expansions', 'Play Time (min)', 'Min Age', 'Teachability (1-5)', 'BGG Complexity',
     'Play Style', 'My Rating', 'BGG Rating', 'Publisher/Designer', 'Favourite',
     'Categories', 'Tags', 'Expansions', 'Plays', 'Last Played', 'Notes',
   ];
