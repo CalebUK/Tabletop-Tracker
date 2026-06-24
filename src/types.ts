@@ -22,7 +22,7 @@ export interface Game {
   bggWeight: number | null; // BGG complexity / "weight", 0-5
   developer: string | null;
   minAge: number | null; // minimum recommended player age
-  complexity: Complexity | null;
+  teachRating: number | null; // how hard to teach, 1 (easy) to 5 (hard)
   edition: string | null;
   loanedTo: string | null;
   loanedAt: string | null; // ISO date (YYYY-MM-DD)
@@ -73,14 +73,12 @@ export interface GameInput {
   bggWeight: number | null;
   developer: string | null;
   minAge: number | null;
-  complexity: Complexity | null;
+  teachRating: number | null;
   edition: string | null;
   tags: string[];
   categories: string[];
   expansions: ExpansionInput[];
 }
-
-export type Complexity = 'easy' | 'medium' | 'high';
 
 // Fixed "what kind of game" tags. Duel = strictly 2 players (not just supports 2).
 export type GameType = 'duel' | 'party' | 'coop';
@@ -171,7 +169,7 @@ export interface SearchFilters {
   // Minimum-age bands: game's min age within ANY selected [lo, hi] range
   // (hi null = open-ended). Empty = no age filter.
   ageBands: { lo: number; hi: number | null }[];
-  complexity: Complexity | null;
+  teachMax: number | null; // teach difficulty at or below this (1-5)
   category: string | null; // game must have this category
   types: GameType[]; // match any of these game types (OR)
 }

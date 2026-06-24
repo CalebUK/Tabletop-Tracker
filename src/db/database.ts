@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS games (
   developer TEXT,
   min_age INTEGER,
   complexity TEXT,
+  teach_rating INTEGER,
   edition TEXT,
   loaned_to TEXT,
   loaned_at TEXT,
@@ -176,6 +177,14 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
     if (!names.has(col)) {
       await db.execAsync(`ALTER TABLE games ADD COLUMN ${col} INTEGER NOT NULL DEFAULT 0`);
     }
+  }
+  // Teach difficulty (1-5). Seeded from the old personal complexity field so
+  // existing data carries over (easy/medium/high -> 2/3/4).
+  if (!names.has('teach_rating')) {
+    await db.execAsync('ALTER TABLE games ADD COLUMN teach_rating INTEGER');
+    await db.execAsync(
+      "UPDATE games SET teach_rating = CASE complexity WHEN 'easy' THEN 2 WHEN 'medium' THEN 3 WHEN 'high' THEN 4 END WHERE complexity IS NOT NULL"
+    );
   }
 
   // loans.photo_uri (added later than the loans table itself).

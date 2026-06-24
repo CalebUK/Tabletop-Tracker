@@ -46,7 +46,7 @@ const EMPTY_FILTERS: SearchFilters = {
   minRating: null,
   minBggRating: null,
   ageBands: [],
-  complexity: null,
+  teachMax: null,
   category: null,
   types: [],
 };
@@ -145,7 +145,7 @@ export default function SearchScreen() {
     filters.text || filters.tags.length || filters.favoritesOnly ||
     filters.unplayedOnly || filters.atHomeOnly || filters.maxPlayTime != null || filters.minPlayTime != null ||
     filters.playerCount != null || filters.minRating != null || filters.minBggRating != null ||
-    filters.ageBands.length > 0 || filters.complexity != null || filters.category != null ||
+    filters.ageBands.length > 0 || filters.teachMax != null || filters.category != null ||
     filters.types.length > 0;
 
   const header = (
@@ -190,14 +190,14 @@ export default function SearchScreen() {
         ))}
       </View>
 
-      <Text style={styles.groupLabel}>Complexity</Text>
+      <Text style={styles.groupLabel}>Teach difficulty (up to)</Text>
       <View style={styles.chipWrap}>
-        {(['easy', 'medium', 'high'] as const).map((c) => (
+        {[1, 2, 3, 4, 5].map((n) => (
           <Toggle
-            key={c}
-            label={c[0].toUpperCase() + c.slice(1)}
-            on={filters.complexity === c}
-            onPress={() => patch({ complexity: filters.complexity === c ? null : c })}
+            key={n}
+            label={`📖 ${n}`}
+            on={filters.teachMax === n}
+            onPress={() => patch({ teachMax: filters.teachMax === n ? null : n })}
           />
         ))}
       </View>

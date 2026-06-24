@@ -1,6 +1,6 @@
 import type * as SQLite from 'expo-sqlite';
 import { getDb } from './database';
-import { Complexity, Expansion, Game, GameInput, LibraryGame, LoanRecord, SearchFilters } from '../types';
+import { Expansion, Game, GameInput, LibraryGame, LoanRecord, SearchFilters } from '../types';
 
 // Separator used inside group_concat for tags (an unlikely-to-appear char).
 const TAG_SEP = '';
@@ -28,7 +28,7 @@ interface GameRow {
   bgg_weight: number | null;
   developer: string | null;
   min_age: number | null;
-  complexity: string | null;
+  teach_rating: number | null;
   edition: string | null;
   loaned_to: string | null;
   loaned_at: string | null;
@@ -65,7 +65,7 @@ function rowToGame(row: GameRow): Game {
     bggWeight: row.bgg_weight,
     developer: row.developer,
     minAge: row.min_age,
-    complexity: (row.complexity as Complexity) ?? null,
+    teachRating: row.teach_rating ?? null,
     edition: row.edition,
     loanedTo: row.loaned_to,
     loanedAt: row.loaned_at,
@@ -176,9 +176,9 @@ export async function searchGames(filters: SearchFilters): Promise<Game[]> {
     }
     where.push(`g.min_age IS NOT NULL AND (${ors.join(' OR ')})`);
   }
-  if (filters.complexity != null) {
-    where.push('g.complexity = ?');
-    params.push(filters.complexity);
+  if (filters.teachMax != null) {
+    where.push('g.teach_rating IS NOT NULL AND g.teach_rating <= ?');
+    params.push(filters.teachMax);
   }
   if (filters.types.length > 0) {
     const cols: Record<string, string> = { duel: 'g.is_duel', party: 'g.is_party', coop: 'g.is_coop' };
@@ -219,7 +219,7 @@ export async function saveGame(input: GameInput): Promise<number> {
            min_players = ?, max_players = ?, play_time_min = ?, rating = ?,
            notes = ?, house_rules = ?, is_favorite = ?, is_wishlist = ?,
            is_duel = ?, is_party = ?, is_coop = ?, bgg_id = ?,
-           bgg_rating = ?, bgg_weight = ?, developer = ?, min_age = ?, complexity = ?, edition = ?,
+           bgg_rating = ?, bgg_weight = ?, developer = ?, min_age = ?, teach_rating = ?, edition = ?,
            updated_at = datetime('now')
          WHERE id = ?`,
         [
@@ -227,7 +227,7 @@ export async function saveGame(input: GameInput): Promise<number> {
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
           input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.isWishlist ? 1 : 0,
           input.isDuel ? 1 : 0, input.isParty ? 1 : 0, input.isCoop ? 1 : 0, input.bggId,
-          input.bggRating, input.bggWeight, input.developer, input.minAge, input.complexity,
+          input.bggRating, input.bggWeight, input.developer, input.minAge, input.teachRating,
           input.edition, input.id,
         ]
       );
@@ -238,7 +238,7 @@ export async function saveGame(input: GameInput): Promise<number> {
            (name, image_uri, location, year, min_players, max_players,
             play_time_min, rating, notes, house_rules, is_favorite, is_wishlist,
             is_duel, is_party, is_coop,
-            bgg_id, bgg_rating, bgg_weight, developer, min_age, complexity, edition)
+            bgg_id, bgg_rating, bgg_weight, developer, min_age, teach_rating, edition)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           input.name, input.imageUri, input.location, input.year,
@@ -246,7 +246,7 @@ export async function saveGame(input: GameInput): Promise<number> {
           input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.isWishlist ? 1 : 0,
           input.isDuel ? 1 : 0, input.isParty ? 1 : 0, input.isCoop ? 1 : 0,
           input.bggId, input.bggRating, input.bggWeight, input.developer, input.minAge,
-          input.complexity, input.edition,
+          input.teachRating, input.edition,
         ]
       );
       gameId = res.lastInsertRowId;
@@ -360,7 +360,7 @@ export async function addWishlistGame(g: {
     bggWeight: null,
     developer: null,
     minAge: null,
-    complexity: null,
+    teachRating: null,
     edition: null,
     tags: [],
     categories: [],

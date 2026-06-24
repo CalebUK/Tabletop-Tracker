@@ -134,15 +134,11 @@ function csvCell(value: unknown): string {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-function cap(s: string | null): string {
-  return s ? s[0].toUpperCase() + s.slice(1) : '';
-}
-
 export async function exportCsv(): Promise<string> {
   const games = await getAllGames();
   const headers = [
     'Name', 'Year', 'Edition', 'Location', 'Min Players', 'Max Players',
-    'Max with Expansions', 'Play Time (min)', 'Min Age', 'Complexity', 'BGG Complexity',
+    'Max with Expansions', 'Play Time (min)', 'Min Age', 'Teach Difficulty (1-5)', 'BGG Complexity',
     'Play Style', 'My Rating', 'BGG Rating', 'Publisher/Designer', 'Favourite',
     'Categories', 'Tags', 'Expansions', 'Plays', 'Last Played', 'Notes',
   ];
@@ -160,7 +156,7 @@ export async function exportCsv(): Promise<string> {
       .join('; ');
     const row = [
       g.name, g.year, g.edition, g.location, g.minPlayers, g.maxPlayers,
-      maxWithExp, g.playTimeMin, g.minAge, cap(g.complexity), g.bggWeight,
+      maxWithExp, g.playTimeMin, g.minAge, g.teachRating, g.bggWeight,
       playStyle, g.rating, g.bggRating, g.developer, g.isFavorite ? 'Yes' : 'No',
       g.categories.join('; '), g.tags.join('; '), expansions, g.playCount,
       g.lastPlayedAt ? isoToUk(g.lastPlayedAt) : '', g.notes,

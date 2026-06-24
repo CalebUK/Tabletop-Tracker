@@ -11,8 +11,8 @@ GitHub: https://github.com/CalebUK/Tabletop-Tracker
 ## Features
 
 - **Collection** — add games with a photo (camera or library), storage location,
-  player count, play time, minimum age, complexity, **play style** (Duel / Party
-  / Co-Op), edition, year, publisher/designer, personal 10-star rating
+  player count, play time, minimum age, **teach difficulty** (1–5), **play style**
+  (Duel / Party / Co-Op), edition, year, publisher/designer, personal 10-star rating
   (half-stars), favourite flag, custom tags and categories (remembered for
   reuse), expansions (each with an optional separate location, and counted into
   the player range), notes and house rules. Cards show player count and play
@@ -33,8 +33,8 @@ GitHub: https://github.com/CalebUK/Tabletop-Tracker
   stats too, with "see all" leaderboards and tap-through that stays group-scoped.
   You can log games you don't own (guests).
 - **Search** — by player count (counts expansions), play time, **player age**
-  (shows games that age can play), complexity, **play style** (Duel/Party/Co-Op),
-  personal rating, category and tags. **At home** hides games out on loan;
+  (shows games that age can play), **teach difficulty**, **play style**
+  (Duel/Party/Co-Op), personal rating, category and tags. **At home** hides games out on loan;
   "Feeling lucky" picks a random match.
 - **Loans** — record who borrowed a game and when, with an optional proof photo
   (deleted on return) and a full loan history.

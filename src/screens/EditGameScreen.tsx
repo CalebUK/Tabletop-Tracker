@@ -56,7 +56,7 @@ const EMPTY: GameInput = {
   bggWeight: null,
   developer: null,
   minAge: null,
-  complexity: null,
+  teachRating: null,
   edition: null,
   tags: [],
   categories: [],
@@ -130,7 +130,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
           bggWeight: g.bggWeight,
           developer: g.developer,
           minAge: g.minAge,
-          complexity: g.complexity,
+          teachRating: g.teachRating,
           edition: g.edition,
           tags: g.tags,
           categories: g.categories,
@@ -500,20 +500,25 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
             </Field>
           </View>
 
-          <Field label="Complexity">
-            <View style={styles.segment}>
-              {(['easy', 'medium', 'high'] as const).map((c) => (
-                <Pressable
-                  key={c}
-                  style={[styles.segmentItem, form.complexity === c && styles.segmentItemOn]}
-                  onPress={() => patch({ complexity: form.complexity === c ? null : c })}
-                >
-                  <Text style={[styles.segmentText, form.complexity === c && styles.segmentTextOn]}>
-                    {c[0].toUpperCase() + c.slice(1)}
-                  </Text>
-                </Pressable>
-              ))}
+          <Field label="Teach difficulty">
+            <View style={styles.teachRow}>
+              {[1, 2, 3, 4, 5].map((n) => {
+                const on = (form.teachRating ?? 0) >= n;
+                return (
+                  <Pressable
+                    key={n}
+                    hitSlop={6}
+                    onPress={() => patch({ teachRating: form.teachRating === n ? null : n })}
+                  >
+                    <Text style={[styles.teachBook, !on && styles.teachBookOff]}>📖</Text>
+                  </Pressable>
+                );
+              })}
+              {form.teachRating != null && (
+                <Text style={styles.teachValue}>{form.teachRating}/5</Text>
+              )}
             </View>
+            <Text style={styles.fieldHint}>How hard to teach? 1 = a quick read · 5 = read the rulebook five times.</Text>
           </Field>
 
           <Field label="Play style">
@@ -901,6 +906,10 @@ const styles = StyleSheet.create({
   },
   chipActiveText: { color: colors.primaryText, fontSize: 13 },
   headerSave: { color: colors.primary, fontSize: 16, fontWeight: '700' },
+  teachRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  teachBook: { fontSize: 26 },
+  teachBookOff: { opacity: 0.28 },
+  teachValue: { color: colors.textMuted, fontSize: 14, marginLeft: spacing.sm },
   segment: { flexDirection: 'row', gap: spacing.sm },
   segmentItem: {
     flex: 1,
