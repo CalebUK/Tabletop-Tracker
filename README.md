@@ -48,28 +48,6 @@ GitHub: https://github.com/CalebUK/Tabletop-Tracker
 
 Dates are shown in UK format (DD/MM/YYYY) throughout.
 
-## Running it locally
-
-This app uses native modules and SDK 56, so **Expo Go won't work** — you need a
-**development build** (built once via EAS), then:
-
-1. Install the development build APK on your device (from an
-   `eas build --profile development` build).
-2. Create `.env.local` in the project root with your BGG token (git-ignored):
-   ```
-   EXPO_PUBLIC_BGG_TOKEN=your-token-here
-   ```
-3. Start the dev server and open the app:
-   ```
-   npx expo start --dev-client
-   ```
-   JavaScript changes hot-reload; only new native modules require a rebuild.
-
-## Validate changes
-
-- `npx tsc --noEmit` — typecheck
-- `npx expo export --platform android --output-dir <tmp>` — full bundle smoke test
-
 ## Project layout
 
 ```

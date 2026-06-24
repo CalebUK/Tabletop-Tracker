@@ -25,6 +25,11 @@ See `README.md` for features and layout, `FIREBASE_SETUP.md` for the cloud bits.
   native storage at launch; uses `getReactNativePersistence` from the RN build.
 - Adding a native module means a new dev/prod build; pure-JS changes hot-reload.
 
+## Running locally
+- No Expo Go (SDK 56 + native modules). Install an EAS **dev build** APK once,
+  put the BGG token in `.env.local`, then `npx expo start --dev-client`.
+- JS changes hot-reload; new native modules need a fresh dev/prod build.
+
 ## Validate changes
 - `npx tsc --noEmit` — typecheck.
 - `npx expo export --platform android --output-dir <tmp>` — full bundle smoke test.
