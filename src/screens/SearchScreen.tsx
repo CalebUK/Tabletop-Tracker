@@ -214,6 +214,7 @@ export default function SearchScreen() {
 
       <Text style={styles.groupLabel}>Play style</Text>
       <View style={styles.chipWrap}>
+        <Toggle label="Any" on={filters.types.length === 0} onPress={() => patch({ types: [] })} />
         {GAME_TYPES.map((t) => {
           const on = filters.types.includes(t.key);
           return (
