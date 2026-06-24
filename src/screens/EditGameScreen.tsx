@@ -515,7 +515,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                 );
               })}
             </View>
-            <Text style={styles.fieldHint}>How many times do you have to read the rule book? 1 = Quick Read - 5 = How long you got?</Text>
+            <Text style={styles.fieldHint}>How many times do you have to read the rule book?{'\n'}1 = Quick Read - 5 = How long you got?</Text>
           </Field>
 
           <Field label="Play style">
