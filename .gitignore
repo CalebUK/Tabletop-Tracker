@@ -35,6 +35,10 @@ yarn-error.*
 .env*.local
 !.env.example
 
+# internal launch/ops docs — kept locally, not published to the public repo
+/GOING_PUBLIC.md
+/STORE_LISTING.md
+
 # typescript
 *.tsbuildinfo
 

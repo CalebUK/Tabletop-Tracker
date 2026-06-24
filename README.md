@@ -109,13 +109,12 @@ src/
 ## Other docs
 
 - `FIREBASE_SETUP.md` — Firebase project + Firestore security rules for the library
-- `STORE_LISTING.md` — Play Store listing copy + data-safety/content-rating answers
-- `GOING_PUBLIC.md` — launch checklist for going from testing to public
-- `PRIVACY.md` — privacy policy (also the hosted policy URL)
+- `PRIVACY.md` / `TERMS.md` — privacy policy and terms of use (also published at
+  https://calebuk.github.io/Tabletop-Tracker/)
 
 ## Roadmap (not yet built)
 
 - Web viewing of libraries.
+- Barcode scanning to add a game (paired with the BoardGameGeek lookup).
 - "Haven't-played-in-a-while" surfacing.
 - BGG collection import.
-- Firebase App Check + API-key restriction before a wide public launch.
