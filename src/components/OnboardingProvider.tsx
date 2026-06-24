@@ -32,7 +32,7 @@ const SLIDES: Slide[] = [
   {
     emoji: '🎲',
     title: 'Your Collection',
-    body: 'Add games with a photo, rating, location and tags — or pull the details in automatically by syncing with BoardGameGeek. Swipe a game → to edit, ← to loan, or hold to log a play. Switch between a list and a photo grid, and filter up top:',
+    body: 'Add games with a photo, rating, location and tags — or pull the details in automatically by syncing with BoardGameGeek.\n\nSwipe a game → to edit, ← to loan, or hold to log a play. Switch between a list and a photo grid, and filter up top:',
     hints: [
       { icon: '📍', label: 'Filter by storage location' },
       { icon: '♥', label: 'Show only your favourites' },
@@ -41,7 +41,7 @@ const SLIDES: Slide[] = [
   {
     emoji: '⭐',
     title: 'Keep a Wishlist',
-    body: 'Flip the toggle at the top of your Collection to your Wishlist — games you’d love to own. If a friend’s shared library has one, you’ll see who can lend it, plus suggestions from friends whose ratings match yours. Bought it? One tap moves it into your collection.',
+    body: 'Flip the toggle at the top of your Collection to your Wishlist — games you’d love to own.\n\nIf a friend’s shared library has one, you’ll see who can lend it, plus suggestions from friends whose ratings match yours.\n\nBought it? One tap moves it into your collection.',
   },
   {
     emoji: '🔍',
@@ -51,7 +51,7 @@ const SLIDES: Slide[] = [
   {
     emoji: '📊',
     title: 'Plays, groups & stats',
-    body: 'Log who played and who won — even games you don’t own. Create gaming groups for a regular game night, and tap any top player or most-played game to see their full stats.',
+    body: 'Log who played, who won, and each player’s score — even games you don’t own.\n\nEvery game keeps its top three high scores (who got them and when). Create gaming groups for a regular game night, and tap any top player or most-played game to see their full stats.',
   },
   {
     emoji: '👥',

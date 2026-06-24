@@ -51,6 +51,7 @@ export default function AboutScreen() {
         </Pressable>
 
         <Text style={styles.footer}>Made for board game lovers, by board game lovers. 🎲</Text>
+        <Text style={styles.team}>Team CALM</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -82,4 +83,5 @@ const styles = StyleSheet.create({
   },
   linkBtnText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   footer: { color: colors.textMuted, fontSize: 13, textAlign: 'center', marginTop: spacing.xl },
+  team: { color: colors.text, fontSize: 14, fontWeight: '700', textAlign: 'center', marginTop: spacing.sm, letterSpacing: 1 },
 });
