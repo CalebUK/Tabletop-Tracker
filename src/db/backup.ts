@@ -140,7 +140,7 @@ export async function exportCsv(): Promise<string> {
     'Name', 'Year', 'Edition', 'Location', 'Min Players', 'Max Players',
     'Max with Expansions', 'Play Time (min)', 'Min Age', 'Teachability (1-5)', 'BGG Complexity',
     'Play Style', 'My Rating', 'BGG Rating', 'Publisher/Designer', 'Favourite',
-    'Categories', 'Tags', 'Expansions', 'Plays', 'Last Played', 'Notes',
+    'Categories', 'Tags', 'Expansions', 'Plays', 'Last Played', 'Notes', 'House Rules',
   ];
   const lines = [headers.join(',')];
 
@@ -159,7 +159,7 @@ export async function exportCsv(): Promise<string> {
       maxWithExp, g.playTimeMin, g.minAge, g.teachRating, g.bggWeight,
       playStyle, g.rating, g.bggRating, g.developer, g.isFavorite ? 'Yes' : 'No',
       g.categories.join('; '), g.tags.join('; '), expansions, g.playCount,
-      g.lastPlayedAt ? isoToUk(g.lastPlayedAt) : '', g.notes,
+      g.lastPlayedAt ? isoToUk(g.lastPlayedAt) : '', g.notes, g.houseRules,
     ];
     lines.push(row.map(csvCell).join(','));
   }
