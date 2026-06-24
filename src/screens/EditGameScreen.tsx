@@ -585,6 +585,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                     placeholderTextColor={colors.placeholder}
                   />
                   <View style={styles.expansionPlayers}>
+                    <Text style={styles.expansionPlayersLabel}>+players</Text>
                     <TextInput
                       style={[styles.input, styles.expansionPlayersInput]}
                       keyboardType="number-pad"
@@ -593,9 +594,12 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                       placeholder="0"
                       placeholderTextColor={colors.placeholder}
                     />
-                    <Text style={styles.expansionPlayersLabel}>+players</Text>
                   </View>
-                  <Pressable onPress={() => removeExpansion(i)} hitSlop={8}>
+                  <Pressable
+                    onPress={() => removeExpansion(i)}
+                    hitSlop={8}
+                    style={styles.expansionRemoveBtn}
+                  >
                     <Text style={styles.expansionRemove}>✕</Text>
                   </Pressable>
                 </View>
@@ -819,13 +823,14 @@ const styles = StyleSheet.create({
   favCol: { alignItems: 'center' },
   favSwitch: { marginTop: 6 },
   bggLinked: { color: colors.success, fontSize: 12, marginTop: 2 },
-  expansionItem: { gap: spacing.sm, marginBottom: spacing.sm },
-  expansionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  expansionItem: { gap: spacing.sm, marginBottom: spacing.xl },
+  expansionRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
   expansionLocation: { fontSize: 14 },
-  expansionPlayers: { alignItems: 'center' },
+  expansionPlayers: { alignItems: 'center', gap: 4 },
   expansionPlayersInput: { width: 56, textAlign: 'center' },
-  expansionPlayersLabel: { color: colors.textMuted, fontSize: 10, marginTop: 2 },
+  expansionPlayersLabel: { color: colors.textMuted, fontSize: 10 },
   expansionRemove: { color: colors.danger, fontSize: 18, paddingHorizontal: 4 },
+  expansionRemoveBtn: { paddingBottom: 10 },
   addExpansion: { paddingVertical: spacing.sm },
   addExpansionText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   sheet: {
