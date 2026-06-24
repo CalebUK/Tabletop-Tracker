@@ -1,13 +1,15 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootStackProps } from '../navigation';
-import { getGroupStats, deleteGroup, GroupStats } from '../db/groups';
+import { getGroupStats, deleteGroup, renameGroup, GroupStats } from '../db/groups';
 import { colors, radius, spacing } from '../theme';
 
 export default function GroupStatsScreen({ route, navigation }: RootStackProps<'GroupStats'>) {
   const { groupId } = route.params;
   const [stats, setStats] = useState<GroupStats | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [newName, setNewName] = useState('');
 
   const load = useCallback(() => {
     getGroupStats(groupId).then((s) => {
@@ -17,6 +19,19 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
   }, [groupId]);
 
   useFocusEffect(load);
+
+  function openRename() {
+    setNewName(stats?.name ?? '');
+    setRenaming(true);
+  }
+
+  async function saveRename() {
+    const name = newName.trim();
+    if (!name) return;
+    await renameGroup(groupId, name);
+    setRenaming(false);
+    load();
+  }
 
   function onDelete() {
     Alert.alert('Delete this group?', 'The plays logged to it are kept, but no longer grouped.', [
@@ -32,8 +47,14 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
   if (!stats) return <View style={styles.safe} />;
 
   return (
+    <>
     <ScrollView style={styles.safe} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>{stats.name}</Text>
+      <View style={styles.headingRow}>
+        <Text style={styles.heading}>{stats.name}</Text>
+        <Pressable onPress={openRename} hitSlop={10}>
+          <Text style={styles.rename}>✏️ Rename</Text>
+        </Pressable>
+      </View>
       <Text style={styles.sub}>
         {stats.totalPlays} play{stats.totalPlays === 1 ? '' : 's'} logged to this group
       </Text>
@@ -95,14 +116,73 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
         <Text style={styles.deleteBtnText}>Delete group</Text>
       </Pressable>
     </ScrollView>
+
+    <Modal visible={renaming} transparent animationType="fade" onRequestClose={() => setRenaming(false)}>
+      <Pressable style={styles.backdrop} onPress={() => setRenaming(false)}>
+        <Pressable style={styles.sheet} onPress={() => {}}>
+          <Text style={styles.sheetTitle}>Rename group</Text>
+          <TextInput
+            style={styles.input}
+            value={newName}
+            onChangeText={setNewName}
+            placeholder="Group name"
+            placeholderTextColor={colors.placeholder}
+            autoFocus
+            onSubmitEditing={saveRename}
+            returnKeyType="done"
+          />
+          <View style={styles.modalBtns}>
+            <Pressable onPress={() => setRenaming(false)} hitSlop={10}>
+              <Text style={styles.modalCancel}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={saveRename} hitSlop={10}>
+              <Text style={styles.modalSave}>Save</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, paddingBottom: spacing.xl * 2 },
-  heading: { color: colors.text, fontSize: 24, fontWeight: '700' },
+  headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  heading: { color: colors.text, fontSize: 24, fontWeight: '700', flexShrink: 1 },
+  rename: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   sub: { color: colors.textMuted, fontSize: 14, marginTop: 2 },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  sheet: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  sheetTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
+  input: {
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    color: colors.text,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+  },
+  modalBtns: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.xl },
+  modalCancel: { color: colors.textMuted, fontSize: 15, fontWeight: '600' },
+  modalSave: { color: colors.primary, fontSize: 15, fontWeight: '700' },
   logBtn: {
     backgroundColor: colors.primary,
     borderRadius: radius.md,

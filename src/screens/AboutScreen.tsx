@@ -50,7 +50,7 @@ export default function AboutScreen() {
           <Text style={styles.linkBtnText}>Show app tour again</Text>
         </Pressable>
 
-        <Text style={styles.footer}>Made for board game lovers. 🎲</Text>
+        <Text style={styles.footer}>Made for board game lovers, by board game lovers. 🎲</Text>
       </ScrollView>
     </SafeAreaView>
   );

@@ -133,7 +133,7 @@ export default function StatsScreen() {
 
         {stats.unplayed > 0 && (
           <Text style={styles.shame}>
-            🛒 You have {stats.unplayed} game{stats.unplayed === 1 ? '' : 's'} you haven't played yet —
+            You have {stats.unplayed} game{stats.unplayed === 1 ? '' : 's'} you haven't played yet —
             your shelf of shame awaits!
           </Text>
         )}

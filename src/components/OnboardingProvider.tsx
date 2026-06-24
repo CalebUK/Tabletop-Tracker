@@ -32,7 +32,7 @@ const SLIDES: Slide[] = [
   {
     emoji: '🎲',
     title: 'Your Collection',
-    body: 'Add games with a photo, rating, location and tags. Swipe a game → to edit, ← to loan, or hold to log a play. Switch between a list and a photo grid, and filter up top:',
+    body: 'Add games with a photo, rating, location and tags — or pull the details in automatically by syncing with BoardGameGeek. Swipe a game → to edit, ← to loan, or hold to log a play. Switch between a list and a photo grid, and filter up top:',
     hints: [
       { icon: '📍', label: 'Filter by storage location' },
       { icon: '♥', label: 'Show only your favourites' },
@@ -56,7 +56,12 @@ const SLIDES: Slide[] = [
   {
     emoji: '👥',
     title: 'Share with friends',
-    body: 'Publish your collection to get a share code, and add friends’ codes to browse everyone’s games together. Export a backup any time to keep your data safe (⚙️ top-right).',
+    body: 'Publish your collection to get a share code, and add friends’ codes to browse everyone’s games together — all on a shared bookshelf.',
+  },
+  {
+    emoji: '⚙️',
+    title: 'Settings & backups',
+    body: 'Tap the ⚙️ at the top of My Collection. Your data lives only on this phone — so before switching devices, export a full backup (photos included) and import it on the new one. You can also export your collection to a CSV, or tidy up the swipe tips.',
   },
 ];
 

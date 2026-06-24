@@ -1,14 +1,27 @@
-import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { RootStackProps } from '../navigation';
 import { exportBackup, exportCsv, importBackup } from '../db/backup';
+import { getMeta, setMeta } from '../db/meta';
 import { colors, radius, spacing } from '../theme';
+
+export const HIDE_SWIPE_TIPS_KEY = 'hide_swipe_tips';
 
 export default function BackupScreen({ navigation }: RootStackProps<'Backup'>) {
   const [busy, setBusy] = useState<string | null>(null);
+  const [hideTips, setHideTips] = useState(false);
+
+  useEffect(() => {
+    getMeta(HIDE_SWIPE_TIPS_KEY).then((v) => setHideTips(v === '1')).catch(() => {});
+  }, []);
+
+  function toggleHideTips(v: boolean) {
+    setHideTips(v);
+    setMeta(HIDE_SWIPE_TIPS_KEY, v ? '1' : '0').catch(() => {});
+  }
 
   async function share(uri: string, mimeType: string, title: string) {
     if (!(await Sharing.isAvailableAsync())) {
@@ -98,6 +111,20 @@ export default function BackupScreen({ navigation }: RootStackProps<'Backup'>) {
           list and doesn’t include photos or play history — use the full backup to move devices.
         </Text>
 
+        <Section title="Display">
+          <View style={styles.toggleRow}>
+            <View style={styles.flex1}>
+              <Text style={styles.toggleLabel}>Hide swipe tips</Text>
+              <Text style={styles.toggleSub}>Hide the swipe/hold hint on Collection &amp; Wishlist</Text>
+            </View>
+            <Switch
+              value={hideTips}
+              onValueChange={toggleHideTips}
+              trackColor={{ true: colors.primary, false: colors.border }}
+            />
+          </View>
+        </Section>
+
         <Pressable style={styles.aboutLink} onPress={() => navigation.navigate('About')}>
           <Text style={styles.aboutLinkText}>About &amp; Privacy ›</Text>
         </Pressable>
@@ -159,6 +186,19 @@ const styles = StyleSheet.create({
   buttonLabel: { color: colors.text, fontSize: 16, fontWeight: '600' },
   buttonSub: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
   note: { color: colors.textMuted, fontSize: 13, lineHeight: 19, marginTop: spacing.xl },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  flex1: { flex: 1 },
+  toggleLabel: { color: colors.text, fontSize: 16, fontWeight: '600' },
+  toggleSub: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
   aboutLink: { marginTop: spacing.xl, paddingVertical: spacing.sm, alignItems: 'center' },
   aboutLinkText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   overlay: {
