@@ -38,7 +38,8 @@ Google requires personal developer accounts (created after ~Nov 2023) to run a
 
 ## 3. App content declarations (must be accurate)
 
-- ✅ **Privacy policy** — hosted (`PRIVACY.md` on GitHub) + in-app (About)
+- ✅ **Privacy policy** — hosted on GitHub Pages + in-app (About); URL set in
+  Play Console
 - ✅ **Data safety** — updated for the online library and submitted (2026-06-24)
 - ✅ **Content rating** questionnaire (Everyone / PEGI 3)
 - ✅ **Target audience** — 13+
@@ -71,10 +72,9 @@ Google requires personal developer accounts (created after ~Nov 2023) to run a
 
 - ✅ Privacy policy covers on-device data, BGG lookups, backups, and the online
   library; contact email present.
-- ⏳ **Privacy-policy host** — published via GitHub Pages from `/docs`
-  (privacy + terms). Action: enable Pages (repo Settings → Pages → Deploy from
-  branch → `main` → `/docs`), then point the Play Console privacy-policy URL at
-  `https://calebuk.github.io/Tabletop-Tracker/privacy/`.
+- ✅ **Privacy-policy host** — published via GitHub Pages from `/docs` and live
+  at `https://calebuk.github.io/Tabletop-Tracker/privacy/` (terms at `/terms/`).
+  Play Console privacy-policy URL updated to it (2026-06-24).
 - ✅ **Terms of Use** — drafted (`TERMS.md`, published at `/docs/terms.md`).
 - ⬜ **GDPR**: deletion path exists (delete online library); keep it working.
 
