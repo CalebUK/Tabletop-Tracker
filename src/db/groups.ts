@@ -50,12 +50,25 @@ export async function addGroupMember(groupId: number, name: string): Promise<voi
   await db.runAsync('INSERT INTO group_members (group_id, name) VALUES (?, ?)', [groupId, trimmed]);
 }
 
-export async function removeGroupMember(groupId: number, name: string): Promise<void> {
+// Members with their ids, for an editable list.
+export async function getGroupMemberRows(groupId: number): Promise<{ id: number; name: string }[]> {
   const db = await getDb();
-  await db.runAsync('DELETE FROM group_members WHERE group_id = ? AND name = ? COLLATE NOCASE', [
-    groupId,
-    name,
-  ]);
+  return db.getAllAsync<{ id: number; name: string }>(
+    'SELECT id, name FROM group_members WHERE group_id = ? ORDER BY id ASC',
+    [groupId]
+  );
+}
+
+export async function updateGroupMember(id: number, name: string): Promise<void> {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  const db = await getDb();
+  await db.runAsync('UPDATE group_members SET name = ? WHERE id = ?', [trimmed, id]);
+}
+
+export async function deleteGroupMember(id: number): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('DELETE FROM group_members WHERE id = ?', [id]);
 }
 
 export async function setGroupAutofill(groupId: number, value: boolean): Promise<void> {

@@ -3,22 +3,25 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootStackProps } from '../navigation';
-import { getGroupRoster, addGroupMember, removeGroupMember, setGroupAutofill } from '../db/groups';
+import {
+  getGroupRoster,
+  getGroupMemberRows,
+  addGroupMember,
+  updateGroupMember,
+  deleteGroupMember,
+  setGroupAutofill,
+} from '../db/groups';
 import { colors, radius, spacing } from '../theme';
 
 export default function GroupMembersScreen({ route, navigation }: RootStackProps<'GroupMembers'>) {
   const { groupId, groupName } = route.params;
-  const [members, setMembers] = useState<string[]>([]);
+  const [members, setMembers] = useState<{ id: number; name: string }[]>([]);
   const [autofill, setAutofill] = useState(false);
   const [newMember, setNewMember] = useState('');
 
   const load = useCallback(() => {
-    getGroupRoster(groupId)
-      .then((r) => {
-        setMembers(r.members);
-        setAutofill(r.autofill);
-      })
-      .catch(() => {});
+    getGroupMemberRows(groupId).then(setMembers).catch(() => {});
+    getGroupRoster(groupId).then((r) => setAutofill(r.autofill)).catch(() => {});
   }, [groupId]);
 
   useFocusEffect(load);
@@ -35,8 +38,18 @@ export default function GroupMembersScreen({ route, navigation }: RootStackProps
     load();
   }
 
-  function onRemove(name: string) {
-    removeGroupMember(groupId, name).then(load);
+  function onEditName(id: number, name: string) {
+    setMembers((list) => list.map((m) => (m.id === id ? { ...m, name } : m)));
+  }
+
+  // Persist on blur — keep the typed name, or revert if they cleared it.
+  function onCommitName(id: number, name: string) {
+    if (name.trim()) updateGroupMember(id, name).catch(() => {});
+    else load();
+  }
+
+  function onRemove(id: number) {
+    deleteGroupMember(id).then(load).catch(() => {});
   }
 
   function onToggle(v: boolean) {
@@ -47,17 +60,26 @@ export default function GroupMembersScreen({ route, navigation }: RootStackProps
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.muted}>The regulars in this group — add anyone who usually plays.</Text>
+        <Text style={styles.muted}>
+          The regulars in this group — add anyone who usually plays. Tap a name to edit it.
+        </Text>
 
-        {members.length > 0 && (
-          <View style={styles.memberRow}>
-            {members.map((m) => (
-              <Pressable key={m} style={styles.memberChip} onPress={() => onRemove(m)}>
-                <Text style={styles.memberChipText}>{m} ✕</Text>
-              </Pressable>
-            ))}
+        {members.map((m) => (
+          <View key={m.id} style={styles.memberRow}>
+            <TextInput
+              style={styles.memberInput}
+              value={m.name}
+              onChangeText={(v) => onEditName(m.id, v)}
+              onEndEditing={() => onCommitName(m.id, m.name)}
+              onBlur={() => onCommitName(m.id, m.name)}
+              placeholder="Member name"
+              placeholderTextColor={colors.placeholder}
+            />
+            <Pressable onPress={() => onRemove(m.id)} hitSlop={8} style={styles.memberRemoveBtn}>
+              <Text style={styles.memberRemove}>✕</Text>
+            </Pressable>
           </View>
-        )}
+        ))}
 
         <View style={styles.addMemberRow}>
           <TextInput
@@ -95,15 +117,10 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: spacing.xl * 2 },
   muted: { color: colors.textMuted, fontSize: 14, lineHeight: 20 },
   flex1: { flex: 1 },
-  memberRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
-  memberChip: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  memberChipText: { color: colors.primaryText, fontSize: 13, fontWeight: '600' },
-  addMemberRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  memberRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
+  memberRemoveBtn: { paddingHorizontal: 4 },
+  memberRemove: { color: colors.danger, fontSize: 18 },
+  addMemberRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
   memberInput: {
     flex: 1,
     backgroundColor: colors.surface,
