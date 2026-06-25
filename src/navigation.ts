@@ -15,6 +15,7 @@ export type RootStackParamList = {
   // Identify the game by id (owned) or by name (a guest game). groupId scopes it.
   GameStats: { gameId?: number; gameName?: string; groupId?: number; groupName?: string };
   GroupStats: { groupId: number };
+  GroupMembers: { groupId: number; groupName?: string };
   Leaderboard: { kind: 'players' | 'games' }; // full ranked list (see all)
   Backup: undefined;
   About: undefined;

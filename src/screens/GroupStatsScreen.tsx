@@ -1,16 +1,8 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootStackProps } from '../navigation';
-import {
-  getGroupStats,
-  deleteGroup,
-  renameGroup,
-  addGroupMember,
-  removeGroupMember,
-  setGroupAutofill,
-  GroupStats,
-} from '../db/groups';
+import { getGroupStats, deleteGroup, renameGroup, GroupStats } from '../db/groups';
 import { colors, radius, spacing } from '../theme';
 
 export default function GroupStatsScreen({ route, navigation }: RootStackProps<'GroupStats'>) {
@@ -18,7 +10,6 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
   const [stats, setStats] = useState<GroupStats | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newMember, setNewMember] = useState('');
 
   const load = useCallback(() => {
     getGroupStats(groupId).then((s) => {
@@ -40,22 +31,6 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
     await renameGroup(groupId, name);
     setRenaming(false);
     load();
-  }
-
-  async function onAddMember() {
-    const name = newMember.trim();
-    if (!name) return;
-    await addGroupMember(groupId, name);
-    setNewMember('');
-    load();
-  }
-
-  function onRemoveMember(name: string) {
-    removeGroupMember(groupId, name).then(load);
-  }
-
-  function onToggleAutofill(v: boolean) {
-    setGroupAutofill(groupId, v).then(load);
   }
 
   function onDelete() {
@@ -91,42 +66,15 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
         <Text style={styles.logBtnText}>+ Log a play for this group</Text>
       </Pressable>
 
-      <Text style={styles.sectionTitle}>👤 Members</Text>
-      <Text style={styles.muted}>The regulars in this group.</Text>
-      {stats.members.length > 0 && (
-        <View style={styles.memberRow}>
-          {stats.members.map((m) => (
-            <Pressable key={m} style={styles.memberChip} onPress={() => onRemoveMember(m)}>
-              <Text style={styles.memberChipText}>{m} ✕</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-      <View style={styles.addMemberRow}>
-        <TextInput
-          style={styles.memberInput}
-          value={newMember}
-          onChangeText={setNewMember}
-          placeholder="Add a member"
-          placeholderTextColor={colors.placeholder}
-          onSubmitEditing={onAddMember}
-          returnKeyType="done"
-        />
-        <Pressable style={styles.memberAddBtn} onPress={onAddMember}>
-          <Text style={styles.memberAddText}>Add</Text>
-        </Pressable>
-      </View>
-      <View style={styles.autofillRow}>
-        <View style={styles.flex1}>
-          <Text style={styles.autofillLabel}>Auto-fill when logging</Text>
-          <Text style={styles.muted}>Prefill these members as players for this group's games.</Text>
-        </View>
-        <Switch
-          value={stats.autofill}
-          onValueChange={onToggleAutofill}
-          trackColor={{ true: colors.primary, false: colors.border }}
-        />
-      </View>
+      <Pressable
+        style={styles.memberLink}
+        onPress={() => navigation.navigate('GroupMembers', { groupId, groupName: stats.name })}
+      >
+        <Text style={styles.memberLinkText}>👤 Members ›</Text>
+        <Text style={styles.memberLinkCount}>
+          {stats.members.length}{stats.autofill ? ' · auto-fill on' : ''}
+        </Text>
+      </Pressable>
 
       <Text style={styles.sectionTitle}>🏆 Players</Text>
       {stats.players.length === 0 ? (
@@ -255,45 +203,19 @@ const styles = StyleSheet.create({
   logBtnText: { color: colors.primaryText, fontSize: 15, fontWeight: '700' },
   sectionTitle: { color: colors.text, fontSize: 17, fontWeight: '700', marginTop: spacing.xl, marginBottom: spacing.sm },
   muted: { color: colors.textMuted, fontSize: 14 },
-  flex1: { flex: 1 },
-  memberRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
-  memberChip: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  memberChipText: { color: colors.primaryText, fontSize: 13, fontWeight: '600' },
-  addMemberRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  memberInput: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    color: colors.text,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 9,
-  },
-  memberAddBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    justifyContent: 'center',
-  },
-  memberAddText: { color: colors.primaryText, fontSize: 15, fontWeight: '700' },
-  autofillRow: {
+  memberLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.lg,
+    justifyContent: 'space-between',
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
+    marginTop: spacing.lg,
   },
-  autofillLabel: { color: colors.text, fontSize: 15, fontWeight: '600' },
+  memberLinkText: { color: colors.text, fontSize: 16, fontWeight: '600' },
+  memberLinkCount: { color: colors.textMuted, fontSize: 13 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
