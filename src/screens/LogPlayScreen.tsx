@@ -17,7 +17,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { RootStackProps } from '../navigation';
 import { addPlay, getPlay, updatePlay, getAllPlayers, PlayInput } from '../db/plays';
 import { getGame, getExpansions, getAllGames } from '../db/games';
-import { getGroups } from '../db/groups';
+import { getGroups, getGroupRoster } from '../db/groups';
 import { pickFromLibrary, takePhoto, deleteImage } from '../lib/images';
 import { Expansion, Group, PlayPlayer, PlayStatus } from '../types';
 import { colors, radius, spacing } from '../theme';
@@ -83,6 +83,22 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
     if (resolvedGameId) getExpansions(resolvedGameId).then(setGameExpansions);
     else setGameExpansions([]);
   }, [resolvedGameId]);
+
+  // When a group with auto-fill is selected (for a new play), prefill its
+  // members as players — but never clobber names the user already typed.
+  useEffect(() => {
+    if (playId || groupId == null) return;
+    getGroupRoster(groupId)
+      .then(({ autofill, members }) => {
+        if (!autofill || members.length === 0) return;
+        setPlayers((prev) =>
+          prev.every((p) => !p.name.trim())
+            ? members.map((name) => ({ name, isWinner: false, score: null }))
+            : prev
+        );
+      })
+      .catch(() => {});
+  }, [groupId, playId]);
 
   const gameSuggestions = gameFocused
     ? ownedGames

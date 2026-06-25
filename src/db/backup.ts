@@ -9,6 +9,7 @@ const TABLES = [
   'tags',
   'categories',
   'groups',
+  'group_members',
   'games',
   'expansions',
   'plays',

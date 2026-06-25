@@ -67,7 +67,15 @@ CREATE TABLE IF NOT EXISTS game_tags (
 CREATE TABLE IF NOT EXISTS groups (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
+  autofill INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS group_members (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS plays (
@@ -143,6 +151,7 @@ CREATE INDEX IF NOT EXISTS idx_game_categories_cat ON game_categories(category_i
 CREATE INDEX IF NOT EXISTS idx_plays_game ON plays(game_id);
 CREATE INDEX IF NOT EXISTS idx_play_players_play ON play_players(play_id);
 CREATE INDEX IF NOT EXISTS idx_play_photos_play ON play_photos(play_id);
+CREATE INDEX IF NOT EXISTS idx_group_members_group ON group_members(group_id);
 CREATE INDEX IF NOT EXISTS idx_loans_game ON loans(game_id);
 CREATE INDEX IF NOT EXISTS idx_expansions_game ON expansions(game_id);
 CREATE INDEX IF NOT EXISTS idx_play_expansions_play ON play_expansions(play_id);
@@ -218,6 +227,12 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   const playStatusCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(plays)');
   if (!playStatusCols.some((c) => c.name === 'status')) {
     await db.execAsync("ALTER TABLE plays ADD COLUMN status TEXT NOT NULL DEFAULT 'completed'");
+  }
+
+  // groups.autofill — auto-fill the group's members when logging a play.
+  const groupCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(groups)');
+  if (!groupCols.some((c) => c.name === 'autofill')) {
+    await db.execAsync('ALTER TABLE groups ADD COLUMN autofill INTEGER NOT NULL DEFAULT 0');
   }
 
   // plays: make game_id nullable + add game_name/group_id (for not-owned games
