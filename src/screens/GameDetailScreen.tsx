@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootStackProps } from '../navigation';
-import { getGame, toggleFavorite, getLoanHistory, getExpansions, setWishlist } from '../db/games';
+import { getGame, toggleFavorite, getLoanHistory, getExpansions, getStandaloneExpansions, setWishlist } from '../db/games';
 import { getFriendOwnersByGame } from '../lib/onlineLibrary';
 import { getPlaysForGame, deletePlay } from '../db/plays';
 import { Expansion, Game, LoanRecord, Play } from '../types';
@@ -35,12 +35,17 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
   const [plays, setPlays] = useState<Play[]>([]);
   const [loans, setLoans] = useState<LoanRecord[]>([]);
   const [expansions, setExpansions] = useState<Expansion[]>([]);
+  const [standaloneExps, setStandaloneExps] = useState<Game[]>([]);
+  const [base, setBase] = useState<Game | null>(null);
   const [friendsWithGame, setFriendsWithGame] = useState<string[]>([]);
 
   const load = useCallback(() => {
     getGame(gameId).then((g) => {
       setGame(g);
       if (g) navigation.setOptions({ title: g.name });
+      // If this game is itself a standalone expansion, load its base for the link.
+      if (g?.baseGameId) getGame(g.baseGameId).then(setBase).catch(() => setBase(null));
+      else setBase(null);
       // For wishlist games, flag any friends (linked libraries) who own it.
       if (g?.isWishlist) {
         getFriendOwnersByGame()
@@ -53,6 +58,7 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
     getPlaysForGame(gameId).then(setPlays);
     getLoanHistory(gameId).then(setLoans);
     getExpansions(gameId).then(setExpansions);
+    getStandaloneExpansions(gameId).then(setStandaloneExps).catch(() => setStandaloneExps([]));
   }, [gameId]);
 
   useFocusEffect(load);
@@ -154,6 +160,15 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
 
       {game.description ? <Text style={styles.tagline}>{game.description}</Text> : null}
 
+      {game.baseGameId && base ? (
+        <Pressable
+          style={styles.baseLink}
+          onPress={() => navigation.navigate('GameDetail', { gameId: base.id })}
+        >
+          <Text style={styles.baseLinkText}>🧩 Expansion of {base.name} ›</Text>
+        </Pressable>
+      ) : null}
+
       {meta ? <Text style={styles.meta}>{meta}</Text> : null}
 
       <View style={styles.ratingsRow}>
@@ -225,9 +240,38 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
         </View>
       ) : null}
 
-      {expansions.length > 0 && (
+      {(expansions.length > 0 || standaloneExps.length > 0) && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Expansions ({expansions.length})</Text>
+          <Text style={styles.sectionTitle}>
+            Expansions ({expansions.length + standaloneExps.length})
+          </Text>
+          {standaloneExps.map((e) => {
+            const boost = e.expansionBoost ?? Math.max(0, (e.maxPlayers ?? 0) - (game.maxPlayers ?? 0));
+            return (
+              <Pressable
+                key={`g${e.id}`}
+                style={styles.expansionRow}
+                onPress={() => navigation.navigate('GameDetail', { gameId: e.id })}
+              >
+                {e.imageUri ? (
+                  <Image source={{ uri: e.imageUri }} style={styles.expansionThumb} />
+                ) : (
+                  <View style={[styles.expansionThumb, styles.expansionThumbEmpty]}>
+                    <Text style={styles.expansionThumbEmoji}>🧩</Text>
+                  </View>
+                )}
+                <View style={styles.expansionInfo}>
+                  <Text style={styles.expansionName}>{e.name} ›</Text>
+                  {e.location ? <Text style={styles.expansionLoc}>📍 {e.location}</Text> : null}
+                </View>
+                {e.isWishlist ? (
+                  <Text style={styles.expansionWish}>⭐ Wishlist</Text>
+                ) : boost > 0 ? (
+                  <Text style={styles.expansionPlus}>+{boost} players</Text>
+                ) : null}
+              </Pressable>
+            );
+          })}
           {expansions.map((e) => (
             <View key={e.id} style={styles.expansionRow}>
               <View style={styles.expansionInfo}>
@@ -240,7 +284,14 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
             </View>
           ))}
           {(() => {
-            const extra = expansions.reduce((s, e) => s + e.additionalPlayers, 0);
+            const extra =
+              expansions.reduce((s, e) => s + e.additionalPlayers, 0) +
+              standaloneExps.reduce(
+                (s, e) =>
+                  s +
+                  (e.isWishlist ? 0 : e.expansionBoost ?? Math.max(0, (e.maxPlayers ?? 0) - (game.maxPlayers ?? 0))),
+                0
+              );
             return extra > 0 && game.maxPlayers ? (
               <Text style={styles.expansionNote}>
                 Up to {game.maxPlayers + extra} players with all expansions.
@@ -283,6 +334,7 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
         </View>
       ) : null}
 
+      {!game.baseGameId && (
       <View style={styles.section}>
         <View style={styles.playsHeader}>
           <Text style={styles.sectionTitle}>Plays ({plays.length})</Text>
@@ -323,6 +375,7 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
           <Text style={styles.hint}>Tap a play to edit · long-press to delete.</Text>
         )}
       </View>
+      )}
 
       {loans.length > 0 && (
         <View style={styles.section}>
@@ -448,15 +501,30 @@ const styles = StyleSheet.create({
   loanDates: { color: colors.textMuted, fontSize: 13 },
   expansionRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.sm,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  expansionThumb: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: colors.surfaceAlt },
+  expansionThumbEmpty: { alignItems: 'center', justifyContent: 'center' },
+  expansionThumbEmoji: { fontSize: 20 },
   expansionInfo: { flex: 1, marginRight: spacing.sm },
   expansionName: { color: colors.text, fontSize: 15 },
   expansionLoc: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
   expansionPlus: { color: colors.success, fontSize: 13, fontWeight: '600' },
+  expansionWish: { color: colors.star, fontSize: 13, fontWeight: '600' },
+  baseLink: {
+    marginTop: spacing.sm,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  baseLinkText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   expansionNote: { color: colors.textMuted, fontSize: 13, marginTop: spacing.sm, fontStyle: 'italic' },
   editLink: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   hint: { color: colors.textMuted, fontSize: 12, marginTop: 4 },

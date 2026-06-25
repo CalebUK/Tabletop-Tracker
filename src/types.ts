@@ -25,6 +25,8 @@ export interface Game {
   minAge: number | null; // minimum recommended player age
   teachRating: number | null; // how hard to teach, 1 (easy) to 5 (hard)
   edition: string | null;
+  baseGameId: number | null; // set = this game is a standalone expansion of that base
+  expansionBoost: number | null; // manual override for players this expansion adds
   loanedTo: string | null;
   loanedAt: string | null; // ISO date (YYYY-MM-DD)
   createdAt: string;
@@ -77,6 +79,8 @@ export interface GameInput {
   minAge: number | null;
   teachRating: number | null;
   edition: string | null;
+  baseGameId: number | null;
+  expansionBoost: number | null;
   tags: string[];
   categories: string[];
   expansions: ExpansionInput[];

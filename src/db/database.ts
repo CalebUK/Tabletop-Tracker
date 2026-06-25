@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS games (
   complexity TEXT,
   teach_rating INTEGER,
   edition TEXT,
+  base_game_id INTEGER,
+  expansion_boost INTEGER,
   loaned_to TEXT,
   loaned_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -208,6 +210,14 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   // Short BGG tagline shown under the game name.
   if (!names.has('description')) {
     await db.execAsync('ALTER TABLE games ADD COLUMN description TEXT');
+  }
+  // Standalone expansions: a game can be an expansion of another game, with an
+  // optional player-boost override.
+  if (!names.has('base_game_id')) {
+    await db.execAsync('ALTER TABLE games ADD COLUMN base_game_id INTEGER');
+  }
+  if (!names.has('expansion_boost')) {
+    await db.execAsync('ALTER TABLE games ADD COLUMN expansion_boost INTEGER');
   }
 
   // loans.photo_uri (added later than the loans table itself).

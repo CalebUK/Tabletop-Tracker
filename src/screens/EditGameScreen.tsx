@@ -20,6 +20,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { RootStackProps } from '../navigation';
 import {
   getGame,
+  getAllGames,
   getAllTags,
   getAllCategories,
   getAllLocations,
@@ -28,10 +29,12 @@ import {
   getExpansions,
   countGamesByName,
 } from '../db/games';
+import { getMeta } from '../db/meta';
+import { STANDALONE_EXPANSIONS_KEY } from './BackupScreen';
 import { deleteImage, pickFromLibrary, takePhoto } from '../lib/images';
 import { bggSearch, bggDetails, BggSearchResult } from '../lib/bgg';
 import { round2num } from '../lib/format';
-import { GameInput } from '../types';
+import { Game, GameInput } from '../types';
 import { colors, radius, spacing } from '../theme';
 import StarRating from '../components/StarRating';
 
@@ -59,6 +62,8 @@ const EMPTY: GameInput = {
   minAge: null,
   teachRating: null,
   edition: null,
+  baseGameId: null,
+  expansionBoost: null,
   tags: [],
   categories: [],
   expansions: [],
@@ -101,8 +106,16 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
   const [bggResults, setBggResults] = useState<BggSearchResult[]>([]);
   const [bggError, setBggError] = useState<string | null>(null);
   const [photoMenu, setPhotoMenu] = useState(false);
+  const [standaloneEnabled, setStandaloneEnabled] = useState(false);
+  const [bases, setBases] = useState<Game[]>([]);
+  const [baseMenu, setBaseMenu] = useState(false);
 
   useEffect(() => {
+    getMeta(STANDALONE_EXPANSIONS_KEY).then((v) => setStandaloneEnabled(v === '1')).catch(() => {});
+    // Potential base games: owned, top-level games (never the game being edited).
+    getAllGames(false)
+      .then((gs) => setBases(gs.filter((g) => g.id !== editingId)))
+      .catch(() => {});
     getAllTags().then(setAllTags).catch(() => {});
     getAllCategories().then(setAllCategories).catch(() => {});
     getAllLocations().then(setAllLocations).catch(() => {});
@@ -134,6 +147,8 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
           minAge: g.minAge,
           teachRating: g.teachRating,
           edition: g.edition,
+          baseGameId: g.baseGameId,
+          expansionBoost: g.expansionBoost,
           tags: g.tags,
           categories: g.categories,
           expansions: exps.map((e) => ({
@@ -270,6 +285,25 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
     } finally {
       setBggLoading(false);
     }
+  }
+
+  // Standalone-expansion linking. The boost auto-fills from the player-count
+  // difference, but stays editable.
+  const baseGame = bases.find((b) => b.id === form.baseGameId) ?? null;
+  const suggestedBoost = baseGame
+    ? Math.max(0, (form.maxPlayers ?? 0) - (baseGame.maxPlayers ?? 0))
+    : 0;
+
+  function pickBase(base: Game) {
+    setBaseMenu(false);
+    patch({
+      baseGameId: base.id,
+      expansionBoost: Math.max(0, (form.maxPlayers ?? 0) - (base.maxPlayers ?? 0)),
+    });
+  }
+
+  function unlinkBase() {
+    patch({ baseGameId: null, expansionBoost: null });
   }
 
   // Expansion editing helpers.
@@ -480,6 +514,41 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
               />
             </Field>
           </View>
+
+          {(standaloneEnabled || form.baseGameId != null) && (
+            <Field label="Standalone expansion">
+              {form.baseGameId == null ? (
+                <Pressable style={styles.basePick} onPress={() => setBaseMenu(true)}>
+                  <Text style={styles.basePickText}>＋ Make this an expansion of a base game</Text>
+                </Pressable>
+              ) : (
+                <View style={styles.baseLinked}>
+                  <Pressable style={styles.basePick} onPress={() => setBaseMenu(true)}>
+                    <Text style={styles.basePickText}>
+                      Expansion of: {baseGame?.name ?? '(unknown game)'} ▸
+                    </Text>
+                  </Pressable>
+                  <View style={styles.boostRow}>
+                    <Text style={styles.boostLabel}>Adds players to the base</Text>
+                    <TextInput
+                      style={[styles.input, styles.boostInput]}
+                      keyboardType="number-pad"
+                      value={form.expansionBoost?.toString() ?? ''}
+                      onChangeText={(v) => patch({ expansionBoost: numOrNull(v) })}
+                      placeholder={String(suggestedBoost)}
+                      placeholderTextColor={colors.placeholder}
+                    />
+                  </View>
+                  <Pressable onPress={unlinkBase} hitSlop={8}>
+                    <Text style={styles.unlinkText}>Unlink from base game</Text>
+                  </Pressable>
+                </View>
+              )}
+              <Text style={styles.fieldHint}>
+                Links this game to one you own; its extra players are added to the base’s total.
+              </Text>
+            </Field>
+          )}
 
           <Field label={`Teachability${form.teachRating ? ` · ${form.teachRating}/5` : ''}`}>
             <View style={styles.teachRow}>
@@ -771,6 +840,35 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
           </Pressable>
         </Pressable>
       </Modal>
+
+      <Modal visible={baseMenu} animationType="slide" transparent onRequestClose={() => setBaseMenu(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setBaseMenu(false)}>
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <Text style={styles.sheetTitle}>Base game</Text>
+            {bases.length === 0 ? (
+              <Text style={styles.modalError}>
+                You have no other games to use as a base yet. Add the base game first, then link this one.
+              </Text>
+            ) : (
+              <FlatList
+                data={bases}
+                keyExtractor={(b) => String(b.id)}
+                renderItem={({ item }) => (
+                  <Pressable style={styles.bggResult} onPress={() => pickBase(item)}>
+                    <Text style={styles.bggResultName}>{item.name}</Text>
+                    {item.maxPlayers ? (
+                      <Text style={styles.bggResultYear}>max {item.maxPlayers}</Text>
+                    ) : null}
+                  </Pressable>
+                )}
+              />
+            )}
+            <Pressable style={[styles.sheetItem, styles.sheetCancel]} onPress={() => setBaseMenu(false)}>
+              <Text style={styles.sheetCancelText}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -849,6 +947,20 @@ const styles = StyleSheet.create({
   expansionRemoveBtn: { paddingBottom: 10 },
   addExpansion: { paddingVertical: spacing.sm },
   addExpansionText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
+  basePick: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+  },
+  basePickText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
+  baseLinked: { gap: spacing.sm },
+  boostRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  boostLabel: { color: colors.text, fontSize: 14, flex: 1 },
+  boostInput: { width: 72, textAlign: 'center' },
+  unlinkText: { color: colors.danger, fontSize: 13, fontWeight: '600' },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,

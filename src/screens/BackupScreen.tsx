@@ -9,18 +9,26 @@ import { getMeta, setMeta } from '../db/meta';
 import { colors, radius, spacing } from '../theme';
 
 export const HIDE_SWIPE_TIPS_KEY = 'hide_swipe_tips';
+export const STANDALONE_EXPANSIONS_KEY = 'expansions_standalone';
 
 export default function BackupScreen({ navigation }: RootStackProps<'Backup'>) {
   const [busy, setBusy] = useState<string | null>(null);
   const [hideTips, setHideTips] = useState(false);
+  const [standaloneExp, setStandaloneExp] = useState(false);
 
   useEffect(() => {
     getMeta(HIDE_SWIPE_TIPS_KEY).then((v) => setHideTips(v === '1')).catch(() => {});
+    getMeta(STANDALONE_EXPANSIONS_KEY).then((v) => setStandaloneExp(v === '1')).catch(() => {});
   }, []);
 
   function toggleHideTips(v: boolean) {
     setHideTips(v);
     setMeta(HIDE_SWIPE_TIPS_KEY, v ? '1' : '0').catch(() => {});
+  }
+
+  function toggleStandaloneExp(v: boolean) {
+    setStandaloneExp(v);
+    setMeta(STANDALONE_EXPANSIONS_KEY, v ? '1' : '0').catch(() => {});
   }
 
   async function share(uri: string, mimeType: string, title: string) {
@@ -120,6 +128,19 @@ export default function BackupScreen({ navigation }: RootStackProps<'Backup'>) {
             <Switch
               value={hideTips}
               onValueChange={toggleHideTips}
+              trackColor={{ true: colors.primary, false: colors.border }}
+            />
+          </View>
+          <View style={styles.toggleRow}>
+            <View style={styles.flex1}>
+              <Text style={styles.toggleLabel}>Expansions as standalone games</Text>
+              <Text style={styles.toggleSub}>
+                Add an expansion as its own game (art &amp; details) linked to a base game
+              </Text>
+            </View>
+            <Switch
+              value={standaloneExp}
+              onValueChange={toggleStandaloneExp}
               trackColor={{ true: colors.primary, false: colors.border }}
             />
           </View>

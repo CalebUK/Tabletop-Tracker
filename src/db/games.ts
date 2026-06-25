@@ -31,6 +31,8 @@ interface GameRow {
   min_age: number | null;
   teach_rating: number | null;
   edition: string | null;
+  base_game_id: number | null;
+  expansion_boost: number | null;
   loaned_to: string | null;
   loaned_at: string | null;
   created_at: string;
@@ -69,6 +71,8 @@ function rowToGame(row: GameRow): Game {
     minAge: row.min_age,
     teachRating: row.teach_rating ?? null,
     edition: row.edition,
+    baseGameId: row.base_game_id ?? null,
+    expansionBoost: row.expansion_boost ?? null,
     loanedTo: row.loaned_to,
     loanedAt: row.loaned_at,
     createdAt: row.created_at,
@@ -92,8 +96,12 @@ const BASE_SELECT = `
       WHERE gc.game_id = g.id) AS categories,
     (SELECT count(*) FROM plays p WHERE p.game_id = g.id AND p.status != 'saved') AS play_count,
     (SELECT max(p.played_at) FROM plays p WHERE p.game_id = g.id AND p.status != 'saved') AS last_played,
-    (SELECT count(*) FROM expansions e WHERE e.game_id = g.id) AS expansion_count,
-    (SELECT COALESCE(SUM(additional_players), 0) FROM expansions e WHERE e.game_id = g.id) AS expansion_players
+    ((SELECT count(*) FROM expansions e WHERE e.game_id = g.id)
+     + (SELECT count(*) FROM games c WHERE c.base_game_id = g.id AND c.is_wishlist = 0)) AS expansion_count,
+    ((SELECT COALESCE(SUM(additional_players), 0) FROM expansions e WHERE e.game_id = g.id)
+     + (SELECT COALESCE(SUM(
+          COALESCE(c.expansion_boost, max(0, COALESCE(c.max_players, 0) - COALESCE(g.max_players, 0)))
+        ), 0) FROM games c WHERE c.base_game_id = g.id AND c.is_wishlist = 0)) AS expansion_players
   FROM games g
 `;
 
@@ -102,7 +110,7 @@ const BASE_SELECT = `
 export async function getAllGames(wishlist = false): Promise<Game[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<GameRow>(
-    `${BASE_SELECT} WHERE g.is_wishlist = ? ORDER BY g.name COLLATE NOCASE ASC`,
+    `${BASE_SELECT} WHERE g.is_wishlist = ? AND g.base_game_id IS NULL ORDER BY g.name COLLATE NOCASE ASC`,
     [wishlist ? 1 : 0]
   );
   return rows.map(rowToGame);
@@ -116,8 +124,9 @@ export async function getGame(id: number): Promise<Game | null> {
 
 export async function searchGames(filters: SearchFilters): Promise<Game[]> {
   const db = await getDb();
-  // Search only covers owned games, never wishlist items.
-  const where: string[] = ['g.is_wishlist = 0'];
+  // Search covers owned games only — never wishlist items or linked expansions
+  // (those live nested under their base game).
+  const where: string[] = ['g.is_wishlist = 0', 'g.base_game_id IS NULL'];
   const params: SQLite.SQLiteBindValue[] = [];
 
   if (filters.text.trim()) {
@@ -222,6 +231,7 @@ export async function saveGame(input: GameInput): Promise<number> {
            notes = ?, house_rules = ?, is_favorite = ?, is_wishlist = ?,
            is_duel = ?, is_party = ?, is_coop = ?, bgg_id = ?,
            bgg_rating = ?, bgg_weight = ?, developer = ?, min_age = ?, teach_rating = ?, edition = ?,
+           base_game_id = ?, expansion_boost = ?,
            updated_at = datetime('now')
          WHERE id = ?`,
         [
@@ -230,7 +240,7 @@ export async function saveGame(input: GameInput): Promise<number> {
           input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.isWishlist ? 1 : 0,
           input.isDuel ? 1 : 0, input.isParty ? 1 : 0, input.isCoop ? 1 : 0, input.bggId,
           input.bggRating, input.bggWeight, input.developer, input.minAge, input.teachRating,
-          input.edition, input.id,
+          input.edition, input.baseGameId, input.expansionBoost, input.id,
         ]
       );
       gameId = input.id;
@@ -240,15 +250,16 @@ export async function saveGame(input: GameInput): Promise<number> {
            (name, image_uri, description, location, year, min_players, max_players,
             play_time_min, rating, notes, house_rules, is_favorite, is_wishlist,
             is_duel, is_party, is_coop,
-            bgg_id, bgg_rating, bgg_weight, developer, min_age, teach_rating, edition)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            bgg_id, bgg_rating, bgg_weight, developer, min_age, teach_rating, edition,
+            base_game_id, expansion_boost)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           input.name, input.imageUri, input.description, input.location, input.year,
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
           input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.isWishlist ? 1 : 0,
           input.isDuel ? 1 : 0, input.isParty ? 1 : 0, input.isCoop ? 1 : 0,
           input.bggId, input.bggRating, input.bggWeight, input.developer, input.minAge,
-          input.teachRating, input.edition,
+          input.teachRating, input.edition, input.baseGameId, input.expansionBoost,
         ]
       );
       gameId = res.lastInsertRowId;
@@ -325,7 +336,12 @@ export async function countGamesByName(
 
 export async function deleteGame(id: number): Promise<void> {
   const db = await getDb();
-  await db.runAsync('DELETE FROM games WHERE id = ?', [id]);
+  await db.withTransactionAsync(async () => {
+    // Unlink any standalone expansions of this game so they don't orphan
+    // (they reappear as normal top-level games, keeping their art/details).
+    await db.runAsync('UPDATE games SET base_game_id = NULL WHERE base_game_id = ?', [id]);
+    await db.runAsync('DELETE FROM games WHERE id = ?', [id]);
+  });
 }
 
 export async function toggleFavorite(id: number, value: boolean): Promise<void> {
@@ -365,10 +381,23 @@ export async function addWishlistGame(g: {
     minAge: null,
     teachRating: null,
     edition: null,
+    baseGameId: null,
+    expansionBoost: null,
     tags: [],
     categories: [],
     expansions: [],
   });
+}
+
+// Standalone-expansion games linked to a base (full game rows, shown nested
+// under the base's detail). Ordered by name.
+export async function getStandaloneExpansions(baseId: number): Promise<Game[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<GameRow>(
+    `${BASE_SELECT} WHERE g.base_game_id = ? ORDER BY g.name COLLATE NOCASE ASC`,
+    [baseId]
+  );
+  return rows.map(rowToGame);
 }
 
 // Move a game between the wishlist and the collection (flip the flag).
@@ -497,7 +526,7 @@ export async function getGamesForLibrary(): Promise<LibraryGame[]> {
     image_uri: string | null;
     description: string | null;
   }>(
-    'SELECT name, rating, min_players, max_players, play_time_min, image_uri, description FROM games WHERE is_wishlist = 0 ORDER BY name COLLATE NOCASE ASC'
+    'SELECT name, rating, min_players, max_players, play_time_min, image_uri, description FROM games WHERE is_wishlist = 0 AND base_game_id IS NULL ORDER BY name COLLATE NOCASE ASC'
   );
   return rows.map((r) => ({
     name: r.name,

@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { getDb } from './database';
-import { getAllGames, getExpansions } from './games';
+import { getAllGames, getExpansions, getStandaloneExpansions } from './games';
 import { isoToUk } from '../lib/dates';
 
 // Tables in dependency order (parents first) so a restore satisfies foreign keys.
@@ -153,14 +153,19 @@ export async function exportCsv(): Promise<string> {
 
   for (const g of games) {
     const exps = await getExpansions(g.id);
+    const standalone = await getStandaloneExpansions(g.id);
     const playStyle = [g.isDuel && 'Duel', g.isParty && 'Party', g.isCoop && 'Co-Op']
       .filter(Boolean)
       .join('; ');
     const maxWithExp =
       g.maxPlayers != null ? g.maxPlayers + g.expansionPlayers : '';
-    const expansions = exps
-      .map((e) => (e.additionalPlayers ? `${e.name} (+${e.additionalPlayers})` : e.name))
-      .join('; ');
+    const expansions = [
+      ...standalone.map((e) => {
+        const boost = e.isWishlist ? 0 : e.expansionBoost ?? Math.max(0, (e.maxPlayers ?? 0) - (g.maxPlayers ?? 0));
+        return boost ? `${e.name} (+${boost})` : e.name;
+      }),
+      ...exps.map((e) => (e.additionalPlayers ? `${e.name} (+${e.additionalPlayers})` : e.name)),
+    ].join('; ');
     const row = [
       g.name, g.description, g.year, g.edition, g.location, g.minPlayers, g.maxPlayers,
       maxWithExp, g.playTimeMin, g.minAge, g.teachRating, g.bggWeight,
