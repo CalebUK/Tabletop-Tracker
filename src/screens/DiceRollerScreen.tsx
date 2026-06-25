@@ -1,19 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle, Defs, LinearGradient, Polygon, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { colors, radius, spacing } from '../theme';
 
 const SIDES = [4, 6, 8, 10, 12, 20, 100];
-
-// Real-dice look: light faces with dark pips/numbers.
-const FACE = '#f4f5f8';
-const FACE_EDGE = '#cdd2dc';
+const FACE_EDGE = '#b9bfca';
 const INK = '#15171c';
 
-// Which of the 9 grid cells get a pip, for each d6 value.
-//  0 1 2
-//  3 4 5
-//  6 7 8
+// Polyhedral silhouettes in a 0–100 viewBox (d6 is drawn as a rounded rect).
+const SHAPES: Record<number, string> = {
+  4: '50,8 93,86 7,86',
+  8: '50,5 95,50 50,95 5,50',
+  10: '50,5 89,40 50,96 11,40',
+  12: '50,5 93,39 76,93 24,93 7,39',
+  20: '50,4 91,27 91,73 50,96 9,73 9,27',
+  100: '50,5 89,40 50,96 11,40',
+};
+
+// d6 pip cells → grid (col,row) centres in the viewBox.
+const COLS = [30, 50, 70];
 const PIPS: Record<number, number[]> = {
   1: [4],
   2: [0, 8],
@@ -23,8 +29,58 @@ const PIPS: Record<number, number[]> = {
   6: [0, 2, 3, 5, 6, 8],
 };
 
+function numSize(v: number): number {
+  return v >= 100 ? 26 : v >= 10 ? 36 : 46;
+}
+
+function DieFace({ value, sides, size }: { value: number; sides: number; size: number }) {
+  const gid = `dieGrad${sides}`;
+  return (
+    <Svg width={size} height={size} viewBox="0 0 100 100">
+      <Defs>
+        <LinearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor="#ffffff" />
+          <Stop offset="1" stopColor="#d4d9e2" />
+        </LinearGradient>
+      </Defs>
+      {sides === 6 ? (
+        <>
+          <Rect x="5" y="5" width="90" height="90" rx="16" fill={`url(#${gid})`} stroke={FACE_EDGE} strokeWidth="2" />
+          {PIPS[value]?.map((cell) => (
+            <Circle key={cell} cx={COLS[cell % 3]} cy={COLS[Math.floor(cell / 3)]} r="7.5" fill={INK} />
+          ))}
+        </>
+      ) : (
+        <>
+          <Polygon
+            points={SHAPES[sides] ?? SHAPES[100]}
+            fill={`url(#${gid})`}
+            stroke={FACE_EDGE}
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+          {sides === 20 && (
+            <Polygon points="50,30 70,64 30,64" fill="none" stroke={FACE_EDGE} strokeWidth="1.5" strokeLinejoin="round" />
+          )}
+          <SvgText
+            x="50"
+            y={sides === 4 ? 80 : 50}
+            fontSize={numSize(value)}
+            fontWeight="bold"
+            fill={INK}
+            textAnchor="middle"
+            alignmentBaseline="central"
+          >
+            {value}
+          </SvgText>
+        </>
+      )}
+    </Svg>
+  );
+}
+
 function Die({ value, sides, anim, index }: { value: number; sides: number; anim: Animated.Value; index: number }) {
-  // Whole-turn spins so each die settles flat, but at different speeds to desync.
+  // Whole-turn spins so each die settles flat, at different speeds to desync.
   const rotate = anim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', `${360 * (2 + (index % 3))}deg`],
@@ -32,19 +88,7 @@ function Die({ value, sides, anim, index }: { value: number; sides: number; anim
   const translateY = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, -30, 0] });
   return (
     <Animated.View style={[styles.die, { transform: [{ translateY }, { rotate }] }]}>
-      {sides === 6 ? (
-        <View style={styles.pipGrid}>
-          {Array.from({ length: 9 }).map((_, i) => (
-            <View key={i} style={styles.pipCell}>
-              {PIPS[value]?.includes(i) ? <View style={styles.pip} /> : null}
-            </View>
-          ))}
-        </View>
-      ) : (
-        <Text style={styles.dieNum} numberOfLines={1} adjustsFontSizeToFit>
-          {value}
-        </Text>
-      )}
+      <DieFace value={value} sides={sides} size={66} />
     </Animated.View>
   );
 }
@@ -67,7 +111,6 @@ export default function DiceRollerScreen() {
     setRolling(true);
     const final = randDice();
     setResults(randDice());
-    // Flicker the faces while the dice tumble.
     flicker.current = setInterval(() => setResults(randDice()), 70);
     anim.setValue(0);
     Animated.timing(anim, {
@@ -173,24 +216,6 @@ const styles = StyleSheet.create({
   rollText: { color: colors.primaryText, fontSize: 18, fontWeight: '800' },
   resultsWrap: { marginTop: spacing.xl * 1.5, alignItems: 'center' },
   diceWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, justifyContent: 'center' },
-  die: {
-    width: 64,
-    height: 64,
-    borderRadius: 14,
-    backgroundColor: FACE,
-    borderWidth: 1,
-    borderColor: FACE_EDGE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.35,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 3 },
-  },
-  pipGrid: { width: 48, height: 48, flexDirection: 'row', flexWrap: 'wrap' },
-  pipCell: { width: 16, height: 16, alignItems: 'center', justifyContent: 'center' },
-  pip: { width: 9, height: 9, borderRadius: 5, backgroundColor: INK },
-  dieNum: { color: INK, fontSize: 26, fontWeight: '800', paddingHorizontal: 6 },
+  die: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center' },
   total: { color: colors.primary, fontSize: 22, fontWeight: '800', marginTop: spacing.xl },
 });
