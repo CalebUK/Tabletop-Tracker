@@ -3,6 +3,7 @@ import { Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import type { LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
@@ -28,6 +29,17 @@ import AboutScreen from './src/screens/AboutScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+// Deep links: tabletoptracker://library/<code> opens a friend's library and
+// auto-fills the share code. (The https Pages link bounces here via the scheme.)
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ['tabletoptracker://', 'https://calebuk.github.io/Tabletop-Tracker'],
+  config: {
+    screens: {
+      FriendLibrary: 'library/:code',
+    },
+  },
+};
 
 const navTheme = {
   ...DarkTheme,
@@ -85,7 +97,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <OnboardingProvider>
-      <NavigationContainer theme={navTheme}>
+      <NavigationContainer theme={navTheme} linking={linking}>
         <StatusBar style="light" />
         <Stack.Navigator
           screenOptions={{
