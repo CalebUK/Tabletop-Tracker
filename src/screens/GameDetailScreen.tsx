@@ -108,6 +108,24 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
     );
   }
 
+  function onMoveToWishlist() {
+    if (!game) return;
+    Alert.alert(
+      'Move to wishlist?',
+      `Move "${game.name}" back to your wishlist? It'll come out of your collection (its details are kept).`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Move',
+          onPress: async () => {
+            await setWishlist(game.id, true);
+            load();
+          },
+        },
+      ]
+    );
+  }
+
   function onDeletePlay(playId: number) {
     Alert.alert('Delete this play?', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
@@ -194,6 +212,12 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
       {!game.isWishlist && !game.loanedTo && (
         <Pressable style={styles.loanBtn} onPress={() => navigation.navigate('Loan', { gameId })}>
           <Text style={styles.loanBtnText}>🤝 Loan out this game</Text>
+        </Pressable>
+      )}
+
+      {!game.isWishlist && (
+        <Pressable style={styles.wishlistBackBtn} onPress={onMoveToWishlist}>
+          <Text style={styles.wishlistBackText}>↩ Move back to wishlist</Text>
         </Pressable>
       )}
 
@@ -367,6 +391,8 @@ const styles = StyleSheet.create({
     borderColor: colors.favorite,
   },
   loanBtnText: { color: colors.favorite, fontSize: 15, fontWeight: '700' },
+  wishlistBackBtn: { marginTop: spacing.md, paddingVertical: spacing.sm, alignItems: 'center' },
+  wishlistBackText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   wishBtn: {
     marginTop: spacing.md,
     paddingVertical: 12,
