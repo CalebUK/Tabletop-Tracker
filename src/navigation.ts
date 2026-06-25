@@ -7,8 +7,14 @@ export type RootStackParamList = {
   // omit gameId to add a new game; wishlist:true creates it on the wishlist
   EditGame: { gameId?: number; wishlist?: boolean };
   // Log/edit a play. From a game: pass gameId. From a group: pass groupId and
-  // let the user enter any game. playId edits an existing play.
-  LogPlay: { gameId?: number; groupId?: number; playId?: number };
+  // let the user enter any game. playId edits an existing play. players
+  // pre-fills the score card (e.g. handed off from the Scorepad tool).
+  LogPlay: {
+    gameId?: number;
+    groupId?: number;
+    playId?: number;
+    players?: { name: string; score: number | null; isWinner?: boolean }[];
+  };
   Loan: { gameId: number };
   // groupId/groupName scope the stats to a single gaming group (omit for global).
   PlayerStats: { name: string; groupId?: number; groupName?: string };

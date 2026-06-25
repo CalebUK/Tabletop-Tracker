@@ -35,7 +35,7 @@ function scoreOrNull(s: string): number | null {
 }
 
 export default function LogPlayScreen({ route, navigation }: RootStackProps<'LogPlay'>) {
-  const { gameId, groupId: groupParam, playId } = route.params;
+  const { gameId, groupId: groupParam, playId, players: initialPlayers } = route.params;
   const headerHeight = useHeaderHeight();
   const [gameName, setGameName] = useState('');
   const [gameFocused, setGameFocused] = useState(false);
@@ -46,7 +46,11 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
   const [groupId, setGroupId] = useState<number | null>(groupParam ?? null);
   const [date, setDate] = useState(todayUk());
   const [notes, setNotes] = useState('');
-  const [players, setPlayers] = useState<PlayPlayer[]>([{ name: '', isWinner: false, score: null }]);
+  const [players, setPlayers] = useState<PlayPlayer[]>(
+    initialPlayers && initialPlayers.length
+      ? initialPlayers.map((p) => ({ name: p.name, isWinner: !!p.isWinner, score: p.score }))
+      : [{ name: '', isWinner: false, score: null }]
+  );
   const [allPlayers, setAllPlayers] = useState<string[]>([]);
   const [focused, setFocused] = useState<number | null>(null);
   const [status, setStatus] = useState<PlayStatus>('completed');

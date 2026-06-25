@@ -1,8 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation';
 import { getMeta, setMeta } from '../db/meta';
 import { colors, radius, spacing } from '../theme';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const KEY = 'scorepad_v1';
 
@@ -13,6 +18,7 @@ interface Player {
 }
 
 export default function ScorepadScreen() {
+  const nav = useNavigation<Nav>();
   const [players, setPlayers] = useState<Player[]>([]);
   const [deltas, setDeltas] = useState<Record<number, string>>({});
   const nextId = useRef(1);
@@ -69,6 +75,22 @@ export default function ScorepadScreen() {
     ]);
   }
 
+  // Hand the current scores off to Log Play — names + scores pre-filled, top
+  // scorer pre-marked as winner. The user just picks the game and saves.
+  function logAsPlay() {
+    const named = players.filter((p) => p.name.trim());
+    if (named.length === 0) return;
+    const max = Math.max(...named.map((p) => p.score));
+    const allEqual = named.every((p) => p.score === named[0].score);
+    nav.navigate('LogPlay', {
+      players: named.map((p) => ({
+        name: p.name.trim(),
+        score: p.score,
+        isWinner: !allEqual && p.score === max,
+      })),
+    });
+  }
+
   // Crown the (single) current leader, once anyone is ahead of 0.
   const top = players.reduce((m, p) => Math.max(m, p.score), -Infinity);
   const leaders = players.filter((p) => p.score === top);
@@ -122,6 +144,12 @@ export default function ScorepadScreen() {
         <Pressable style={styles.addPlayer} onPress={addPlayer}>
           <Text style={styles.addPlayerText}>+ Add player</Text>
         </Pressable>
+
+        {players.some((p) => p.name.trim()) && (
+          <Pressable style={styles.logBtn} onPress={logAsPlay}>
+            <Text style={styles.logBtnText}>🎲  Log as a play</Text>
+          </Pressable>
+        )}
 
         {players.length > 0 && (
           <View style={styles.footer}>
@@ -185,6 +213,14 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   addPlayerText: { color: colors.primary, fontSize: 15, fontWeight: '700' },
+  logBtn: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+  },
+  logBtnText: { color: colors.primaryText, fontSize: 17, fontWeight: '800' },
   footer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xl },
   footerLink: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   danger: { color: colors.danger },

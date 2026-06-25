@@ -1,34 +1,56 @@
-import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../theme';
 
 export default function WhoGoesFirstScreen() {
   const [names, setNames] = useState<string[]>(['', '']);
-  const [order, setOrder] = useState<string[] | null>(null);
+  const [slot, setSlot] = useState<string | null>(null);
+  const [spinning, setSpinning] = useState(false);
+  const [landed, setLanded] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pop = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
   function setName(i: number, v: string) {
     setNames((list) => list.map((n, idx) => (idx === i ? v : n)));
-    setOrder(null);
   }
   function addRow() {
     setNames((list) => [...list, '']);
   }
   function removeRow(i: number) {
     setNames((list) => (list.length <= 2 ? list : list.filter((_, idx) => idx !== i)));
-    setOrder(null);
   }
 
   function decide() {
+    if (spinning) return;
     const players = names.map((n) => n.trim()).filter(Boolean);
     if (players.length < 2) return;
-    // Fisher–Yates shuffle for a fair random turn order.
-    const shuffled = [...players];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    setOrder(shuffled);
+
+    setSpinning(true);
+    setLanded(false);
+    const finalPick = players[Math.floor(Math.random() * players.length)];
+    const totalSpins = 18 + Math.floor(Math.random() * players.length);
+    let i = 0;
+
+    const step = () => {
+      setSlot(players[i % players.length]);
+      i += 1;
+      if (i >= totalSpins) {
+        setSlot(finalPick);
+        setSpinning(false);
+        setLanded(true);
+        pop.setValue(0.6);
+        Animated.spring(pop, { toValue: 1, friction: 4, tension: 120, useNativeDriver: true }).start();
+        return;
+      }
+      // Ease-out: the reel slows as it approaches the end.
+      const progress = i / totalSpins;
+      const delay = 45 + progress * progress * 230;
+      timer.current = setTimeout(step, delay);
+    };
+    step();
   }
 
   const enough = names.filter((n) => n.trim()).length >= 2;
@@ -36,6 +58,20 @@ export default function WhoGoesFirstScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
+        <View style={[styles.slot, landed && styles.slotLanded]}>
+          {landed && <Text style={styles.slotCaption}>Goes first</Text>}
+          <Animated.Text
+            style={[styles.slotName, !slot && styles.slotPlaceholder, { transform: [{ scale: landed ? pop : 1 }] }]}
+            numberOfLines={1}
+          >
+            {slot ?? '🎰'}
+          </Animated.Text>
+        </View>
+
+        <Pressable style={[styles.decideBtn, !enough && styles.decideOff]} onPress={decide} disabled={!enough || spinning}>
+          <Text style={styles.decideText}>{spinning ? 'Spinning…' : '🎲  Decide!'}</Text>
+        </Pressable>
+
         <Text style={styles.label}>Players</Text>
         {names.map((n, i) => (
           <View key={i} style={styles.row}>
@@ -54,28 +90,6 @@ export default function WhoGoesFirstScreen() {
         <Pressable onPress={addRow} style={styles.addBtn}>
           <Text style={styles.addText}>+ Add player</Text>
         </Pressable>
-
-        <Pressable style={[styles.decideBtn, !enough && styles.decideOff]} onPress={decide} disabled={!enough}>
-          <Text style={styles.decideText}>👑  Decide!</Text>
-        </Pressable>
-
-        {order && (
-          <View style={styles.result}>
-            <Text style={styles.firstLabel}>Goes first</Text>
-            <Text style={styles.firstName}>{order[0]}</Text>
-            {order.length > 1 && (
-              <>
-                <Text style={styles.orderLabel}>Turn order</Text>
-                {order.map((name, i) => (
-                  <View key={i} style={styles.orderRow}>
-                    <Text style={styles.orderNum}>{i + 1}</Text>
-                    <Text style={styles.orderName}>{name}</Text>
-                  </View>
-                ))}
-              </>
-            )}
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -84,7 +98,30 @@ export default function WhoGoesFirstScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, paddingBottom: spacing.xl * 2 },
-  label: { color: colors.textMuted, fontSize: 14, fontWeight: '600', marginBottom: spacing.sm },
+  slot: {
+    height: 130,
+    borderRadius: radius.lg,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  slotLanded: { borderColor: colors.star },
+  slotCaption: { color: colors.textMuted, fontSize: 14, fontWeight: '600', marginBottom: 4 },
+  slotName: { color: colors.star, fontSize: 34, fontWeight: '800', textAlign: 'center' },
+  slotPlaceholder: { color: colors.textMuted, fontSize: 44 },
+  decideBtn: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+  },
+  decideOff: { opacity: 0.4 },
+  decideText: { color: colors.primaryText, fontSize: 18, fontWeight: '800' },
+  label: { color: colors.textMuted, fontSize: 14, fontWeight: '600', marginTop: spacing.xl, marginBottom: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   input: {
     flex: 1,
@@ -101,20 +138,4 @@ const styles = StyleSheet.create({
   remove: { color: colors.danger, fontSize: 18 },
   addBtn: { paddingVertical: spacing.sm },
   addText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
-  decideBtn: {
-    marginTop: spacing.lg,
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-  },
-  decideOff: { opacity: 0.4 },
-  decideText: { color: colors.primaryText, fontSize: 18, fontWeight: '800' },
-  result: { marginTop: spacing.xl, alignItems: 'center' },
-  firstLabel: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
-  firstName: { color: colors.star, fontSize: 34, fontWeight: '800', marginTop: 4, textAlign: 'center' },
-  orderLabel: { color: colors.textMuted, fontSize: 14, fontWeight: '600', marginTop: spacing.xl, marginBottom: spacing.sm, alignSelf: 'flex-start' },
-  orderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, alignSelf: 'stretch', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
-  orderNum: { color: colors.textMuted, fontSize: 16, fontWeight: '700', width: 28 },
-  orderName: { color: colors.text, fontSize: 16, fontWeight: '600' },
 });
