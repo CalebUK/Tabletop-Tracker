@@ -157,7 +157,9 @@ const styles = StyleSheet.create({
   fav: { color: colors.textMuted, fontSize: 18, lineHeight: 18 },
   favOn: { color: colors.favorite, fontSize: 18, lineHeight: 18 },
   myRating: { color: colors.star, fontSize: 13, fontWeight: '700', lineHeight: 16 },
-  location: { color: colors.textMuted, fontSize: 13, lineHeight: 16, flexShrink: 1 },
+  // The 📍 emoji has more built-in left bearing than the ★ / text, so nudge the
+  // whole line left to keep the icon flush with the rating and name.
+  location: { color: colors.textMuted, fontSize: 13, lineHeight: 16, flexShrink: 1, marginLeft: -2 },
   loaned: { color: colors.favorite },
   friends: { color: colors.success, fontSize: 13, fontWeight: '600', lineHeight: 16 },
   metaRight: { color: colors.textMuted, fontSize: 13, lineHeight: 16 },
