@@ -57,10 +57,20 @@ export default function LibraryScreen() {
     setBusy(myLib ? 'Updating your library…' : 'Creating your library…');
     try {
       const name = libName.trim() || 'My library';
-      const code = await publishLibrary(name, myLib?.code);
+      const prevCode = myLib?.code;
+      const code = await publishLibrary(name, prevCode);
       await saveMyLibrary(code, name);
       setMyLib({ code, name });
-      Alert.alert(myLib ? 'Library updated' : 'Library created', `Your share code is ${code}.`);
+      // publishLibrary returns a brand-new code if this device lost ownership of
+      // the old library (anonymous login reset). Let the user know to re-share.
+      if (prevCode && code !== prevCode) {
+        Alert.alert(
+          'New library created',
+          `Your old library couldn't be updated (this device's login was reset), so a fresh one was published. Your new share code is ${code} — re-share it with friends.`
+        );
+      } else {
+        Alert.alert(myLib ? 'Library updated' : 'Library created', `Your share code is ${code}.`);
+      }
     } catch (e: any) {
       Alert.alert('Could not connect', e?.message ?? 'Please check your connection and try again.');
     } finally {
@@ -90,7 +100,22 @@ export default function LibraryScreen() {
             await clearMyLibrary();
             setMyLib(null);
           } catch (e: any) {
-            Alert.alert('Could not delete', e?.message ?? 'Please try again.');
+            // If this device no longer owns the library (anonymous login reset),
+            // Firestore blocks the remote delete. Unlink it locally so the user
+            // isn't stuck and can publish a fresh one.
+            const denied =
+              e?.code === 'permission-denied' ||
+              /insufficient permissions/i.test(e?.message ?? '');
+            if (denied) {
+              await clearMyLibrary();
+              setMyLib(null);
+              Alert.alert(
+                'Library unlinked',
+                "This device's login was reset, so the online copy can't be removed from here — but it's now unlinked. Publish again to create a fresh library you control."
+              );
+            } else {
+              Alert.alert('Could not delete', e?.message ?? 'Please try again.');
+            }
           } finally {
             setBusy(null);
           }

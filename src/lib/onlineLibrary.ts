@@ -29,14 +29,24 @@ export async function publishLibrary(name: string, existingCode?: string | null)
   const uid = await ensureSignedIn();
   const db = getFirestoreDb();
   const games = await getGamesForLibrary();
-  const code = existingCode || (await freshCode());
-  const ref = doc(db, 'libraries', code);
+  let code = existingCode || (await freshCode());
   // Preserve the view counter across updates (setDoc overwrites the document).
   let views = 0;
   if (existingCode) {
-    const existing = await getDoc(ref);
-    if (existing.exists()) views = (existing.data() as any).views ?? 0;
+    const existing = await getDoc(doc(db, 'libraries', existingCode));
+    if (existing.exists()) {
+      const data = existing.data() as any;
+      if (data.ownerUid && data.ownerUid !== uid) {
+        // This install no longer owns the existing library — the anonymous login
+        // was reset (e.g. after a reinstall or clearing app data), so Firestore
+        // would reject the update. Publish a fresh library we do own instead.
+        code = await freshCode();
+      } else {
+        views = data.views ?? 0;
+      }
+    }
   }
+  const ref = doc(db, 'libraries', code);
   await setDoc(ref, {
     ownerUid: uid,
     name: name.trim() || 'My library',
