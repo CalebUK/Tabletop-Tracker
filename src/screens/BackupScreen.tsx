@@ -131,7 +131,7 @@ export default function BackupScreen({ navigation }: RootStackProps<'Backup'>) {
               trackColor={{ true: colors.primary, false: colors.border }}
             />
           </View>
-          <View style={styles.toggleRow}>
+          <View style={[styles.toggleRow, styles.toggleRowGap]}>
             <View style={styles.flex1}>
               <Text style={styles.toggleLabel}>Expansions as standalone games</Text>
               <Text style={styles.toggleSub}>
@@ -217,6 +217,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.md,
   },
+  toggleRowGap: { marginTop: spacing.sm },
   flex1: { flex: 1 },
   toggleLabel: { color: colors.text, fontSize: 16, fontWeight: '600' },
   toggleSub: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
