@@ -72,6 +72,8 @@ export default function SearchScreen() {
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const [categoryMenu, setCategoryMenu] = useState(false);
   const [labelMenu, setLabelMenu] = useState(false);
+  // Whether the detailed criteria are expanded (collapse for a cleaner results view).
+  const [criteriaOpen, setCriteriaOpen] = useState(true);
 
   // "Feeling lucky" dice-roll animation state.
   const [rolling, setRolling] = useState(false);
@@ -148,6 +150,17 @@ export default function SearchScreen() {
     filters.ageBands.length > 0 || filters.teachRatings.length > 0 || filters.category != null ||
     filters.types.length > 0;
 
+  // How many of the collapsible criteria are set (shown on the header when collapsed).
+  const criteriaCount =
+    (filters.playerCount != null ? 1 : 0) +
+    (filters.maxPlayTime != null || filters.minPlayTime != null ? 1 : 0) +
+    (filters.teachRatings.length ? 1 : 0) +
+    (filters.types.length ? 1 : 0) +
+    (filters.ageBands.length ? 1 : 0) +
+    (filters.minRating != null ? 1 : 0) +
+    (filters.category != null ? 1 : 0) +
+    (filters.tags.length ? 1 : 0);
+
   const header = (
     <View style={styles.filters}>
       <Text style={styles.heading}>Find a Game</Text>
@@ -166,6 +179,19 @@ export default function SearchScreen() {
         <Toggle label="🏠 At home" on={filters.atHomeOnly} onPress={() => patch({ atHomeOnly: !filters.atHomeOnly })} />
       </View>
 
+      <Pressable style={styles.criteriaHeader} onPress={() => setCriteriaOpen((o) => !o)}>
+        <Text style={styles.criteriaTitle}>Search criteria</Text>
+        {criteriaCount > 0 && (
+          <View style={styles.criteriaBadge}>
+            <Text style={styles.criteriaBadgeText}>{criteriaCount}</Text>
+          </View>
+        )}
+        <View style={styles.flex1} />
+        <Text style={styles.criteriaToggle}>{criteriaOpen ? 'Hide ▾' : 'Show ▸'}</Text>
+      </Pressable>
+
+      {criteriaOpen && (
+        <>
       <Text style={styles.groupLabel}>Plays with</Text>
       <View style={styles.chipWrap}>
         {PLAYER_PRESETS.map((n) => (
@@ -280,6 +306,8 @@ export default function SearchScreen() {
           </Pressable>
         </View>
       </View>
+        </>
+      )}
 
       <View style={styles.resultHeader}>
         <Text style={styles.resultCount}>{results.length} result{results.length === 1 ? '' : 's'}</Text>
@@ -410,6 +438,29 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   toggleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
+  criteriaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    marginTop: spacing.sm,
+  },
+  criteriaTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  criteriaBadge: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    minWidth: 20,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    alignItems: 'center',
+  },
+  criteriaBadgeText: { color: colors.primaryText, fontSize: 12, fontWeight: '700' },
+  criteriaToggle: { color: colors.primary, fontSize: 13, fontWeight: '600' },
   groupLabel: { color: colors.textMuted, fontSize: 13, fontWeight: '600', marginTop: spacing.sm },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   toggle: {
