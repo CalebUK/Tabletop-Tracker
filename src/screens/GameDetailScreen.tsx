@@ -215,12 +215,6 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
         </Pressable>
       )}
 
-      {!game.isWishlist && (
-        <Pressable style={styles.wishlistBackBtn} onPress={onMoveToWishlist}>
-          <Text style={styles.wishlistBackText}>↩ Move back to wishlist</Text>
-        </Pressable>
-      )}
-
       {/* House rules shown prominently, below the picture and above play history. */}
       {game.houseRules ? (
         <View style={styles.section}>
@@ -344,6 +338,14 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
           ))}
         </View>
       )}
+
+      {!game.isWishlist && (
+        <Pressable style={styles.wishlistBackBtn} onPress={onMoveToWishlist}>
+          <Text style={styles.wishlistBackText}>
+            Accidentally moved to collection? <Text style={styles.wishlistBackLink}>Move back to wishlist.</Text>
+          </Text>
+        </Pressable>
+      )}
     </ScrollView>
   );
 }
@@ -391,8 +393,9 @@ const styles = StyleSheet.create({
     borderColor: colors.favorite,
   },
   loanBtnText: { color: colors.favorite, fontSize: 15, fontWeight: '700' },
-  wishlistBackBtn: { marginTop: spacing.md, paddingVertical: spacing.sm, alignItems: 'center' },
-  wishlistBackText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
+  wishlistBackBtn: { marginTop: spacing.xl, paddingVertical: spacing.sm, alignItems: 'center' },
+  wishlistBackText: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
+  wishlistBackLink: { color: colors.primary, fontWeight: '600' },
   wishBtn: {
     marginTop: spacing.md,
     paddingVertical: 12,
