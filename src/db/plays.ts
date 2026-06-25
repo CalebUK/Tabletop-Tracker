@@ -1,5 +1,5 @@
 import { getDb } from './database';
-import { Play, PlayPlayer } from '../types';
+import { Play, PlayPlayer, PlayStatus } from '../types';
 
 interface PlayRow {
   id: number;
@@ -8,6 +8,7 @@ interface PlayRow {
   group_id: number | null;
   played_at: string;
   notes: string | null;
+  status: PlayStatus;
 }
 
 export interface PlayInput {
@@ -16,8 +17,30 @@ export interface PlayInput {
   groupId: number | null;
   playedAt: string;
   notes: string | null;
+  status: PlayStatus;
   players: PlayPlayer[];
   expansionIds?: number[];
+  photos?: string[]; // board photos (kept only while saved-for-later)
+}
+
+// Board photos are excluded from play stats; only 'saved' games hold them.
+async function writePlayPhotos(
+  db: Awaited<ReturnType<typeof getDb>>,
+  playId: number,
+  photos: string[]
+): Promise<void> {
+  await db.runAsync('DELETE FROM play_photos WHERE play_id = ?', [playId]);
+  for (const uri of photos) {
+    if (uri) await db.runAsync('INSERT INTO play_photos (play_id, photo_uri) VALUES (?, ?)', [playId, uri]);
+  }
+}
+
+async function getPhotosFor(db: Awaited<ReturnType<typeof getDb>>, playId: number): Promise<string[]> {
+  const rows = await db.getAllAsync<{ photo_uri: string }>(
+    'SELECT photo_uri FROM play_photos WHERE play_id = ? ORDER BY id ASC',
+    [playId]
+  );
+  return rows.map((r) => r.photo_uri);
 }
 
 interface PlayPlayerRow {
@@ -53,8 +76,9 @@ async function writePlayChildren(
 // All plays for a game, newest first, with players and used expansions.
 export async function getPlaysForGame(gameId: number): Promise<Play[]> {
   const db = await getDb();
+  // Saved-for-later games live in "Unfinished games", not the normal history.
   const playRows = await db.getAllAsync<PlayRow>(
-    'SELECT * FROM plays WHERE game_id = ? ORDER BY played_at DESC, id DESC',
+    "SELECT * FROM plays WHERE game_id = ? AND status != 'saved' ORDER BY played_at DESC, id DESC",
     [gameId]
   );
   if (playRows.length === 0) return [];
@@ -95,9 +119,11 @@ export async function getPlaysForGame(gameId: number): Promise<Play[]> {
     groupId: p.group_id,
     playedAt: p.played_at,
     notes: p.notes,
+    status: p.status,
     players: playersByPlay.get(p.id) ?? [],
     expansions: expsByPlay.get(p.id) ?? [],
     expansionIds: [],
+    photos: [],
   }));
 }
 
@@ -106,11 +132,12 @@ export async function addPlay(input: PlayInput): Promise<number> {
   let playId = 0;
   await db.withTransactionAsync(async () => {
     const res = await db.runAsync(
-      'INSERT INTO plays (game_id, game_name, group_id, played_at, notes) VALUES (?, ?, ?, ?, ?)',
-      [input.gameId, input.gameName, input.groupId, input.playedAt, input.notes]
+      'INSERT INTO plays (game_id, game_name, group_id, played_at, notes, status) VALUES (?, ?, ?, ?, ?, ?)',
+      [input.gameId, input.gameName, input.groupId, input.playedAt, input.notes, input.status]
     );
     playId = res.lastInsertRowId;
     await writePlayChildren(db, playId, input.players, input.expansionIds ?? []);
+    await writePlayPhotos(db, playId, input.photos ?? []);
   });
   return playId;
 }
@@ -136,9 +163,11 @@ export async function getPlay(playId: number): Promise<Play | null> {
     groupId: p.group_id,
     playedAt: p.played_at,
     notes: p.notes,
+    status: p.status,
     players: players.map((r) => ({ name: r.player_name, isWinner: r.is_winner === 1, score: r.score })),
     expansions: exps.map((e) => e.name),
     expansionIds: exps.map((e) => e.expansion_id),
+    photos: await getPhotosFor(db, playId),
   };
 }
 
@@ -146,18 +175,61 @@ export async function updatePlay(playId: number, input: PlayInput): Promise<void
   const db = await getDb();
   await db.withTransactionAsync(async () => {
     await db.runAsync(
-      'UPDATE plays SET game_id = ?, game_name = ?, group_id = ?, played_at = ?, notes = ? WHERE id = ?',
-      [input.gameId, input.gameName, input.groupId, input.playedAt, input.notes, playId]
+      'UPDATE plays SET game_id = ?, game_name = ?, group_id = ?, played_at = ?, notes = ?, status = ? WHERE id = ?',
+      [input.gameId, input.gameName, input.groupId, input.playedAt, input.notes, input.status, playId]
     );
     await db.runAsync('DELETE FROM play_players WHERE play_id = ?', [playId]);
     await db.runAsync('DELETE FROM play_expansions WHERE play_id = ?', [playId]);
     await writePlayChildren(db, playId, input.players, input.expansionIds ?? []);
+    await writePlayPhotos(db, playId, input.photos ?? []);
   });
 }
 
 export async function deletePlay(playId: number): Promise<void> {
   const db = await getDb();
   await db.runAsync('DELETE FROM plays WHERE id = ?', [playId]);
+}
+
+export interface SavedPlay {
+  id: number;
+  gameName: string;
+  groupName: string | null;
+  playedAt: string;
+  photoCount: number;
+}
+
+// Saved-for-later (in-progress) games, for the "Unfinished games" section.
+export async function getSavedPlays(): Promise<SavedPlay[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{
+    id: number;
+    game_name: string | null;
+    played_at: string;
+    group_name: string | null;
+    photo_count: number;
+  }>(
+    `SELECT p.id AS id,
+            COALESCE(p.game_name, (SELECT name FROM games WHERE id = p.game_id)) AS game_name,
+            p.played_at AS played_at,
+            (SELECT name FROM groups gr WHERE gr.id = p.group_id) AS group_name,
+            (SELECT count(*) FROM play_photos ph WHERE ph.play_id = p.id) AS photo_count
+       FROM plays p
+      WHERE p.status = 'saved'
+      ORDER BY p.played_at DESC, p.id DESC`
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    gameName: r.game_name ?? '(game)',
+    groupName: r.group_name,
+    playedAt: r.played_at,
+    photoCount: r.photo_count,
+  }));
+}
+
+// Photo uris for a play, so the caller can delete the underlying files.
+export async function getPlayPhotoUris(playId: number): Promise<string[]> {
+  const db = await getDb();
+  return getPhotosFor(db, playId);
 }
 
 // Distinct player names ever recorded, most-used first (for autocomplete).
@@ -189,7 +261,7 @@ export async function getPlayerStats(name: string, groupId?: number): Promise<Pl
     `SELECT count(*) AS plays, sum(pp.is_winner) AS wins
        FROM play_players pp
        JOIN plays p ON p.id = pp.play_id
-      WHERE pp.player_name = ? COLLATE NOCASE${groupFilter}`,
+      WHERE pp.player_name = ? COLLATE NOCASE${groupFilter} AND p.status != 'saved'`,
     [name, ...gp]
   );
   // COALESCE so guest games (no game_id, just a game_name) are included too.
@@ -198,7 +270,7 @@ export async function getPlayerStats(name: string, groupId?: number): Promise<Pl
        FROM play_players pp
        JOIN plays p ON p.id = pp.play_id
        LEFT JOIN games g ON g.id = p.game_id
-      WHERE pp.player_name = ? COLLATE NOCASE${groupFilter}
+      WHERE pp.player_name = ? COLLATE NOCASE${groupFilter} AND p.status != 'saved'
         AND COALESCE(g.name, p.game_name) IS NOT NULL
       GROUP BY name COLLATE NOCASE
       ORDER BY plays DESC, name COLLATE NOCASE ASC`,
@@ -246,32 +318,36 @@ export async function getStats(): Promise<CollectionStats> {
     favorites: number;
   }>('SELECT count(*) AS total_games, sum(is_favorite) AS favorites FROM games WHERE is_wishlist = 0');
   const totalPlays = await db.getFirstAsync<{ c: number }>(
-    'SELECT count(*) AS c FROM plays'
+    "SELECT count(*) AS c FROM plays WHERE status != 'saved'"
   );
   const unplayed = await db.getFirstAsync<{ c: number }>(
-    'SELECT count(*) AS c FROM games g WHERE g.is_wishlist = 0 AND (SELECT count(*) FROM plays p WHERE p.game_id = g.id) = 0'
+    "SELECT count(*) AS c FROM games g WHERE g.is_wishlist = 0 AND (SELECT count(*) FROM plays p WHERE p.game_id = g.id AND p.status != 'saved') = 0"
   );
   const topPlayers = await db.getAllAsync<PlayerRanking>(
-    `SELECT player_name AS name,
-            sum(is_winner) AS wins,
+    `SELECT pp.player_name AS name,
+            sum(pp.is_winner) AS wins,
             count(*) AS plays
-       FROM play_players
-      GROUP BY player_name COLLATE NOCASE
+       FROM play_players pp
+       JOIN plays p ON p.id = pp.play_id
+      WHERE p.status != 'saved'
+      GROUP BY pp.player_name COLLATE NOCASE
       ORDER BY wins DESC, plays DESC
       LIMIT 5`
   );
   const mostPlayed = await db.getAllAsync<GameRanking>(
     `SELECT g.id AS id, g.name AS name, count(p.id) AS plays
        FROM games g JOIN plays p ON p.game_id = g.id
+      WHERE p.status != 'saved'
       GROUP BY g.id
       ORDER BY plays DESC
       LIMIT 5`
   );
   const playerCount = await db.getFirstAsync<{ c: number }>(
-    'SELECT count(DISTINCT player_name COLLATE NOCASE) AS c FROM play_players'
+    `SELECT count(DISTINCT pp.player_name COLLATE NOCASE) AS c
+       FROM play_players pp JOIN plays p ON p.id = pp.play_id WHERE p.status != 'saved'`
   );
   const playedGamesCount = await db.getFirstAsync<{ c: number }>(
-    'SELECT count(DISTINCT game_id) AS c FROM plays WHERE game_id IS NOT NULL'
+    "SELECT count(DISTINCT game_id) AS c FROM plays WHERE game_id IS NOT NULL AND status != 'saved'"
   );
 
   return {
@@ -290,9 +366,10 @@ export async function getStats(): Promise<CollectionStats> {
 export async function getPlayerRankings(): Promise<PlayerRanking[]> {
   const db = await getDb();
   return db.getAllAsync<PlayerRanking>(
-    `SELECT player_name AS name, sum(is_winner) AS wins, count(*) AS plays
-       FROM play_players
-      GROUP BY player_name COLLATE NOCASE
+    `SELECT pp.player_name AS name, sum(pp.is_winner) AS wins, count(*) AS plays
+       FROM play_players pp JOIN plays p ON p.id = pp.play_id
+      WHERE p.status != 'saved'
+      GROUP BY pp.player_name COLLATE NOCASE
       ORDER BY wins DESC, plays DESC, name COLLATE NOCASE ASC`
   );
 }
@@ -302,6 +379,7 @@ export async function getGameRankings(): Promise<GameRanking[]> {
   return db.getAllAsync<GameRanking>(
     `SELECT g.id AS id, g.name AS name, count(p.id) AS plays
        FROM games g JOIN plays p ON p.game_id = g.id
+      WHERE p.status != 'saved'
       GROUP BY g.id
       ORDER BY plays DESC, g.name COLLATE NOCASE ASC`
   );
@@ -331,8 +409,9 @@ export async function getGamePlayStats(opts: {
   const db = await getDb();
   const { gameId, gameName, groupId } = opts;
 
-  // Build the play filter: by id when owned, otherwise by name.
-  const filters: string[] = [];
+  // Build the play filter: by id when owned, otherwise by name. Saved-for-later
+  // games never count toward stats.
+  const filters: string[] = ["p.status != 'saved'"];
   const args: (number | string)[] = [];
   let displayName = gameName ?? 'Game';
   if (gameId != null) {

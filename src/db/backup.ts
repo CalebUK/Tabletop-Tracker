@@ -16,6 +16,7 @@ const TABLES = [
   'game_categories',
   'play_players',
   'play_expansions',
+  'play_photos',
   'loans',
   'meta',
   'friend_libraries',
@@ -45,8 +46,7 @@ async function buildBackup(): Promise<BackupFile> {
   }
 
   const images: Record<string, string> = {};
-  for (const g of tables.games) {
-    const uri: string | null = g.image_uri;
+  const embed = async (uri: string | null) => {
     if (uri && uri.startsWith('file') && uri.includes('game-images')) {
       const name = basename(uri);
       try {
@@ -57,7 +57,9 @@ async function buildBackup(): Promise<BackupFile> {
         // Image file missing — skip it; the row keeps its (now broken) uri.
       }
     }
-  }
+  };
+  for (const g of tables.games) await embed(g.image_uri);
+  for (const ph of tables.play_photos ?? []) await embed(ph.photo_uri);
 
   return {
     app: BACKUP_APP_ID,
@@ -118,6 +120,10 @@ export async function importBackup(fileUri: string): Promise<void> {
         if (t === 'games' && r.image_uri) {
           const mapped = newUriByName[basename(r.image_uri)];
           if (mapped) r.image_uri = mapped;
+        }
+        if (t === 'play_photos' && r.photo_uri) {
+          const mapped = newUriByName[basename(r.photo_uri)];
+          if (mapped) r.photo_uri = mapped;
         }
         const keys = Object.keys(r);
         const sql = `INSERT INTO ${t} (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`;

@@ -1,11 +1,13 @@
 import React, { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation';
-import { CollectionStats, getStats } from '../db/plays';
+import { CollectionStats, getStats, getSavedPlays, getPlayPhotoUris, deletePlay, SavedPlay } from '../db/plays';
 import { getGroups, createGroup } from '../db/groups';
+import { deleteImage } from '../lib/images';
+import { isoToUk } from '../lib/dates';
 import { Group } from '../types';
 import { colors, radius, spacing } from '../theme';
 
@@ -15,18 +17,44 @@ export default function StatsScreen() {
   const navigation = useNavigation<Nav>();
   const [stats, setStats] = useState<CollectionStats | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [saved, setSaved] = useState<SavedPlay[]>([]);
   const [newGroup, setNewGroup] = useState('');
 
   const loadGroups = useCallback(() => {
     getGroups().then(setGroups).catch(() => {});
   }, []);
 
+  const loadSaved = useCallback(() => {
+    getSavedPlays().then(setSaved).catch(() => {});
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       getStats().then(setStats).catch((e) => console.warn('stats', e));
       loadGroups();
-    }, [loadGroups])
+      loadSaved();
+    }, [loadGroups, loadSaved])
   );
+
+  function onDiscardSaved(s: SavedPlay) {
+    Alert.alert(
+      'Discard this game?',
+      `"${s.gameName}" and its board photos will be deleted. This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Discard',
+          style: 'destructive',
+          onPress: async () => {
+            const uris = await getPlayPhotoUris(s.id).catch(() => []);
+            await Promise.all(uris.map((u) => deleteImage(u).catch(() => {})));
+            await deletePlay(s.id);
+            loadSaved();
+          },
+        },
+      ]
+    );
+  }
 
   async function onCreateGroup() {
     if (!newGroup.trim()) return;
@@ -78,6 +106,30 @@ export default function StatsScreen() {
             </Pressable>
           </View>
         </Section>
+
+        {saved.length > 0 && (
+          <Section title="⏸ Unfinished games">
+            <Text style={styles.muted}>Games you saved mid-play. Tap to resume.</Text>
+            {saved.map((s) => (
+              <View key={s.id} style={styles.savedRow}>
+                <Pressable
+                  style={styles.flex1}
+                  onPress={() => navigation.navigate('LogPlay', { playId: s.id })}
+                >
+                  <Text style={styles.listName}>{s.gameName} ›</Text>
+                  <Text style={styles.savedMeta}>
+                    {isoToUk(s.playedAt)}
+                    {s.groupName ? ` · ${s.groupName}` : ''}
+                    {s.photoCount > 0 ? ` · 📷 ${s.photoCount}` : ''}
+                  </Text>
+                </Pressable>
+                <Pressable hitSlop={10} onPress={() => onDiscardSaved(s)}>
+                  <Text style={styles.discard}>🗑</Text>
+                </Pressable>
+              </View>
+            ))}
+          </Section>
+        )}
 
         <Section title="🏆 Top players">
           {stats.topPlayers.length === 0 ? (
@@ -188,6 +240,17 @@ const styles = StyleSheet.create({
   },
   listName: { color: colors.text, fontSize: 15 },
   listValue: { color: colors.textMuted, fontSize: 14 },
+  flex1: { flex: 1 },
+  savedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  savedMeta: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
+  discard: { fontSize: 18 },
   seeAll: { paddingVertical: spacing.sm },
   seeAllText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   muted: { color: colors.textMuted, fontSize: 14, marginBottom: spacing.sm },

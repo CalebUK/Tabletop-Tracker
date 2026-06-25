@@ -39,14 +39,14 @@ export async function getGroupStats(groupId: number): Promise<GroupStats> {
     groupId,
   ]);
   const total = await db.getFirstAsync<{ c: number }>(
-    'SELECT count(*) AS c FROM plays WHERE group_id = ?',
+    "SELECT count(*) AS c FROM plays WHERE group_id = ? AND status != 'saved'",
     [groupId]
   );
   const players = await db.getAllAsync<{ name: string; wins: number; plays: number }>(
     `SELECT pp.player_name AS name, sum(pp.is_winner) AS wins, count(*) AS plays
        FROM play_players pp
        JOIN plays p ON p.id = pp.play_id
-      WHERE p.group_id = ?
+      WHERE p.group_id = ? AND p.status != 'saved'
       GROUP BY pp.player_name COLLATE NOCASE
       ORDER BY wins DESC, plays DESC`,
     [groupId]
@@ -55,7 +55,7 @@ export async function getGroupStats(groupId: number): Promise<GroupStats> {
     `SELECT COALESCE(game_name, '(unknown)') AS name, count(*) AS plays,
             MAX(game_id) AS gameId
        FROM plays
-      WHERE group_id = ?
+      WHERE group_id = ? AND status != 'saved'
       GROUP BY name COLLATE NOCASE
       ORDER BY plays DESC, name COLLATE NOCASE ASC`,
     [groupId]

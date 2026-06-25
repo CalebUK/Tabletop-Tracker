@@ -88,8 +88,8 @@ const BASE_SELECT = `
     (SELECT group_concat(c.name, char(1))
        FROM game_categories gc JOIN categories c ON c.id = gc.category_id
       WHERE gc.game_id = g.id) AS categories,
-    (SELECT count(*) FROM plays p WHERE p.game_id = g.id) AS play_count,
-    (SELECT max(p.played_at) FROM plays p WHERE p.game_id = g.id) AS last_played,
+    (SELECT count(*) FROM plays p WHERE p.game_id = g.id AND p.status != 'saved') AS play_count,
+    (SELECT max(p.played_at) FROM plays p WHERE p.game_id = g.id AND p.status != 'saved') AS last_played,
     (SELECT count(*) FROM expansions e WHERE e.game_id = g.id) AS expansion_count,
     (SELECT COALESCE(SUM(additional_players), 0) FROM expansions e WHERE e.game_id = g.id) AS expansion_players
   FROM games g
@@ -127,7 +127,7 @@ export async function searchGames(filters: SearchFilters): Promise<Game[]> {
     where.push('g.is_favorite = 1');
   }
   if (filters.unplayedOnly) {
-    where.push('(SELECT count(*) FROM plays p WHERE p.game_id = g.id) = 0');
+    where.push("(SELECT count(*) FROM plays p WHERE p.game_id = g.id AND p.status != 'saved') = 0");
   }
   if (filters.atHomeOnly) {
     where.push('g.loaned_to IS NULL');

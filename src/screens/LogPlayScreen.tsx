@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,14 +14,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { Alert } from 'react-native';
 import { RootStackProps } from '../navigation';
 import { addPlay, getPlay, updatePlay, getAllPlayers, PlayInput } from '../db/plays';
 import { getGame, getExpansions, getAllGames } from '../db/games';
 import { getGroups } from '../db/groups';
-import { Expansion, Group, PlayPlayer } from '../types';
+import { pickFromLibrary, takePhoto, deleteImage } from '../lib/images';
+import { Expansion, Group, PlayPlayer, PlayStatus } from '../types';
 import { colors, radius, spacing } from '../theme';
 import { isoToUk, todayIso, todayUk, ukToIso } from '../lib/dates';
+
+const STATUSES: { key: PlayStatus; label: string }[] = [
+  { key: 'completed', label: '✅ Played' },
+  { key: 'dnf', label: '🏳️ DNF' },
+  { key: 'saved', label: '⏸ Save for later' },
+];
 
 function scoreOrNull(s: string): number | null {
   const n = parseFloat(s);
@@ -41,6 +49,8 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
   const [players, setPlayers] = useState<PlayPlayer[]>([{ name: '', isWinner: false, score: null }]);
   const [allPlayers, setAllPlayers] = useState<string[]>([]);
   const [focused, setFocused] = useState<number | null>(null);
+  const [status, setStatus] = useState<PlayStatus>('completed');
+  const [photos, setPhotos] = useState<string[]>([]);
 
   useEffect(() => {
     navigation.setOptions({ title: playId ? 'Edit Play' : 'Log Play' });
@@ -56,6 +66,8 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
         setNotes(p.notes ?? '');
         setPlayers(p.players.length ? p.players : [{ name: '', isWinner: false, score: null }]);
         setSelectedExpIds(p.expansionIds);
+        setStatus(p.status);
+        setPhotos(p.photos);
       });
     } else if (gameId) {
       getGame(gameId).then((g) => g && setGameName(g.name));
@@ -111,11 +123,32 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
       .slice(0, 6);
   }
 
-  async function onSave() {
-    if (!gameName.trim()) {
-      Alert.alert('Which game?', 'Please enter the game that was played.');
-      return;
-    }
+  function addBoardPhoto() {
+    Alert.alert('Board photo', 'Add a photo of the board so you can re-set up later.', [
+      {
+        text: '📸 Take photo',
+        onPress: async () => {
+          const uri = await takePhoto();
+          if (uri) setPhotos((ps) => [...ps, uri]);
+        },
+      },
+      {
+        text: '🖼 Choose from library',
+        onPress: async () => {
+          const uri = await pickFromLibrary();
+          if (uri) setPhotos((ps) => [...ps, uri]);
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+
+  function removeBoardPhoto(uri: string) {
+    deleteImage(uri).catch(() => {});
+    setPhotos((ps) => ps.filter((u) => u !== uri));
+  }
+
+  async function doSave(finalStatus: PlayStatus, finalPhotos: string[]) {
     const cleaned = players.filter((p) => p.name.trim());
     const input: PlayInput = {
       gameId: resolvedGameId,
@@ -123,12 +156,40 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
       groupId,
       playedAt: ukToIso(date) ?? todayIso(),
       notes: notes.trim() || null,
+      status: finalStatus,
       players: cleaned,
       expansionIds: selectedExpIds,
+      photos: finalPhotos,
     };
     if (playId) await updatePlay(playId, input);
     else await addPlay(input);
     navigation.goBack();
+  }
+
+  async function onSave() {
+    if (!gameName.trim()) {
+      Alert.alert('Which game?', 'Please enter the game that was played.');
+      return;
+    }
+    // Finishing a game that still has board photos: confirm, then delete them.
+    if (status !== 'saved' && photos.length > 0) {
+      Alert.alert(
+        'Mark as played?',
+        `This game will be logged as ${status === 'dnf' ? 'DNF' : 'played'}, and its ${photos.length} board photo${photos.length === 1 ? '' : 's'} will be deleted.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Mark as played',
+            onPress: async () => {
+              await Promise.all(photos.map((u) => deleteImage(u).catch(() => {})));
+              await doSave(status, []);
+            },
+          },
+        ]
+      );
+      return;
+    }
+    await doSave(status, status === 'saved' ? photos : []);
   }
 
   return (
@@ -161,6 +222,19 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
           {gameName.trim() && !resolvedGameId && (
             <Text style={styles.notOwned}>Not in your collection — logged as a guest game.</Text>
           )}
+
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>Status</Text>
+          <View style={styles.statusRow}>
+            {STATUSES.map((s) => (
+              <Pressable
+                key={s.key}
+                style={[styles.statusChip, status === s.key && styles.statusChipOn]}
+                onPress={() => setStatus(s.key)}
+              >
+                <Text style={[styles.statusText, status === s.key && styles.statusTextOn]}>{s.label}</Text>
+              </Pressable>
+            ))}
+          </View>
 
           {groups.length > 0 && (
             <>
@@ -275,6 +349,28 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
             </>
           )}
 
+          {status === 'saved' && (
+            <>
+              <Text style={[styles.label, { marginTop: spacing.lg }]}>Board photos</Text>
+              <Text style={styles.notOwned}>
+                Snap the table so you can re-set up later. Deleted when you mark the game played.
+              </Text>
+              <View style={styles.photoRow}>
+                {photos.map((uri) => (
+                  <View key={uri} style={styles.photoThumb}>
+                    <Image source={{ uri }} style={styles.photoImg} />
+                    <Pressable style={styles.photoRemove} onPress={() => removeBoardPhoto(uri)} hitSlop={6}>
+                      <Text style={styles.photoRemoveText}>✕</Text>
+                    </Pressable>
+                  </View>
+                ))}
+                <Pressable style={styles.photoAdd} onPress={addBoardPhoto}>
+                  <Text style={styles.photoAddText}>＋</Text>
+                </Pressable>
+              </View>
+            </>
+          )}
+
           <Text style={[styles.label, { marginTop: spacing.lg }]}>Notes</Text>
           <TextInput
             style={[styles.input, styles.multiline]}
@@ -286,7 +382,13 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
           />
 
           <Pressable style={styles.saveBtn} onPress={onSave}>
-            <Text style={styles.saveBtnText}>{playId ? 'Update Play' : 'Save Play'}</Text>
+            <Text style={styles.saveBtnText}>
+              {status === 'saved'
+                ? 'Save for later'
+                : status === 'dnf'
+                ? playId ? 'Update (DNF)' : 'Log DNF'
+                : playId ? 'Update Play' : 'Save Play'}
+            </Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -310,6 +412,45 @@ const styles = StyleSheet.create({
   groupChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   groupChipText: { color: colors.textMuted, fontSize: 13 },
   groupChipTextOn: { color: colors.primaryText, fontWeight: '600' },
+  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  statusChip: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  statusChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  statusText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+  statusTextOn: { color: colors.primaryText },
+  photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
+  photoThumb: { width: 80, height: 80 },
+  photoImg: { width: 80, height: 80, borderRadius: radius.md },
+  photoRemove: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoRemoveText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  photoAdd: {
+    width: 80,
+    height: 80,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoAddText: { color: colors.primary, fontSize: 30, lineHeight: 34 },
   checkbox: { color: colors.textMuted, fontSize: 22, marginRight: spacing.sm },
   checkboxOn: { color: colors.success },
   expansionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },

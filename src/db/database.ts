@@ -77,8 +77,16 @@ CREATE TABLE IF NOT EXISTS plays (
   group_id INTEGER,           -- optional gaming group
   played_at TEXT NOT NULL,
   notes TEXT,
+  status TEXT NOT NULL DEFAULT 'completed', -- 'completed' | 'dnf' | 'saved'
   FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
   FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS play_photos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  play_id INTEGER NOT NULL,
+  photo_uri TEXT NOT NULL,
+  FOREIGN KEY (play_id) REFERENCES plays(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS play_players (
@@ -134,6 +142,7 @@ CREATE INDEX IF NOT EXISTS idx_game_categories_game ON game_categories(game_id);
 CREATE INDEX IF NOT EXISTS idx_game_categories_cat ON game_categories(category_id);
 CREATE INDEX IF NOT EXISTS idx_plays_game ON plays(game_id);
 CREATE INDEX IF NOT EXISTS idx_play_players_play ON play_players(play_id);
+CREATE INDEX IF NOT EXISTS idx_play_photos_play ON play_photos(play_id);
 CREATE INDEX IF NOT EXISTS idx_loans_game ON loans(game_id);
 CREATE INDEX IF NOT EXISTS idx_expansions_game ON expansions(game_id);
 CREATE INDEX IF NOT EXISTS idx_play_expansions_play ON play_expansions(play_id);
@@ -203,6 +212,12 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   const expCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(expansions)');
   if (!expCols.some((c) => c.name === 'location')) {
     await db.execAsync('ALTER TABLE expansions ADD COLUMN location TEXT');
+  }
+
+  // plays.status — completed / dnf / saved-for-later (added later).
+  const playStatusCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(plays)');
+  if (!playStatusCols.some((c) => c.name === 'status')) {
+    await db.execAsync("ALTER TABLE plays ADD COLUMN status TEXT NOT NULL DEFAULT 'completed'");
   }
 
   // plays: make game_id nullable + add game_name/group_id (for not-owned games

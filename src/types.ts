@@ -123,6 +123,8 @@ export interface TasteSuggestion {
   game: LibraryGame; // the suggested game (name + their rating + players/time)
 }
 
+export type PlayStatus = 'completed' | 'dnf' | 'saved';
+
 export interface Play {
   id: number;
   gameId: number | null; // null when the game isn't in the collection
@@ -130,9 +132,11 @@ export interface Play {
   groupId: number | null;
   playedAt: string;
   notes: string | null;
+  status: PlayStatus;
   players: PlayPlayer[];
   expansions: string[]; // names of expansions used (for display)
   expansionIds: number[]; // expansion ids used (for editing)
+  photos: string[]; // board photos (saved-for-later games only)
 }
 
 export interface Group {

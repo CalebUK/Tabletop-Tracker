@@ -282,7 +282,10 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
               onPress={() => navigation.navigate('LogPlay', { gameId, playId: p.id })}
               onLongPress={() => onDeletePlay(p.id)}
             >
-              <Text style={styles.playDate}>{isoToUk(p.playedAt)}</Text>
+              <Text style={styles.playDate}>
+                {isoToUk(p.playedAt)}
+                {p.status === 'dnf' ? '  🏳️ DNF' : ''}
+              </Text>
               {p.players.length > 0 && (
                 <Text style={styles.playPlayers}>
                   {p.players
