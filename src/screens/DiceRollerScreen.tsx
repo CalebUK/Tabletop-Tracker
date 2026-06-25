@@ -1,24 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, LinearGradient, Polygon, Stop, Text as SvgText } from 'react-native-svg';
 import { colors, radius, spacing } from '../theme';
 
 const SIDES = [4, 6, 8, 10, 12, 20, 100];
-// 3D cube face tones (top lightest, right darkest) for a real-die look.
-const TOP = '#f6f8fc';
-const RIGHT = '#c3c9d6';
-const EDGE = '#a9b1c0';
+
+// Real-dice look: light faces with dark pips/numbers.
+const FACE = '#f4f5f8';
+const FACE_EDGE = '#cdd2dc';
 const INK = '#15171c';
 
-// Isometric cube in a 0–100 viewBox: a front square plus top + right faces.
-const FRONT_PTS = '14,32 74,32 74,92 14,92';
-const TOP_PTS = '14,32 74,32 96,10 36,10';
-const RIGHT_PTS = '74,32 74,92 96,70 96,10';
-
-// d6 pip cell centres on the front face (3×3 grid).
-const PX = [29, 44, 59];
-const PY = [47, 62, 77];
+// Which of the 9 grid cells get a pip, for each d6 value.
+//  0 1 2
+//  3 4 5
+//  6 7 8
 const PIPS: Record<number, number[]> = {
   1: [4],
   2: [0, 8],
@@ -28,45 +23,8 @@ const PIPS: Record<number, number[]> = {
   6: [0, 2, 3, 5, 6, 8],
 };
 
-function numSize(v: number): number {
-  return v >= 100 ? 22 : v >= 10 ? 30 : 40;
-}
-
-function DieFace({ value, sides, size }: { value: number; sides: number; size: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 100 100">
-      <Defs>
-        <LinearGradient id="dieFront" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#eef1f6" />
-          <Stop offset="1" stopColor="#d8dde6" />
-        </LinearGradient>
-      </Defs>
-      <Polygon points={TOP_PTS} fill={TOP} stroke={EDGE} strokeWidth="1.5" strokeLinejoin="round" />
-      <Polygon points={RIGHT_PTS} fill={RIGHT} stroke={EDGE} strokeWidth="1.5" strokeLinejoin="round" />
-      <Polygon points={FRONT_PTS} fill="url(#dieFront)" stroke={EDGE} strokeWidth="1.5" strokeLinejoin="round" />
-      {sides === 6 ? (
-        PIPS[value]?.map((cell) => (
-          <Circle key={cell} cx={PX[cell % 3]} cy={PY[Math.floor(cell / 3)]} r="6" fill={INK} />
-        ))
-      ) : (
-        <SvgText
-          x="44"
-          y="62"
-          fontSize={numSize(value)}
-          fontWeight="bold"
-          fill={INK}
-          textAnchor="middle"
-          alignmentBaseline="central"
-        >
-          {value}
-        </SvgText>
-      )}
-    </Svg>
-  );
-}
-
 function Die({ value, sides, anim, index }: { value: number; sides: number; anim: Animated.Value; index: number }) {
-  // Whole-turn spins so each die settles flat, at different speeds to desync.
+  // Whole-turn spins so each die settles flat, but at different speeds to desync.
   const rotate = anim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', `${360 * (2 + (index % 3))}deg`],
@@ -74,7 +32,19 @@ function Die({ value, sides, anim, index }: { value: number; sides: number; anim
   const translateY = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, -30, 0] });
   return (
     <Animated.View style={[styles.die, { transform: [{ translateY }, { rotate }] }]}>
-      <DieFace value={value} sides={sides} size={66} />
+      {sides === 6 ? (
+        <View style={styles.pipGrid}>
+          {Array.from({ length: 9 }).map((_, i) => (
+            <View key={i} style={styles.pipCell}>
+              {PIPS[value]?.includes(i) ? <View style={styles.pip} /> : null}
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.dieNum} numberOfLines={1} adjustsFontSizeToFit>
+          {value}
+        </Text>
+      )}
     </Animated.View>
   );
 }
@@ -97,6 +67,7 @@ export default function DiceRollerScreen() {
     setRolling(true);
     const final = randDice();
     setResults(randDice());
+    // Flicker the faces while the dice tumble.
     flicker.current = setInterval(() => setResults(randDice()), 70);
     anim.setValue(0);
     Animated.timing(anim, {
@@ -202,6 +173,24 @@ const styles = StyleSheet.create({
   rollText: { color: colors.primaryText, fontSize: 18, fontWeight: '800' },
   resultsWrap: { marginTop: spacing.xl * 1.5, alignItems: 'center' },
   diceWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, justifyContent: 'center' },
-  die: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center' },
+  die: {
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    backgroundColor: FACE,
+    borderWidth: 1,
+    borderColor: FACE_EDGE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  pipGrid: { width: 48, height: 48, flexDirection: 'row', flexWrap: 'wrap' },
+  pipCell: { width: 16, height: 16, alignItems: 'center', justifyContent: 'center' },
+  pip: { width: 9, height: 9, borderRadius: 5, backgroundColor: INK },
+  dieNum: { color: INK, fontSize: 26, fontWeight: '800', paddingHorizontal: 6 },
   total: { color: colors.primary, fontSize: 22, fontWeight: '800', marginTop: spacing.xl },
 });
