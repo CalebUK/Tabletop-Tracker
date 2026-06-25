@@ -54,9 +54,19 @@ const SLIDES: Slide[] = [
     body: 'Log who played, who won, and each player’s score.\n\nTap through to see any player or game’s full stats. If recorded, also view the top three high scores (who got them and when) for all games.\n\nCreate gaming groups for a regular game night (including games you don’t own).',
   },
   {
+    emoji: '⏸️',
+    title: 'Finish later — or not at all',
+    body: 'When you log a play you can mark it DNF (did not finish) — it still counts as a play — or “Save for later” and snap a few photos of the board where you left off.\n\nSaved games wait under “Unfinished games” on the Stats tab. Reopen one to pick up where you stopped; finish it and the board photos are cleared.',
+  },
+  {
     emoji: '👥',
     title: 'Share with friends',
     body: 'Publish your collection to get a share code, and add friends’ codes to browse everyone’s games together — all on a shared bookshelf.',
+  },
+  {
+    emoji: '🧰',
+    title: 'Game-night tools',
+    body: 'The Tools tab packs a few handy gadgets: roll any dice, pick who goes first, a quick calculator, and a scorepad.\n\nKeep score as you play, then turn the scorepad straight into a logged play — names and scores already filled in.',
   },
   {
     emoji: '⚙️',
