@@ -212,6 +212,9 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
                   <Image source={{ uri: selected.image }} style={styles.cover} resizeMode="contain" />
                 ) : null}
                 <Text style={styles.sheetTitle}>{selected.name}</Text>
+                {selected.description ? (
+                  <Text style={styles.sheetTagline}>{selected.description}</Text>
+                ) : null}
                 <Text style={styles.sheetMeta}>
                   {[
                     selected.minPlayers && selected.maxPlayers
@@ -421,7 +424,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
   },
   sheetTitle: { color: colors.text, fontSize: 20, fontWeight: '700' },
-  sheetMeta: { color: colors.textMuted, fontSize: 14, marginTop: 2, marginBottom: spacing.md },
+  sheetTagline: { color: colors.text, fontSize: 14, fontStyle: 'italic', marginTop: 6, lineHeight: 20 },
+  sheetMeta: { color: colors.textMuted, fontSize: 14, marginTop: 6, marginBottom: spacing.md },
   ownersLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '700', marginBottom: spacing.xs },
   ownerRow: {
     flexDirection: 'row',

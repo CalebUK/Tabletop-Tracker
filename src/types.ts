@@ -113,6 +113,7 @@ export interface AggregatedGame {
   maxPlayers: number | null;
   playTimeMin: number | null;
   image: string | null; // first public cover URL found among owners
+  description: string | null; // first BGG tagline found among owners
   owners: { owner: string; rating: number | null }[];
   bestRating: number | null;
 }
