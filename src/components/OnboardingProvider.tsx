@@ -78,7 +78,7 @@ const SLIDES: Slide[] = [
   {
     emoji: '⚙️',
     title: 'Settings & backups',
-    body: 'Tap the ⚙️ at the top of My Collection. Your data lives only on this phone — so before switching devices, export a full backup (photos included) and import it on the new one. You can also export your collection to a CSV, or tidy up the swipe tips.',
+    body: 'Tap the ⚙️ at the top of My Collection. Your data lives only on this phone — so before switching devices, export a full backup (photos included) and import it on the new one. You can also export your collection to a CSV, or tidy up the swipe tips.\n\nWant to see this tour again? Open “About & Privacy” in Settings and tap “Show app tour again”.',
   },
 ];
 
