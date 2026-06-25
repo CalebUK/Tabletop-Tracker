@@ -4,6 +4,7 @@ export interface Game {
   id: number;
   name: string;
   imageUri: string | null;
+  description: string | null; // short BGG tagline (one fun sentence)
   location: string | null;
   year: number | null;
   minPlayers: number | null;
@@ -55,6 +56,7 @@ export interface GameInput {
   id?: number;
   name: string;
   imageUri: string | null;
+  description: string | null;
   location: string | null;
   year: number | null;
   minPlayers: number | null;
@@ -92,6 +94,7 @@ export interface LibraryGame {
   maxPlayers: number | null;
   playTimeMin: number | null;
   image: string | null; // public BGG cover URL, or null
+  description: string | null; // short BGG tagline, or null
 }
 
 export interface SharedLibrary {

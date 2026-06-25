@@ -10,6 +10,7 @@ interface GameRow {
   id: number;
   name: string;
   image_uri: string | null;
+  description: string | null;
   location: string | null;
   year: number | null;
   min_players: number | null;
@@ -47,6 +48,7 @@ function rowToGame(row: GameRow): Game {
     id: row.id,
     name: row.name,
     imageUri: row.image_uri,
+    description: row.description,
     location: row.location,
     year: row.year,
     minPlayers: row.min_players,
@@ -215,7 +217,7 @@ export async function saveGame(input: GameInput): Promise<number> {
     if (input.id) {
       await db.runAsync(
         `UPDATE games SET
-           name = ?, image_uri = ?, location = ?, year = ?,
+           name = ?, image_uri = ?, description = ?, location = ?, year = ?,
            min_players = ?, max_players = ?, play_time_min = ?, rating = ?,
            notes = ?, house_rules = ?, is_favorite = ?, is_wishlist = ?,
            is_duel = ?, is_party = ?, is_coop = ?, bgg_id = ?,
@@ -223,7 +225,7 @@ export async function saveGame(input: GameInput): Promise<number> {
            updated_at = datetime('now')
          WHERE id = ?`,
         [
-          input.name, input.imageUri, input.location, input.year,
+          input.name, input.imageUri, input.description, input.location, input.year,
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
           input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.isWishlist ? 1 : 0,
           input.isDuel ? 1 : 0, input.isParty ? 1 : 0, input.isCoop ? 1 : 0, input.bggId,
@@ -235,13 +237,13 @@ export async function saveGame(input: GameInput): Promise<number> {
     } else {
       const res = await db.runAsync(
         `INSERT INTO games
-           (name, image_uri, location, year, min_players, max_players,
+           (name, image_uri, description, location, year, min_players, max_players,
             play_time_min, rating, notes, house_rules, is_favorite, is_wishlist,
             is_duel, is_party, is_coop,
             bgg_id, bgg_rating, bgg_weight, developer, min_age, teach_rating, edition)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
-          input.name, input.imageUri, input.location, input.year,
+          input.name, input.imageUri, input.description, input.location, input.year,
           input.minPlayers, input.maxPlayers, input.playTimeMin, input.rating,
           input.notes, input.houseRules, input.isFavorite ? 1 : 0, input.isWishlist ? 1 : 0,
           input.isDuel ? 1 : 0, input.isParty ? 1 : 0, input.isCoop ? 1 : 0,
@@ -342,6 +344,7 @@ export async function addWishlistGame(g: {
   return saveGame({
     name: g.name,
     imageUri: null,
+    description: null,
     location: null,
     year: null,
     minPlayers: g.minPlayers,
@@ -492,8 +495,9 @@ export async function getGamesForLibrary(): Promise<LibraryGame[]> {
     max_players: number | null;
     play_time_min: number | null;
     image_uri: string | null;
+    description: string | null;
   }>(
-    'SELECT name, rating, min_players, max_players, play_time_min, image_uri FROM games WHERE is_wishlist = 0 ORDER BY name COLLATE NOCASE ASC'
+    'SELECT name, rating, min_players, max_players, play_time_min, image_uri, description FROM games WHERE is_wishlist = 0 ORDER BY name COLLATE NOCASE ASC'
   );
   return rows.map((r) => ({
     name: r.name,
@@ -503,6 +507,7 @@ export async function getGamesForLibrary(): Promise<LibraryGame[]> {
     playTimeMin: r.play_time_min,
     // Only share a remote (BGG) cover; local file:// photos stay private.
     image: r.image_uri && r.image_uri.startsWith('http') ? r.image_uri : null,
+    description: r.description ?? null,
   }));
 }
 

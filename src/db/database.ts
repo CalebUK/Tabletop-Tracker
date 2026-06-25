@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS games (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   image_uri TEXT,
+  description TEXT,
   location TEXT,
   year INTEGER,
   min_players INTEGER,
@@ -203,6 +204,10 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
     await db.execAsync(
       "UPDATE games SET teach_rating = CASE complexity WHEN 'easy' THEN 2 WHEN 'medium' THEN 3 WHEN 'high' THEN 4 END WHERE complexity IS NOT NULL"
     );
+  }
+  // Short BGG tagline shown under the game name.
+  if (!names.has('description')) {
+    await db.execAsync('ALTER TABLE games ADD COLUMN description TEXT');
   }
 
   // loans.photo_uri (added later than the loans table itself).

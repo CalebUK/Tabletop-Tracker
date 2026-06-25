@@ -144,7 +144,7 @@ function csvCell(value: unknown): string {
 export async function exportCsv(): Promise<string> {
   const games = await getAllGames();
   const headers = [
-    'Name', 'Year', 'Edition', 'Location', 'Min Players', 'Max Players',
+    'Name', 'Description', 'Year', 'Edition', 'Location', 'Min Players', 'Max Players',
     'Max with Expansions', 'Play Time (min)', 'Min Age', 'Teachability (1-5)', 'BGG Complexity',
     'Play Style', 'My Rating', 'BGG Rating', 'Publisher/Designer', 'Favourite',
     'Categories', 'Tags', 'Expansions', 'Plays', 'Last Played', 'Notes', 'House Rules',
@@ -162,7 +162,7 @@ export async function exportCsv(): Promise<string> {
       .map((e) => (e.additionalPlayers ? `${e.name} (+${e.additionalPlayers})` : e.name))
       .join('; ');
     const row = [
-      g.name, g.year, g.edition, g.location, g.minPlayers, g.maxPlayers,
+      g.name, g.description, g.year, g.edition, g.location, g.minPlayers, g.maxPlayers,
       maxWithExp, g.playTimeMin, g.minAge, g.teachRating, g.bggWeight,
       playStyle, g.rating, g.bggRating, g.developer, g.isFavorite ? 'Yes' : 'No',
       g.categories.join('; '), g.tags.join('; '), expansions, g.playCount,

@@ -22,6 +22,7 @@ export interface BggDetails {
   bggRating: number | null;
   bggWeight: number | null; // BGG complexity / "weight", 0-5
   imageUrl: string | null;
+  description: string | null; // BGG's short tagline (one fun sentence)
 }
 
 function attr(xml: string, tag: string, name = 'value'): string | null {
@@ -116,7 +117,27 @@ export async function bggSearch(query: string): Promise<BggSearchResult[]> {
   return results.slice(0, 40);
 }
 
+// The one-line tagline shown under a game's title on the website lives in BGG's
+// JSON API (item.short_description), NOT the XML thing endpoint. This endpoint
+// needs no token, so we fetch it separately and tolerate any failure.
+async function fetchTagline(id: number): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://api.geekdo.com/api/geekitems?objectid=${id}&objecttype=thing`,
+      { headers: { 'User-Agent': HEADERS['User-Agent'], Accept: 'application/json' } }
+    );
+    if (!res.ok) return null;
+    const data: any = await res.json();
+    const t = data?.item?.short_description;
+    return typeof t === 'string' && t.trim() ? t.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function bggDetails(id: number): Promise<BggDetails | null> {
+  // Kick off the tagline lookup in parallel (different endpoint, no token).
+  const taglineP = fetchTagline(id);
   // BGG sometimes answers 202 ("queued") first; retry briefly.
   let res = await fetch(`${BASE}/thing?id=${id}&stats=1`, { headers: HEADERS });
   for (let i = 0; i < 2 && res.status === 202; i++) {
@@ -147,5 +168,6 @@ export async function bggDetails(id: number): Promise<BggDetails | null> {
     bggRating: rating,
     bggWeight: weight,
     imageUrl: /<image>([^<]*)<\/image>/i.exec(xml)?.[1] ?? null,
+    description: await taglineP,
   };
 }

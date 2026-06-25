@@ -38,6 +38,7 @@ import StarRating from '../components/StarRating';
 const EMPTY: GameInput = {
   name: '',
   imageUri: null,
+  description: null,
   location: null,
   year: null,
   minPlayers: null,
@@ -112,6 +113,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
           id: g.id,
           name: g.name,
           imageUri: g.imageUri,
+          description: g.description,
           location: g.location,
           year: g.year,
           minPlayers: g.minPlayers,
@@ -242,6 +244,7 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
       return {
         ...f,
         name: d.name || f.name,
+        description: d.description ?? f.description,
         year: d.year ?? f.year,
         minPlayers: d.minPlayers ?? f.minPlayers,
         maxPlayers: d.maxPlayers ?? f.maxPlayers,
@@ -675,6 +678,17 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
                 ))}
               </View>
             )}
+          </Field>
+
+          <Field label="Description">
+            <TextInput
+              style={[styles.input, styles.multiline]}
+              value={form.description ?? ''}
+              onChangeText={(v) => patch({ description: v || null })}
+              placeholder="A one-line blurb (auto-filled from BGG when you sync)…"
+              placeholderTextColor={colors.placeholder}
+              multiline
+            />
           </Field>
 
           <Field label="Notes">

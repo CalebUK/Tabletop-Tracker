@@ -137,7 +137,12 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
           const meta = [players(item), item.playTimeMin ? `${item.playTimeMin} min` : null].filter(Boolean);
           return (
             <View style={styles.gameRow}>
-              <Text style={styles.gameName} numberOfLines={1}>{item.name}</Text>
+              <View style={styles.gameLeft}>
+                <Text style={styles.gameName} numberOfLines={1}>{item.name}</Text>
+                {item.description ? (
+                  <Text style={styles.gameTagline} numberOfLines={2}>{item.description}</Text>
+                ) : null}
+              </View>
               <View style={styles.gameMeta}>
                 {item.rating != null && item.rating > 0 && (
                   <Text style={styles.rating}>★ {fmt(item.rating)}/10</Text>
@@ -210,8 +215,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     gap: spacing.sm,
   },
-  gameName: { color: colors.text, fontSize: 15, fontWeight: '600', flex: 1 },
-  gameMeta: { alignItems: 'flex-end' },
+  gameLeft: { flex: 1 },
+  gameName: { color: colors.text, fontSize: 15, fontWeight: '600' },
+  gameTagline: { color: colors.textMuted, fontSize: 12, fontStyle: 'italic', marginTop: 2 },
+  gameMeta: { alignItems: 'flex-end', paddingLeft: spacing.sm },
   rating: { color: colors.star, fontSize: 13, fontWeight: '700' },
   metaText: { color: colors.textMuted, fontSize: 12 },
   empty: { color: colors.textMuted, textAlign: 'center', marginTop: spacing.xl },

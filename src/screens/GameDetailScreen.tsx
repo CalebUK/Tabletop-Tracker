@@ -152,6 +152,8 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
         </Pressable>
       </View>
 
+      {game.description ? <Text style={styles.tagline}>{game.description}</Text> : null}
+
       {meta ? <Text style={styles.meta}>{meta}</Text> : null}
 
       <View style={styles.ratingsRow}>
@@ -366,6 +368,7 @@ const styles = StyleSheet.create({
   title: { flex: 1, color: colors.text, fontSize: 24, fontWeight: '700' },
   heart: { fontSize: 28, color: colors.textMuted },
   heartOn: { color: colors.favorite },
+  tagline: { color: colors.text, fontSize: 15, fontStyle: 'italic', marginTop: 6, lineHeight: 21 },
   meta: { color: colors.textMuted, fontSize: 14, marginTop: 4 },
   ratingsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xl, marginTop: spacing.md },
   ratingBlock: { gap: 4 },
