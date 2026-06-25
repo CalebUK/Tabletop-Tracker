@@ -16,10 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { RootStackProps } from '../navigation';
 import { addPlay, getPlay, updatePlay, getAllPlayers, PlayInput } from '../db/plays';
-import { getGame, getExpansions, getAllGames } from '../db/games';
+import { getGame, getExpansions, getStandaloneExpansions, getAllGames } from '../db/games';
 import { getGroups, getGroupRoster } from '../db/groups';
 import { pickFromLibrary, takePhoto, deleteImage } from '../lib/images';
-import { Expansion, Group, PlayPlayer, PlayStatus } from '../types';
+import { Expansion, Game, Group, PlayPlayer, PlayStatus } from '../types';
 import { colors, radius, spacing } from '../theme';
 import { isoToUk, todayIso, todayUk, ukToIso } from '../lib/dates';
 
@@ -42,6 +42,8 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
   const [allGames, setAllGames] = useState<{ id: number; name: string; isWishlist: boolean }[]>([]);
   const [gameExpansions, setGameExpansions] = useState<Expansion[]>([]);
   const [selectedExpIds, setSelectedExpIds] = useState<number[]>([]);
+  const [standaloneExps, setStandaloneExps] = useState<Game[]>([]);
+  const [selectedStandaloneIds, setSelectedStandaloneIds] = useState<number[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [groupId, setGroupId] = useState<number | null>(groupParam ?? null);
   const [date, setDate] = useState(todayUk());
@@ -74,6 +76,7 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
         setNotes(p.notes ?? '');
         setPlayers(p.players.length ? p.players : [{ name: '', isWinner: false, score: null }]);
         setSelectedExpIds(p.expansionIds);
+        setSelectedStandaloneIds(p.standaloneExpansionIds);
         setStatus(p.status);
         setPhotos(p.photos);
       });
@@ -89,8 +92,16 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
 
   // Load that owned game's expansions whenever the resolved game changes.
   useEffect(() => {
-    if (resolvedGameId) getExpansions(resolvedGameId).then(setGameExpansions);
-    else setGameExpansions([]);
+    if (resolvedGameId) {
+      getExpansions(resolvedGameId).then(setGameExpansions);
+      // Owned standalone expansions of the base can be marked as used.
+      getStandaloneExpansions(resolvedGameId)
+        .then((gs) => setStandaloneExps(gs.filter((g) => !g.isWishlist)))
+        .catch(() => setStandaloneExps([]));
+    } else {
+      setGameExpansions([]);
+      setStandaloneExps([]);
+    }
   }, [resolvedGameId]);
 
   // When a group with auto-fill is selected (for a new play), prefill its
@@ -120,6 +131,10 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
 
   function toggleExpansion(id: number) {
     setSelectedExpIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+  }
+
+  function toggleStandalone(id: number) {
+    setSelectedStandaloneIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
   }
 
   function updatePlayer(i: number, p: Partial<PlayPlayer>) {
@@ -183,6 +198,7 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
       status: finalStatus,
       players: cleaned,
       expansionIds: selectedExpIds,
+      standaloneExpansionIds: selectedStandaloneIds,
       photos: finalPhotos,
     };
     if (playId) await updatePlay(playId, input);
@@ -355,9 +371,24 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
             <Text style={styles.addPlayerText}>+ Add player</Text>
           </Pressable>
 
-          {gameExpansions.length > 0 && (
+          {(gameExpansions.length > 0 || standaloneExps.length > 0) && (
             <>
               <Text style={[styles.label, { marginTop: spacing.lg }]}>Expansions used</Text>
+              {standaloneExps.map((ex) => {
+                const on = selectedStandaloneIds.includes(ex.id);
+                return (
+                  <Pressable
+                    key={`g${ex.id}`}
+                    style={styles.expansionRow}
+                    onPress={() => toggleStandalone(ex.id)}
+                  >
+                    <Text style={[styles.checkbox, on && styles.checkboxOn]}>
+                      {on ? '☑' : '☐'}
+                    </Text>
+                    <Text style={styles.expansionName}>{ex.name}</Text>
+                  </Pressable>
+                );
+              })}
               {gameExpansions.map((ex) => {
                 const on = selectedExpIds.includes(ex.id);
                 return (

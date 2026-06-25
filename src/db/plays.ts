@@ -20,6 +20,7 @@ export interface PlayInput {
   status: PlayStatus;
   players: PlayPlayer[];
   expansionIds?: number[];
+  standaloneExpansionIds?: number[]; // standalone-expansion game ids used
   photos?: string[]; // board photos (kept only while saved-for-later)
 }
 
@@ -55,7 +56,8 @@ async function writePlayChildren(
   db: Awaited<ReturnType<typeof getDb>>,
   playId: number,
   players: PlayPlayer[],
-  expansionIds: number[]
+  expansionIds: number[],
+  standaloneExpansionIds: number[]
 ): Promise<void> {
   for (const p of players) {
     const name = p.name.trim();
@@ -68,6 +70,12 @@ async function writePlayChildren(
   for (const id of expansionIds) {
     await db.runAsync(
       'INSERT OR IGNORE INTO play_expansions (play_id, expansion_id) VALUES (?, ?)',
+      [playId, id]
+    );
+  }
+  for (const id of standaloneExpansionIds) {
+    await db.runAsync(
+      'INSERT OR IGNORE INTO play_game_expansions (play_id, game_id) VALUES (?, ?)',
       [playId, id]
     );
   }
@@ -95,8 +103,14 @@ export async function getPlaysForGame(gameId: number): Promise<Play[]> {
        FROM play_expansions pe
        JOIN expansions e ON e.id = pe.expansion_id
        JOIN plays p ON p.id = pe.play_id
+      WHERE p.game_id = ?
+     UNION ALL
+     SELECT pge.play_id, g.name
+       FROM play_game_expansions pge
+       JOIN games g ON g.id = pge.game_id
+       JOIN plays p ON p.id = pge.play_id
       WHERE p.game_id = ?`,
-    [gameId]
+    [gameId, gameId]
   );
 
   const playersByPlay = new Map<number, PlayPlayer[]>();
@@ -123,6 +137,7 @@ export async function getPlaysForGame(gameId: number): Promise<Play[]> {
     players: playersByPlay.get(p.id) ?? [],
     expansions: expsByPlay.get(p.id) ?? [],
     expansionIds: [],
+    standaloneExpansionIds: [],
     photos: [],
   }));
 }
@@ -136,7 +151,13 @@ export async function addPlay(input: PlayInput): Promise<number> {
       [input.gameId, input.gameName, input.groupId, input.playedAt, input.notes, input.status]
     );
     playId = res.lastInsertRowId;
-    await writePlayChildren(db, playId, input.players, input.expansionIds ?? []);
+    await writePlayChildren(
+      db,
+      playId,
+      input.players,
+      input.expansionIds ?? [],
+      input.standaloneExpansionIds ?? []
+    );
     await writePlayPhotos(db, playId, input.photos ?? []);
   });
   return playId;
@@ -156,6 +177,12 @@ export async function getPlay(playId: number): Promise<Play | null> {
       WHERE pe.play_id = ?`,
     [playId]
   );
+  const stdExps = await db.getAllAsync<{ game_id: number; name: string }>(
+    `SELECT pge.game_id, g.name
+       FROM play_game_expansions pge JOIN games g ON g.id = pge.game_id
+      WHERE pge.play_id = ?`,
+    [playId]
+  );
   return {
     id: p.id,
     gameId: p.game_id,
@@ -165,8 +192,9 @@ export async function getPlay(playId: number): Promise<Play | null> {
     notes: p.notes,
     status: p.status,
     players: players.map((r) => ({ name: r.player_name, isWinner: r.is_winner === 1, score: r.score })),
-    expansions: exps.map((e) => e.name),
+    expansions: [...exps.map((e) => e.name), ...stdExps.map((e) => e.name)],
     expansionIds: exps.map((e) => e.expansion_id),
+    standaloneExpansionIds: stdExps.map((e) => e.game_id),
     photos: await getPhotosFor(db, playId),
   };
 }
@@ -180,7 +208,14 @@ export async function updatePlay(playId: number, input: PlayInput): Promise<void
     );
     await db.runAsync('DELETE FROM play_players WHERE play_id = ?', [playId]);
     await db.runAsync('DELETE FROM play_expansions WHERE play_id = ?', [playId]);
-    await writePlayChildren(db, playId, input.players, input.expansionIds ?? []);
+    await db.runAsync('DELETE FROM play_game_expansions WHERE play_id = ?', [playId]);
+    await writePlayChildren(
+      db,
+      playId,
+      input.players,
+      input.expansionIds ?? [],
+      input.standaloneExpansionIds ?? []
+    );
     await writePlayPhotos(db, playId, input.photos ?? []);
   });
 }

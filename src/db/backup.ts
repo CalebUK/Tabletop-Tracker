@@ -17,6 +17,7 @@ const TABLES = [
   'game_categories',
   'play_players',
   'play_expansions',
+  'play_game_expansions',
   'play_photos',
   'loans',
   'meta',

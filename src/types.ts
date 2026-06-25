@@ -142,8 +142,9 @@ export interface Play {
   notes: string | null;
   status: PlayStatus;
   players: PlayPlayer[];
-  expansions: string[]; // names of expansions used (for display)
-  expansionIds: number[]; // expansion ids used (for editing)
+  expansions: string[]; // names of expansions used (for display: lightweight + standalone)
+  expansionIds: number[]; // lightweight expansion ids used (for editing)
+  standaloneExpansionIds: number[]; // standalone-expansion game ids used (for editing)
   photos: string[]; // board photos (saved-for-later games only)
 }
 

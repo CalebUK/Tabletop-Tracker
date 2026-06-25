@@ -136,6 +136,15 @@ CREATE TABLE IF NOT EXISTS play_expansions (
   FOREIGN KEY (expansion_id) REFERENCES expansions(id) ON DELETE CASCADE
 );
 
+-- Standalone expansions (which are games) used in a play.
+CREATE TABLE IF NOT EXISTS play_game_expansions (
+  play_id INTEGER NOT NULL,
+  game_id INTEGER NOT NULL,
+  PRIMARY KEY (play_id, game_id),
+  FOREIGN KEY (play_id) REFERENCES plays(id) ON DELETE CASCADE,
+  FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS meta (
   key TEXT PRIMARY KEY,
   value TEXT
@@ -158,6 +167,7 @@ CREATE INDEX IF NOT EXISTS idx_group_members_group ON group_members(group_id);
 CREATE INDEX IF NOT EXISTS idx_loans_game ON loans(game_id);
 CREATE INDEX IF NOT EXISTS idx_expansions_game ON expansions(game_id);
 CREATE INDEX IF NOT EXISTS idx_play_expansions_play ON play_expansions(play_id);
+CREATE INDEX IF NOT EXISTS idx_play_game_expansions_play ON play_game_expansions(play_id);
 `;
 
 // Patch databases created by an earlier schema version. CREATE TABLE above
