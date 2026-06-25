@@ -39,13 +39,6 @@ const SLIDES: Slide[] = [
     ],
   },
   {
-    emoji: '🧩',
-    title: 'Two ways to add expansions',
-    body:
-      'Quick way (best for most): while adding or editing a game, find “Expansions owned” and type the expansion’s name and how many extra players it adds. That bumps the base game’s player count — e.g. a 1–5 game with a “+2” expansion now shows 1–7.\n\n' +
-      'Full way: in Settings, turn on “Expansions as standalone games”. Now you can add an expansion as its own game — with its own box art and BGG details — and link it to its base. The extra players are worked out automatically, and the expansion appears nested under the base game (and, if you like, as its own card in your collection).',
-  },
-  {
     emoji: '⭐',
     title: 'Keep a Wishlist',
     body: 'Flip the toggle at the top of your Collection to your Wishlist — games you’d love to own.\n\nIf a friend’s shared library has one, you’ll see who can lend it, plus suggestions from friends whose ratings match yours.\n\nBought it? One tap moves it into your collection.',
@@ -64,6 +57,13 @@ const SLIDES: Slide[] = [
     emoji: '⏸️',
     title: 'Finish later — or not at all',
     body: 'When you log a play you can mark it DNF (did not finish) — it still counts as a play — or “Save for later” and snap a few photos of the board where you left off.\n\nSaved games wait under “Unfinished games” on the Stats tab. Reopen one to pick up where you stopped; finish it and the board photos are cleared.',
+  },
+  {
+    emoji: '🧩',
+    title: 'Two ways to add expansions',
+    body:
+      'Quick way (best for most): while adding or editing a game, find “Expansions owned” and type the expansion’s name and how many extra players it adds. That bumps the base game’s player count — e.g. a 1–5 game with a “+2” expansion now shows 1–7.\n\n' +
+      'Full way: in Settings, turn on “Expansions as standalone games”. Now you can add an expansion as its own game — with its own box art and BGG details — and link it to its base. The extra players are worked out automatically, and the expansion appears nested under the base game (and, if you like, as its own card in your collection).',
   },
   {
     emoji: '👥',

@@ -1,25 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, LinearGradient, Polygon, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Polygon, Stop, Text as SvgText } from 'react-native-svg';
 import { colors, radius, spacing } from '../theme';
 
 const SIDES = [4, 6, 8, 10, 12, 20, 100];
-const FACE_EDGE = '#b9bfca';
+// 3D cube face tones (top lightest, right darkest) for a real-die look.
+const TOP = '#f6f8fc';
+const RIGHT = '#c3c9d6';
+const EDGE = '#a9b1c0';
 const INK = '#15171c';
 
-// Polyhedral silhouettes in a 0–100 viewBox (d6 is drawn as a rounded rect).
-const SHAPES: Record<number, string> = {
-  4: '50,8 93,86 7,86',
-  8: '50,5 95,50 50,95 5,50',
-  10: '50,5 89,40 50,96 11,40',
-  12: '50,5 93,39 76,93 24,93 7,39',
-  20: '50,4 91,27 91,73 50,96 9,73 9,27',
-  100: '50,5 89,40 50,96 11,40',
-};
+// Isometric cube in a 0–100 viewBox: a front square plus top + right faces.
+const FRONT_PTS = '14,32 74,32 74,92 14,92';
+const TOP_PTS = '14,32 74,32 96,10 36,10';
+const RIGHT_PTS = '74,32 74,92 96,70 96,10';
 
-// d6 pip cells → grid (col,row) centres in the viewBox.
-const COLS = [30, 50, 70];
+// d6 pip cell centres on the front face (3×3 grid).
+const PX = [29, 44, 59];
+const PY = [47, 62, 77];
 const PIPS: Record<number, number[]> = {
   1: [4],
   2: [0, 8],
@@ -30,50 +29,37 @@ const PIPS: Record<number, number[]> = {
 };
 
 function numSize(v: number): number {
-  return v >= 100 ? 26 : v >= 10 ? 36 : 46;
+  return v >= 100 ? 22 : v >= 10 ? 30 : 40;
 }
 
 function DieFace({ value, sides, size }: { value: number; sides: number; size: number }) {
-  const gid = `dieGrad${sides}`;
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
       <Defs>
-        <LinearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#ffffff" />
-          <Stop offset="1" stopColor="#d4d9e2" />
+        <LinearGradient id="dieFront" x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor="#eef1f6" />
+          <Stop offset="1" stopColor="#d8dde6" />
         </LinearGradient>
       </Defs>
+      <Polygon points={TOP_PTS} fill={TOP} stroke={EDGE} strokeWidth="1.5" strokeLinejoin="round" />
+      <Polygon points={RIGHT_PTS} fill={RIGHT} stroke={EDGE} strokeWidth="1.5" strokeLinejoin="round" />
+      <Polygon points={FRONT_PTS} fill="url(#dieFront)" stroke={EDGE} strokeWidth="1.5" strokeLinejoin="round" />
       {sides === 6 ? (
-        <>
-          <Rect x="5" y="5" width="90" height="90" rx="16" fill={`url(#${gid})`} stroke={FACE_EDGE} strokeWidth="2" />
-          {PIPS[value]?.map((cell) => (
-            <Circle key={cell} cx={COLS[cell % 3]} cy={COLS[Math.floor(cell / 3)]} r="7.5" fill={INK} />
-          ))}
-        </>
+        PIPS[value]?.map((cell) => (
+          <Circle key={cell} cx={PX[cell % 3]} cy={PY[Math.floor(cell / 3)]} r="6" fill={INK} />
+        ))
       ) : (
-        <>
-          <Polygon
-            points={SHAPES[sides] ?? SHAPES[100]}
-            fill={`url(#${gid})`}
-            stroke={FACE_EDGE}
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-          {sides === 20 && (
-            <Polygon points="50,30 70,64 30,64" fill="none" stroke={FACE_EDGE} strokeWidth="1.5" strokeLinejoin="round" />
-          )}
-          <SvgText
-            x="50"
-            y={sides === 4 ? 80 : 50}
-            fontSize={numSize(value)}
-            fontWeight="bold"
-            fill={INK}
-            textAnchor="middle"
-            alignmentBaseline="central"
-          >
-            {value}
-          </SvgText>
-        </>
+        <SvgText
+          x="44"
+          y="62"
+          fontSize={numSize(value)}
+          fontWeight="bold"
+          fill={INK}
+          textAnchor="middle"
+          alignmentBaseline="central"
+        >
+          {value}
+        </SvgText>
       )}
     </Svg>
   );
