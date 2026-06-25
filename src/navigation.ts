@@ -20,6 +20,11 @@ export type RootStackParamList = {
   Leaderboard: { kind: 'players' | 'games'; groupId?: number; groupName?: string };
   Backup: undefined;
   About: undefined;
+  // Tools tab gadgets (each opened from the Tools hub).
+  DiceRoller: undefined;
+  WhoGoesFirst: undefined;
+  Calculator: undefined;
+  Scorepad: undefined;
   FriendLibrary: { code: string; name?: string };
   BrowseAll: undefined;
 };

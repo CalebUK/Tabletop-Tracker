@@ -12,6 +12,11 @@ import { colors } from './src/theme';
 import CollectionScreen from './src/screens/CollectionScreen';
 import SearchScreen from './src/screens/SearchScreen';
 import StatsScreen from './src/screens/StatsScreen';
+import ToolsScreen from './src/screens/ToolsScreen';
+import DiceRollerScreen from './src/screens/DiceRollerScreen';
+import WhoGoesFirstScreen from './src/screens/WhoGoesFirstScreen';
+import CalculatorScreen from './src/screens/CalculatorScreen';
+import ScorepadScreen from './src/screens/ScorepadScreen';
 import LibraryScreen from './src/screens/LibraryScreen';
 import FriendLibraryScreen from './src/screens/FriendLibraryScreen';
 import BrowseAllScreen from './src/screens/BrowseAllScreen';
@@ -90,6 +95,11 @@ function Tabs() {
         component={StatsScreen}
         options={{ tabBarIcon: tabIcon('📊') }}
       />
+      <Tab.Screen
+        name="Tools"
+        component={ToolsScreen}
+        options={{ tabBarIcon: tabIcon('🧰') }}
+      />
     </Tab.Navigator>
   );
 }
@@ -118,6 +128,10 @@ export default function App() {
           <Stack.Screen name="GroupStats" component={GroupStatsScreen} options={{ title: '' }} />
           <Stack.Screen name="GroupMembers" component={GroupMembersScreen} options={{ title: 'Members' }} />
           <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: '' }} />
+          <Stack.Screen name="DiceRoller" component={DiceRollerScreen} options={{ title: 'Dice Roller' }} />
+          <Stack.Screen name="WhoGoesFirst" component={WhoGoesFirstScreen} options={{ title: 'Who Goes First?' }} />
+          <Stack.Screen name="Calculator" component={CalculatorScreen} options={{ title: 'Calculator' }} />
+          <Stack.Screen name="Scorepad" component={ScorepadScreen} options={{ title: 'Scorepad' }} />
           <Stack.Screen name="Backup" component={BackupScreen} options={{ title: 'Backup & Export' }} />
           <Stack.Screen name="About" component={AboutScreen} options={{ title: 'About & Privacy' }} />
           <Stack.Screen name="FriendLibrary" component={FriendLibraryScreen} options={{ title: '' }} />
