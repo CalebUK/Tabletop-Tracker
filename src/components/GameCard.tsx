@@ -54,16 +54,27 @@ export default function GameCard({
   const hasRating = game.rating != null && game.rating > 0;
   const friends = friendsWithGame ?? [];
   const players = playersText(game);
+  // Corner badge on the cover: "🧩" for a standalone expansion, "🧩 N" for a
+  // base game that has expansions.
+  const expBadge =
+    game.baseGameId != null ? '🧩' : game.expansionCount > 0 ? `🧩 ${game.expansionCount}` : null;
 
   return (
     <Pressable style={styles.card} onPress={onPress} onLongPress={onLongPress} delayLongPress={300}>
-      {game.imageUri ? (
-        <Image source={{ uri: game.imageUri }} style={styles.thumb} />
-      ) : (
-        <View style={[styles.thumb, styles.thumbPlaceholder]}>
-          <Text style={styles.thumbEmoji}>🎲</Text>
-        </View>
-      )}
+      <View style={styles.thumbWrap}>
+        {game.imageUri ? (
+          <Image source={{ uri: game.imageUri }} style={styles.thumb} />
+        ) : (
+          <View style={[styles.thumb, styles.thumbPlaceholder]}>
+            <Text style={styles.thumbEmoji}>🎲</Text>
+          </View>
+        )}
+        {expBadge ? (
+          <View style={styles.expBadge}>
+            <Text style={styles.expBadgeText}>{expBadge}</Text>
+          </View>
+        ) : null}
+      </View>
       <View style={styles.body}>
         <View style={styles.titleRow}>
           <Text style={styles.title} numberOfLines={2}>
@@ -80,14 +91,6 @@ export default function GameCard({
             game.isFavorite && <Text style={styles.favOn}>♥</Text>
           )}
         </View>
-
-        {game.baseGameId != null ? (
-          <Text style={styles.expansions}>🧩 Expansion</Text>
-        ) : game.expansionCount > 0 ? (
-          <Text style={styles.expansions}>
-            🧩 {game.expansionCount} expansion{game.expansionCount === 1 ? '' : 's'}
-          </Text>
-        ) : null}
 
         {game.isWishlist ? (
           friends.length > 0 ? (
@@ -107,7 +110,7 @@ export default function GameCard({
             </View>
             <View style={styles.infoRight}>
               {players ? <Text style={styles.metaRight}>👥 {players}</Text> : null}
-              {game.playTimeMin ? <Text style={styles.metaRight}>⏱ {game.playTimeMin} min</Text> : null}
+              {game.playTimeMin ? <Text style={styles.metaRight}>⏱ {game.playTimeMin}m</Text> : null}
             </View>
           </View>
         )}
@@ -117,14 +120,17 @@ export default function GameCard({
 }
 
 const styles = StyleSheet.create({
+  // Height is driven by the 92px cover, so the card never grows taller than it.
   card: {
     flexDirection: 'row',
+    height: 92,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
   },
+  thumbWrap: { width: 92, height: 92 },
   thumb: { width: 92, height: 92 },
   thumbPlaceholder: {
     backgroundColor: colors.surfaceAlt,
@@ -132,19 +138,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   thumbEmoji: { fontSize: 32 },
-  body: { flex: 1, padding: spacing.md, justifyContent: 'center', gap: 4 },
+  expBadge: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: radius.sm,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  expBadgeText: { color: '#fff', fontSize: 11, fontWeight: '600' },
+  body: { flex: 1, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, justifyContent: 'center', gap: 5 },
   titleRow: { flexDirection: 'row', alignItems: 'center' },
-  title: { flexShrink: 1, color: colors.text, fontSize: 16, fontWeight: '600' },
+  title: { flexShrink: 1, color: colors.text, fontSize: 16, fontWeight: '600', lineHeight: 20 },
   spacer: { flex: 1 },
   fav: { color: colors.textMuted, fontSize: 20, marginLeft: spacing.sm },
   favOn: { color: colors.favorite, fontSize: 20, marginLeft: spacing.sm },
   myRating: { color: colors.star, fontSize: 13, fontWeight: '700' },
-  location: { color: colors.textMuted, fontSize: 13 },
+  location: { color: colors.textMuted, fontSize: 13, flexShrink: 1 },
   loaned: { color: colors.favorite },
   friends: { color: colors.success, fontSize: 13, fontWeight: '600' },
-  infoRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: spacing.sm },
-  infoLeft: { flex: 1, gap: 4 },
-  infoRight: { alignItems: 'flex-end', gap: 4 },
+  // Meta is a single line: rating + location on the left, players + time right.
+  infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  infoLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 },
+  infoRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   metaRight: { color: colors.textMuted, fontSize: 12 },
-  expansions: { color: colors.textMuted, fontSize: 12 },
 });
