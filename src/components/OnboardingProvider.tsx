@@ -42,7 +42,7 @@ const SLIDES: Slide[] = [
     emoji: '🧩',
     title: 'Two ways to add expansions',
     body:
-      'Quick way (best for most): open a game, scroll to “Expansions owned”, and just type the expansion’s name and how many extra players it adds. That bumps the base game’s player count — e.g. a 1–5 game with a “+2” expansion now shows 1–7.\n\n' +
+      'Quick way (best for most): while adding or editing a game, find “Expansions owned” and type the expansion’s name and how many extra players it adds. That bumps the base game’s player count — e.g. a 1–5 game with a “+2” expansion now shows 1–7.\n\n' +
       'Full way: in Settings, turn on “Expansions as standalone games”. Now you can add an expansion as its own game — with its own box art and BGG details — and link it to its base. The extra players are worked out automatically, and the expansion appears nested under the base game (and, if you like, as its own card in your collection).',
   },
   {
@@ -141,7 +141,12 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
             onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
           >
             {SLIDES.map((s, i) => (
-              <View key={i} style={[styles.slide, { width }]}>
+              <ScrollView
+                key={i}
+                style={{ width }}
+                contentContainerStyle={styles.slide}
+                showsVerticalScrollIndicator={false}
+              >
                 {s.logo ? (
                   <Image source={require('../../assets/adaptive-icon.png')} style={styles.logo} />
                 ) : (
@@ -161,7 +166,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
                     ))}
                   </View>
                 )}
-              </View>
+              </ScrollView>
             ))}
           </ScrollView>
 
@@ -184,7 +189,13 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   topBar: { height: 44, justifyContent: 'center', alignItems: 'flex-end', paddingHorizontal: spacing.lg },
   skip: { color: colors.textMuted, fontSize: 16, fontWeight: '600' },
-  slide: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
+  slide: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+  },
   logo: { width: 120, height: 120, marginBottom: spacing.xl },
   emoji: { fontSize: 72, marginBottom: spacing.xl },
   title: { color: colors.text, fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: spacing.md },
