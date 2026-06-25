@@ -76,44 +76,45 @@ export default function GameCard({
         ) : null}
       </View>
       <View style={styles.body}>
-        <View style={styles.titleRow}>
+        <View style={styles.leftCol}>
           <Text style={styles.title} numberOfLines={2}>
             {game.name}
           </Text>
-          <View style={styles.spacer} />
-          {onToggleFavorite ? (
-            <Pressable onPress={onToggleFavorite} hitSlop={10}>
-              <Text style={[styles.fav, game.isFavorite && styles.favOn]}>
-                {game.isFavorite ? '♥' : '♡'}
+          {game.isWishlist ? (
+            friends.length > 0 ? (
+              <Text style={styles.friends} numberOfLines={1}>
+                👥 {friendsLine(friends)}
               </Text>
-            </Pressable>
+            ) : null
           ) : (
-            game.isFavorite && <Text style={styles.favOn}>♥</Text>
-          )}
-        </View>
-
-        {game.isWishlist ? (
-          friends.length > 0 ? (
-            <Text style={styles.friends} numberOfLines={1}>
-              👥 {friendsLine(friends)}
-            </Text>
-          ) : null
-        ) : (
-          <View style={styles.infoRow}>
-            <View style={styles.infoLeft}>
+            <>
               {hasRating && <Text style={styles.myRating}>★ {fmt(game.rating as number)}/10</Text>}
               {loc ? (
                 <Text style={[styles.location, game.loanedTo && styles.loaned]} numberOfLines={1}>
                   {loc.icon} {loc.text}
                 </Text>
               ) : null}
-            </View>
-            <View style={styles.infoRight}>
+            </>
+          )}
+        </View>
+
+        <View style={styles.rightCol}>
+          {onToggleFavorite ? (
+            <Pressable onPress={onToggleFavorite} hitSlop={10}>
+              <Text style={[styles.fav, game.isFavorite && styles.favOn]}>
+                {game.isFavorite ? '♥' : '♡'}
+              </Text>
+            </Pressable>
+          ) : game.isFavorite ? (
+            <Text style={styles.favOn}>♥</Text>
+          ) : null}
+          {!game.isWishlist && (
+            <>
               {players ? <Text style={styles.metaRight}>👥 {players}</Text> : null}
               {game.playTimeMin ? <Text style={styles.metaRight}>⏱ {game.playTimeMin} min</Text> : null}
-            </View>
-          </View>
-        )}
+            </>
+          )}
+        </View>
       </View>
     </Pressable>
   );
@@ -148,19 +149,16 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   expBadgeText: { color: '#fff', fontSize: 11, fontWeight: '600' },
-  body: { flex: 1, paddingHorizontal: spacing.md, paddingVertical: 6, justifyContent: 'center', gap: 4 },
-  titleRow: { flexDirection: 'row', alignItems: 'center' },
-  title: { flexShrink: 1, color: colors.text, fontSize: 16, fontWeight: '600', lineHeight: 18 },
-  spacer: { flex: 1 },
-  fav: { color: colors.textMuted, fontSize: 20, marginLeft: spacing.sm },
-  favOn: { color: colors.favorite, fontSize: 20, marginLeft: spacing.sm },
+  // Two evenly-spaced columns, vertically centred within the cover height.
+  body: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: 6, gap: spacing.sm },
+  leftCol: { flex: 1, gap: 6 },
+  rightCol: { alignItems: 'flex-end', gap: 6 },
+  title: { color: colors.text, fontSize: 15, fontWeight: '600', lineHeight: 18 },
+  fav: { color: colors.textMuted, fontSize: 18, lineHeight: 18 },
+  favOn: { color: colors.favorite, fontSize: 18, lineHeight: 18 },
   myRating: { color: colors.star, fontSize: 13, fontWeight: '700', lineHeight: 16 },
   location: { color: colors.textMuted, fontSize: 13, lineHeight: 16, flexShrink: 1 },
   loaned: { color: colors.favorite },
-  friends: { color: colors.success, fontSize: 13, fontWeight: '600' },
-  // Stacked meta: rating over location (left); players over play time (right).
-  infoRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
-  infoLeft: { flex: 1, gap: 2 },
-  infoRight: { alignItems: 'flex-end', gap: 2 },
-  metaRight: { color: colors.textMuted, fontSize: 12, lineHeight: 15 },
+  friends: { color: colors.success, fontSize: 13, fontWeight: '600', lineHeight: 16 },
+  metaRight: { color: colors.textMuted, fontSize: 13, lineHeight: 16 },
 });
