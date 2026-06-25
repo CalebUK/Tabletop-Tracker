@@ -93,8 +93,77 @@ export interface GroupStats {
   totalPlays: number;
   autofill: boolean;
   members: string[];
-  players: { name: string; wins: number; plays: number }[];
-  games: { name: string; plays: number; gameId: number | null }[];
+  players: { name: string; wins: number; plays: number }[]; // top 5
+  playerCount: number;
+  games: { name: string; plays: number; gameId: number | null }[]; // top 5
+  gameCount: number;
+}
+
+export interface GroupPlay {
+  id: number;
+  gameName: string;
+  playedAt: string;
+  status: string; // 'completed' | 'dnf'
+  winners: string; // comma-joined winner names (may be empty)
+}
+
+// Every play logged to the group (newest first), for an editable log list.
+export async function getGroupPlays(groupId: number): Promise<GroupPlay[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{
+    id: number;
+    game_name: string | null;
+    played_at: string;
+    status: string;
+    winners: string | null;
+  }>(
+    `SELECT p.id AS id,
+            COALESCE(p.game_name, (SELECT name FROM games WHERE id = p.game_id), '(game)') AS game_name,
+            p.played_at AS played_at,
+            p.status AS status,
+            (SELECT group_concat(pp.player_name, ', ') FROM play_players pp
+              WHERE pp.play_id = p.id AND pp.is_winner = 1) AS winners
+       FROM plays p
+      WHERE p.group_id = ? AND p.status != 'saved'
+      ORDER BY p.played_at DESC, p.id DESC`,
+    [groupId]
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    gameName: r.game_name ?? '(game)',
+    playedAt: r.played_at,
+    status: r.status,
+    winners: r.winners ?? '',
+  }));
+}
+
+// Full group leaderboards (no limit) for the "see all" screens.
+export async function getGroupPlayerRankings(
+  groupId: number
+): Promise<{ name: string; wins: number; plays: number }[]> {
+  const db = await getDb();
+  return db.getAllAsync(
+    `SELECT pp.player_name AS name, sum(pp.is_winner) AS wins, count(*) AS plays
+       FROM play_players pp JOIN plays p ON p.id = pp.play_id
+      WHERE p.group_id = ? AND p.status != 'saved'
+      GROUP BY pp.player_name COLLATE NOCASE
+      ORDER BY wins DESC, plays DESC, name COLLATE NOCASE ASC`,
+    [groupId]
+  );
+}
+
+export async function getGroupGameRankings(
+  groupId: number
+): Promise<{ name: string; plays: number; gameId: number | null }[]> {
+  const db = await getDb();
+  return db.getAllAsync(
+    `SELECT COALESCE(game_name, '(unknown)') AS name, count(*) AS plays, MAX(game_id) AS gameId
+       FROM plays
+      WHERE group_id = ? AND status != 'saved'
+      GROUP BY name COLLATE NOCASE
+      ORDER BY plays DESC, name COLLATE NOCASE ASC`,
+    [groupId]
+  );
 }
 
 export async function getGroupStats(groupId: number): Promise<GroupStats> {
@@ -113,7 +182,14 @@ export async function getGroupStats(groupId: number): Promise<GroupStats> {
        JOIN plays p ON p.id = pp.play_id
       WHERE p.group_id = ? AND p.status != 'saved'
       GROUP BY pp.player_name COLLATE NOCASE
-      ORDER BY wins DESC, plays DESC`,
+      ORDER BY wins DESC, plays DESC
+      LIMIT 5`,
+    [groupId]
+  );
+  const playerCount = await db.getFirstAsync<{ c: number }>(
+    `SELECT count(DISTINCT pp.player_name COLLATE NOCASE) AS c
+       FROM play_players pp JOIN plays p ON p.id = pp.play_id
+      WHERE p.group_id = ? AND p.status != 'saved'`,
     [groupId]
   );
   const games = await db.getAllAsync<{ name: string; plays: number; gameId: number | null }>(
@@ -122,7 +198,14 @@ export async function getGroupStats(groupId: number): Promise<GroupStats> {
        FROM plays
       WHERE group_id = ? AND status != 'saved'
       GROUP BY name COLLATE NOCASE
-      ORDER BY plays DESC, name COLLATE NOCASE ASC`,
+      ORDER BY plays DESC, name COLLATE NOCASE ASC
+      LIMIT 5`,
+    [groupId]
+  );
+  const gameCount = await db.getFirstAsync<{ c: number }>(
+    `SELECT count(*) AS c FROM (
+       SELECT DISTINCT COALESCE(game_name, '(unknown)') COLLATE NOCASE AS n
+         FROM plays WHERE group_id = ? AND status != 'saved')`,
     [groupId]
   );
   return {
@@ -131,6 +214,8 @@ export async function getGroupStats(groupId: number): Promise<GroupStats> {
     autofill: g?.autofill === 1,
     members: await getGroupMembers(groupId),
     players,
+    playerCount: playerCount?.c ?? 0,
     games,
+    gameCount: gameCount?.c ?? 0,
   };
 }

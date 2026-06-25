@@ -16,7 +16,8 @@ export type RootStackParamList = {
   GameStats: { gameId?: number; gameName?: string; groupId?: number; groupName?: string };
   GroupStats: { groupId: number };
   GroupMembers: { groupId: number; groupName?: string };
-  Leaderboard: { kind: 'players' | 'games' }; // full ranked list (see all)
+  // full ranked list (see all). groupId scopes it to a single gaming group.
+  Leaderboard: { kind: 'players' | 'games'; groupId?: number; groupName?: string };
   Backup: undefined;
   About: undefined;
   FriendLibrary: { code: string; name?: string };

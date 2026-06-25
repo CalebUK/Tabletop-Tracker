@@ -2,12 +2,14 @@ import React, { useCallback, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootStackProps } from '../navigation';
-import { getGroupStats, deleteGroup, renameGroup, GroupStats } from '../db/groups';
+import { getGroupStats, getGroupPlays, deleteGroup, renameGroup, GroupStats, GroupPlay } from '../db/groups';
+import { isoToUk } from '../lib/dates';
 import { colors, radius, spacing } from '../theme';
 
 export default function GroupStatsScreen({ route, navigation }: RootStackProps<'GroupStats'>) {
   const { groupId } = route.params;
   const [stats, setStats] = useState<GroupStats | null>(null);
+  const [plays, setPlays] = useState<GroupPlay[]>([]);
   const [renaming, setRenaming] = useState(false);
   const [newName, setNewName] = useState('');
 
@@ -16,6 +18,7 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
       setStats(s);
       navigation.setOptions({ title: s.name });
     });
+    getGroupPlays(groupId).then(setPlays).catch(() => {});
   }, [groupId]);
 
   useFocusEffect(load);
@@ -97,6 +100,14 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
           );
         })
       )}
+      {stats.playerCount > stats.players.length && (
+        <Pressable
+          style={styles.seeAll}
+          onPress={() => navigation.navigate('Leaderboard', { kind: 'players', groupId, groupName: stats.name })}
+        >
+          <Text style={styles.seeAllText}>See all {stats.playerCount} players ›</Text>
+        </Pressable>
+      )}
 
       <Text style={styles.sectionTitle}>🔥 Most played</Text>
       {stats.games.length === 0 ? (
@@ -118,6 +129,39 @@ export default function GroupStatsScreen({ route, navigation }: RootStackProps<'
           >
             <Text style={styles.name}>{g.name} ›</Text>
             <Text style={styles.record}>{g.plays} play{g.plays === 1 ? '' : 's'}</Text>
+          </Pressable>
+        ))
+      )}
+      {stats.gameCount > stats.games.length && (
+        <Pressable
+          style={styles.seeAll}
+          onPress={() => navigation.navigate('Leaderboard', { kind: 'games', groupId, groupName: stats.name })}
+        >
+          <Text style={styles.seeAllText}>See all {stats.gameCount} games ›</Text>
+        </Pressable>
+      )}
+
+      <Text style={styles.sectionTitle}>📋 Game logs</Text>
+      {plays.length === 0 ? (
+        <Text style={styles.muted}>No plays logged to this group yet.</Text>
+      ) : (
+        plays.map((p) => (
+          <Pressable
+            key={p.id}
+            style={styles.logRow}
+            onPress={() => navigation.navigate('LogPlay', { playId: p.id })}
+          >
+            <View style={styles.flex1}>
+              <Text style={styles.logName}>
+                {p.gameName}
+                {p.status === 'dnf' ? '  🏳️ DNF' : ''}
+              </Text>
+              <Text style={styles.logMeta}>
+                {isoToUk(p.playedAt)}
+                {p.winners ? ` · 🏆 ${p.winners}` : ''}
+              </Text>
+            </View>
+            <Text style={styles.editLink}>Edit ›</Text>
           </Pressable>
         ))
       )}
@@ -216,6 +260,20 @@ const styles = StyleSheet.create({
   },
   memberLinkText: { color: colors.text, fontSize: 16, fontWeight: '600' },
   memberLinkCount: { color: colors.textMuted, fontSize: 13 },
+  seeAll: { paddingVertical: spacing.sm },
+  seeAllText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
+  flex1: { flex: 1 },
+  logRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  logName: { color: colors.text, fontSize: 15, fontWeight: '600' },
+  logMeta: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
+  editLink: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

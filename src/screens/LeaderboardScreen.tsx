@@ -2,64 +2,85 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackProps } from '../navigation';
-import {
-  GameRanking,
-  PlayerRanking,
-  getGameRankings,
-  getPlayerRankings,
-} from '../db/plays';
+import { getGameRankings, getPlayerRankings } from '../db/plays';
+import { getGroupGameRankings, getGroupPlayerRankings } from '../db/groups';
 import { colors, radius, spacing } from '../theme';
 
-type Row = (PlayerRanking | GameRanking) & { id?: number };
+type PlayerRow = { name: string; wins: number; plays: number };
+type GameRow = { name: string; plays: number; gameId: number | null };
 
 export default function LeaderboardScreen({ route, navigation }: RootStackProps<'Leaderboard'>) {
-  const { kind } = route.params;
+  const { kind, groupId, groupName } = route.params;
   const isPlayers = kind === 'players';
-  const [rows, setRows] = useState<Row[]>([]);
+  const [players, setPlayers] = useState<PlayerRow[]>([]);
+  const [games, setGames] = useState<GameRow[]>([]);
 
   useEffect(() => {
-    navigation.setOptions({ title: isPlayers ? 'All players' : 'All games' });
-    const load = isPlayers ? getPlayerRankings() : getGameRankings();
-    load.then((r) => setRows(r as Row[])).catch((e) => console.warn('leaderboard', e));
-  }, [kind]);
+    const prefix = groupName ? `${groupName} · ` : '';
+    navigation.setOptions({ title: `${prefix}${isPlayers ? 'All players' : 'All games'}` });
+    if (isPlayers) {
+      (groupId != null ? getGroupPlayerRankings(groupId) : getPlayerRankings())
+        .then(setPlayers)
+        .catch((e) => console.warn('leaderboard', e));
+    } else {
+      (groupId != null
+        ? getGroupGameRankings(groupId)
+        : getGameRankings().then((rs) => rs.map((r) => ({ name: r.name, plays: r.plays, gameId: r.id })))
+      )
+        .then(setGames)
+        .catch((e) => console.warn('leaderboard', e));
+    }
+  }, [kind, groupId]);
+
+  if (isPlayers) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <FlatList
+          data={players}
+          keyExtractor={(r, i) => r.name + i}
+          contentContainerStyle={styles.list}
+          renderItem={({ item, index }) => (
+            <Pressable
+              style={styles.row}
+              onPress={() => navigation.navigate('PlayerStats', { name: item.name, groupId, groupName })}
+            >
+              <Text style={styles.rank}>{index + 1}</Text>
+              <Text style={styles.name} numberOfLines={1}>{item.name} ›</Text>
+              <Text style={styles.value}>
+                {item.wins} win{item.wins === 1 ? '' : 's'} · {item.plays} play{item.plays === 1 ? '' : 's'}
+              </Text>
+            </Pressable>
+          )}
+          ListEmptyComponent={<Text style={styles.empty}>Log some plays to build a leaderboard.</Text>}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <FlatList
-        data={rows}
-        keyExtractor={(r, i) => (isPlayers ? (r as PlayerRanking).name : String((r as GameRanking).id)) + i}
+        data={games}
+        keyExtractor={(r, i) => r.name + i}
         contentContainerStyle={styles.list}
-        renderItem={({ item, index }) => {
-          if (isPlayers) {
-            const p = item as PlayerRanking;
-            return (
-              <Pressable
-                style={styles.row}
-                onPress={() => navigation.navigate('PlayerStats', { name: p.name })}
-              >
-                <Text style={styles.rank}>{index + 1}</Text>
-                <Text style={styles.name} numberOfLines={1}>{p.name} ›</Text>
-                <Text style={styles.value}>
-                  {p.wins} win{p.wins === 1 ? '' : 's'} · {p.plays} play{p.plays === 1 ? '' : 's'}
-                </Text>
-              </Pressable>
-            );
-          }
-          const g = item as GameRanking;
-          return (
-            <Pressable
-              style={styles.row}
-              onPress={() => navigation.navigate('GameStats', { gameId: g.id })}
-            >
-              <Text style={styles.rank}>{index + 1}</Text>
-              <Text style={styles.name} numberOfLines={1}>{g.name} ›</Text>
-              <Text style={styles.value}>{g.plays} play{g.plays === 1 ? '' : 's'}</Text>
-            </Pressable>
-          );
-        }}
-        ListEmptyComponent={
-          <Text style={styles.empty}>Log some plays to build a leaderboard.</Text>
-        }
+        renderItem={({ item, index }) => (
+          <Pressable
+            style={styles.row}
+            onPress={() =>
+              navigation.navigate('GameStats', {
+                gameId: item.gameId ?? undefined,
+                gameName: item.gameId == null ? item.name : undefined,
+                groupId,
+                groupName,
+              })
+            }
+          >
+            <Text style={styles.rank}>{index + 1}</Text>
+            <Text style={styles.name} numberOfLines={1}>{item.name} ›</Text>
+            <Text style={styles.value}>{item.plays} play{item.plays === 1 ? '' : 's'}</Text>
+          </Pressable>
+        )}
+        ListEmptyComponent={<Text style={styles.empty}>Log some plays to build a leaderboard.</Text>}
       />
     </SafeAreaView>
   );
