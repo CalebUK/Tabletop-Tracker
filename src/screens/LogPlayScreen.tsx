@@ -39,7 +39,7 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
   const headerHeight = useHeaderHeight();
   const [gameName, setGameName] = useState('');
   const [gameFocused, setGameFocused] = useState(false);
-  const [ownedGames, setOwnedGames] = useState<{ id: number; name: string }[]>([]);
+  const [allGames, setAllGames] = useState<{ id: number; name: string; isWishlist: boolean }[]>([]);
   const [gameExpansions, setGameExpansions] = useState<Expansion[]>([]);
   const [selectedExpIds, setSelectedExpIds] = useState<number[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -55,7 +55,11 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
   useEffect(() => {
     navigation.setOptions({ title: playId ? 'Edit Play' : 'Log Play' });
     getAllPlayers().then(setAllPlayers).catch(() => {});
-    getAllGames().then((gs) => setOwnedGames(gs.map((g) => ({ id: g.id, name: g.name })))).catch(() => {});
+    Promise.all([getAllGames(false), getAllGames(true)])
+      .then(([owned, wish]) =>
+        setAllGames([...owned, ...wish].map((g) => ({ id: g.id, name: g.name, isWishlist: g.isWishlist })))
+      )
+      .catch(() => {});
     getGroups().then(setGroups).catch(() => {});
     if (playId) {
       getPlay(playId).then((p) => {
@@ -74,9 +78,10 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
     }
   }, [playId, gameId]);
 
-  // Resolve the typed game name to an owned game id (if it matches one).
-  const resolvedGameId =
-    ownedGames.find((g) => g.name.toLowerCase() === gameName.trim().toLowerCase())?.id ?? null;
+  // Resolve the typed name to a game in your collection OR wishlist (if it
+  // matches one); otherwise the play is logged as a guest game.
+  const resolved = allGames.find((g) => g.name.toLowerCase() === gameName.trim().toLowerCase());
+  const resolvedGameId = resolved?.id ?? null;
 
   // Load that owned game's expansions whenever the resolved game changes.
   useEffect(() => {
@@ -101,11 +106,10 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
   }, [groupId, playId]);
 
   const gameSuggestions = gameFocused
-    ? ownedGames
-        .map((g) => g.name)
-        .filter((n) => {
+    ? allGames
+        .filter((g) => {
           const t = gameName.trim().toLowerCase();
-          return n.toLowerCase() !== t && (!t || n.toLowerCase().includes(t));
+          return g.name.toLowerCase() !== t && (!t || g.name.toLowerCase().includes(t));
         })
         .slice(0, 6)
     : [];
@@ -228,15 +232,18 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
           />
           {gameSuggestions.length > 0 && (
             <View style={styles.suggestRow}>
-              {gameSuggestions.map((name) => (
-                <Pressable key={name} style={styles.suggestChip} onPress={() => setGameName(name)}>
-                  <Text style={styles.suggestText}>🎲 {name}</Text>
+              {gameSuggestions.map((g) => (
+                <Pressable key={g.id} style={styles.suggestChip} onPress={() => setGameName(g.name)}>
+                  <Text style={styles.suggestText}>{g.isWishlist ? '⭐' : '🎲'} {g.name}</Text>
                 </Pressable>
               ))}
             </View>
           )}
-          {gameName.trim() && !resolvedGameId && (
+          {gameName.trim() && !resolved && (
             <Text style={styles.notOwned}>Not in your collection — logged as a guest game.</Text>
+          )}
+          {resolved?.isWishlist && (
+            <Text style={styles.notOwned}>⭐ On your wishlist — this play is recorded against it.</Text>
           )}
 
           <Text style={[styles.label, { marginTop: spacing.lg }]}>Status</Text>

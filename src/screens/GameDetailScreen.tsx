@@ -281,7 +281,6 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
         </View>
       ) : null}
 
-      {!game.isWishlist && (
       <View style={styles.section}>
         <View style={styles.playsHeader}>
           <Text style={styles.sectionTitle}>Plays ({plays.length})</Text>
@@ -322,7 +321,6 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
           <Text style={styles.hint}>Tap a play to edit · long-press to delete.</Text>
         )}
       </View>
-      )}
 
       {loans.length > 0 && (
         <View style={styles.section}>
