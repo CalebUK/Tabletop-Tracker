@@ -7,6 +7,7 @@ import { RootStackParamList } from '../navigation';
 import { addWishlistGame, getAllGames, getAllLocations, setWishlist, toggleFavorite } from '../db/games';
 import { getWishlistInsights } from '../lib/onlineLibrary';
 import { getMeta, setMeta } from '../db/meta';
+import { STANDALONE_EXPANSIONS_KEY } from './BackupScreen';
 import { Game, TasteSuggestion } from '../types';
 import { colors, radius, spacing } from '../theme';
 import GameCard from '../components/GameCard';
@@ -145,6 +146,7 @@ export default function CollectionScreen() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [nudgeDismissed, setNudgeDismissed] = useState(true);
   const [hideTips, setHideTips] = useState(false);
+  const [showExpansions, setShowExpansions] = useState(false);
   // Wishlist only: game name (lowercased) -> friends (linked libraries) who own it.
   const [friendOwners, setFriendOwners] = useState<Map<string, string[]>>(new Map());
   const [suggestions, setSuggestions] = useState<TasteSuggestion[]>([]);
@@ -152,7 +154,16 @@ export default function CollectionScreen() {
   const wishlist = mode === 'wishlist';
 
   const load = useCallback(() => {
-    getAllGames(wishlist).then(setGames).catch((e) => console.warn('load games', e));
+    // Read the standalone-expansions toggle first so we know whether to surface
+    // linked expansions as their own cards.
+    getMeta(STANDALONE_EXPANSIONS_KEY)
+      .then((v) => {
+        const inc = v === '1';
+        setShowExpansions(inc);
+        return getAllGames(wishlist, inc);
+      })
+      .then(setGames)
+      .catch((e) => console.warn('load games', e));
     getAllLocations().then(setLocations).catch(() => {});
     getMeta(NUDGE_KEY).then((v) => setNudgeDismissed(v === '1')).catch(() => {});
     getMeta(HIDE_SWIPE_TIPS_KEY).then((v) => setHideTips(v === '1')).catch(() => {});
@@ -229,7 +240,11 @@ export default function CollectionScreen() {
       <Pressable
         style={styles.tile}
         onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
-        onLongPress={wishlist ? undefined : () => navigation.navigate('LogPlay', { gameId: item.id })}
+        onLongPress={
+          wishlist || item.baseGameId != null
+            ? undefined
+            : () => navigation.navigate('LogPlay', { gameId: item.id })
+        }
         delayLongPress={300}
       >
         {item.imageUri ? (
@@ -242,6 +257,7 @@ export default function CollectionScreen() {
             </Text>
           </View>
         )}
+        {item.baseGameId != null && <Text style={styles.tileExp}>🧩</Text>}
         {item.isFavorite && <Text style={styles.tileFav}>♥</Text>}
         {meta ? (
           <View style={styles.tileBar}>
@@ -443,7 +459,9 @@ export default function CollectionScreen() {
                 game={item}
                 onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
                 onLongPress={
-                  wishlist ? undefined : () => navigation.navigate('LogPlay', { gameId: item.id })
+                  wishlist || item.baseGameId != null
+                    ? undefined
+                    : () => navigation.navigate('LogPlay', { gameId: item.id })
                 }
                 onToggleFavorite={() => onToggleFavorite(item)}
                 friendsWithGame={wishlist ? friendOwners.get(item.name.trim().toLowerCase()) : undefined}
@@ -740,6 +758,14 @@ const styles = StyleSheet.create({
     right: 6,
     color: colors.favorite,
     fontSize: 16,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowRadius: 3,
+  },
+  tileExp: {
+    position: 'absolute',
+    top: 4,
+    left: 6,
+    fontSize: 15,
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowRadius: 3,
   },

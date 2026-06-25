@@ -69,11 +69,13 @@ export default function GameCard({
           <Text style={styles.title} numberOfLines={1}>
             {game.name}
           </Text>
-          {game.expansionCount > 0 && (
+          {game.baseGameId != null ? (
+            <Text style={styles.expansions} numberOfLines={1}>{'  '}🧩 Expansion</Text>
+          ) : game.expansionCount > 0 ? (
             <Text style={styles.expansions} numberOfLines={1}>
               {'  '}🧩 {game.expansionCount} expansion{game.expansionCount === 1 ? '' : 's'}
             </Text>
-          )}
+          ) : null}
           <View style={styles.spacer} />
           {onToggleFavorite ? (
             <Pressable onPress={onToggleFavorite} hitSlop={10}>

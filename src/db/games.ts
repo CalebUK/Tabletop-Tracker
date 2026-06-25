@@ -107,10 +107,14 @@ const BASE_SELECT = `
 
 // Games in the collection (default) or the wishlist. The two lists share the
 // games table, separated by the is_wishlist flag.
-export async function getAllGames(wishlist = false): Promise<Game[]> {
+export async function getAllGames(wishlist = false, includeExpansions = false): Promise<Game[]> {
   const db = await getDb();
+  // By default, linked standalone expansions are hidden from the top-level list
+  // (they nest under their base). includeExpansions surfaces them as their own
+  // cards too, when the user has opted in.
+  const expFilter = includeExpansions ? '' : ' AND g.base_game_id IS NULL';
   const rows = await db.getAllAsync<GameRow>(
-    `${BASE_SELECT} WHERE g.is_wishlist = ? AND g.base_game_id IS NULL ORDER BY g.name COLLATE NOCASE ASC`,
+    `${BASE_SELECT} WHERE g.is_wishlist = ?${expFilter} ORDER BY g.name COLLATE NOCASE ASC`,
     [wishlist ? 1 : 0]
   );
   return rows.map(rowToGame);
