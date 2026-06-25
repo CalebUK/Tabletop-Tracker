@@ -1,20 +1,64 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../theme';
 
 const SIDES = [4, 6, 8, 10, 12, 20, 100];
+
+// Real-dice look: light faces with dark pips/numbers.
+const FACE = '#f4f5f8';
+const FACE_EDGE = '#cdd2dc';
+const INK = '#15171c';
+
+// Which of the 9 grid cells get a pip, for each d6 value.
+//  0 1 2
+//  3 4 5
+//  6 7 8
+const PIPS: Record<number, number[]> = {
+  1: [4],
+  2: [0, 8],
+  3: [0, 4, 8],
+  4: [0, 2, 6, 8],
+  5: [0, 2, 4, 6, 8],
+  6: [0, 2, 3, 5, 6, 8],
+};
+
+function Die({ value, sides, anim, index }: { value: number; sides: number; anim: Animated.Value; index: number }) {
+  // Whole-turn spins so each die settles flat, but at different speeds to desync.
+  const rotate = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', `${360 * (2 + (index % 3))}deg`],
+  });
+  const translateY = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, -30, 0] });
+  return (
+    <Animated.View style={[styles.die, { transform: [{ translateY }, { rotate }] }]}>
+      {sides === 6 ? (
+        <View style={styles.pipGrid}>
+          {Array.from({ length: 9 }).map((_, i) => (
+            <View key={i} style={styles.pipCell}>
+              {PIPS[value]?.includes(i) ? <View style={styles.pip} /> : null}
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.dieNum} numberOfLines={1} adjustsFontSizeToFit>
+          {value}
+        </Text>
+      )}
+    </Animated.View>
+  );
+}
 
 export default function DiceRollerScreen() {
   const [sides, setSides] = useState(6);
   const [count, setCount] = useState(2);
   const [results, setResults] = useState<number[]>([]);
   const [rolling, setRolling] = useState(false);
-  const pop = useRef(new Animated.Value(1)).current;
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const anim = useRef(new Animated.Value(0)).current; // spin + bounce
+  const pop = useRef(new Animated.Value(1)).current; // settle pop
+  const flicker = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Stop the flicker loop if we leave mid-roll.
-  useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
+  useEffect(() => () => { if (flicker.current) clearInterval(flicker.current); }, []);
 
   const randDice = () => Array.from({ length: count }, () => 1 + Math.floor(Math.random() * sides));
 
@@ -22,22 +66,23 @@ export default function DiceRollerScreen() {
     if (rolling) return;
     setRolling(true);
     const final = randDice();
-    let ticks = 0;
-    const maxTicks = 12;
-    timer.current = setInterval(() => {
-      ticks += 1;
-      if (ticks >= maxTicks) {
-        if (timer.current) clearInterval(timer.current);
-        timer.current = null;
-        setResults(final);
-        setRolling(false);
-        // Settle pop.
-        pop.setValue(0.7);
-        Animated.spring(pop, { toValue: 1, friction: 4, tension: 120, useNativeDriver: true }).start();
-      } else {
-        setResults(randDice()); // flicker random faces
-      }
-    }, 55);
+    setResults(randDice());
+    // Flicker the faces while the dice tumble.
+    flicker.current = setInterval(() => setResults(randDice()), 70);
+    anim.setValue(0);
+    Animated.timing(anim, {
+      toValue: 1,
+      duration: 850,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => {
+      if (flicker.current) clearInterval(flicker.current);
+      flicker.current = null;
+      setResults(final);
+      setRolling(false);
+      pop.setValue(0.82);
+      Animated.spring(pop, { toValue: 1, friction: 5, tension: 140, useNativeDriver: true }).start();
+    });
   }
 
   const total = results.reduce((a, b) => a + b, 0);
@@ -77,9 +122,7 @@ export default function DiceRollerScreen() {
           <Animated.View style={[styles.resultsWrap, { transform: [{ scale: pop }] }]}>
             <View style={styles.diceWrap}>
               {results.map((r, i) => (
-                <View key={i} style={[styles.die, rolling && styles.dieRolling]}>
-                  <Text style={styles.dieText}>{r}</Text>
-                </View>
+                <Die key={i} value={r} sides={sides} anim={anim} index={i} />
               ))}
             </View>
             {results.length > 1 && !rolling && <Text style={styles.total}>Total: {total}</Text>}
@@ -128,19 +171,26 @@ const styles = StyleSheet.create({
   },
   rollBtnOff: { opacity: 0.6 },
   rollText: { color: colors.primaryText, fontSize: 18, fontWeight: '800' },
-  dieRolling: { borderColor: colors.primary },
-  resultsWrap: { marginTop: spacing.xl, alignItems: 'center' },
-  diceWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, justifyContent: 'center' },
+  resultsWrap: { marginTop: spacing.xl * 1.5, alignItems: 'center' },
+  diceWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, justifyContent: 'center' },
   die: {
-    width: 60,
-    height: 60,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceAlt,
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    backgroundColor: FACE,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: FACE_EDGE,
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
   },
-  dieText: { color: colors.text, fontSize: 24, fontWeight: '800' },
-  total: { color: colors.primary, fontSize: 22, fontWeight: '800', marginTop: spacing.lg },
+  pipGrid: { width: 48, height: 48, flexDirection: 'row', flexWrap: 'wrap' },
+  pipCell: { width: 16, height: 16, alignItems: 'center', justifyContent: 'center' },
+  pip: { width: 9, height: 9, borderRadius: 5, backgroundColor: INK },
+  dieNum: { color: INK, fontSize: 26, fontWeight: '800', paddingHorizontal: 6 },
+  total: { color: colors.primary, fontSize: 22, fontWeight: '800', marginTop: spacing.xl },
 });
