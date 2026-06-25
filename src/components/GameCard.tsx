@@ -66,16 +66,9 @@ export default function GameCard({
       )}
       <View style={styles.body}>
         <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={styles.title} numberOfLines={2}>
             {game.name}
           </Text>
-          {game.baseGameId != null ? (
-            <Text style={styles.expansions} numberOfLines={1}>{'  '}🧩 Expansion</Text>
-          ) : game.expansionCount > 0 ? (
-            <Text style={styles.expansions} numberOfLines={1}>
-              {'  '}🧩 {game.expansionCount} expansion{game.expansionCount === 1 ? '' : 's'}
-            </Text>
-          ) : null}
           <View style={styles.spacer} />
           {onToggleFavorite ? (
             <Pressable onPress={onToggleFavorite} hitSlop={10}>
@@ -87,6 +80,14 @@ export default function GameCard({
             game.isFavorite && <Text style={styles.favOn}>♥</Text>
           )}
         </View>
+
+        {game.baseGameId != null ? (
+          <Text style={styles.expansions}>🧩 Expansion</Text>
+        ) : game.expansionCount > 0 ? (
+          <Text style={styles.expansions}>
+            🧩 {game.expansionCount} expansion{game.expansionCount === 1 ? '' : 's'}
+          </Text>
+        ) : null}
 
         {game.isWishlist ? (
           friends.length > 0 ? (
