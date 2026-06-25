@@ -1,33 +1,65 @@
----
-title: Add a library
-permalink: /add/
----
-
-<div id="card" style="max-width:520px;margin:2rem auto;padding:1.5rem;border:1px solid #ddd;border-radius:12px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-align:center">
-  <h2 style="margin-top:0">Add a board game library</h2>
-  <p>A friend shared their Tabletop Tracker collection with you.</p>
-
-  <p style="margin:1rem 0">Share code</p>
-  <p id="code" style="font-size:2rem;font-weight:800;letter-spacing:4px;margin:0 0 1.5rem">——————</p>
-
-  <p><a id="open" href="#" style="display:inline-block;background:#534ab7;color:#fff;text-decoration:none;padding:0.8rem 1.5rem;border-radius:8px;font-weight:600">Open in Tabletop Tracker</a></p>
-
-  <p style="font-size:0.9rem;color:#666;margin-top:1.5rem">
-    Don't have the app yet?
-    <a id="store" href="https://play.google.com/store/apps/details?id=com.bgk.boardgamekeeper">Get it on Google&nbsp;Play</a>,
-    then open the app, go to the Library tab, and enter the code above.
-  </p>
-</div>
-
-<script>
-  (function () {
-    var params = new URLSearchParams(window.location.search);
-    var code = (params.get('code') || '').trim().toUpperCase();
-    if (code) {
-      document.getElementById('code').textContent = code;
-      document.getElementById('open').setAttribute('href', 'tabletoptracker://library/' + encodeURIComponent(code));
-    } else {
-      document.getElementById('open').style.display = 'none';
-    }
-  })();
-</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add a library — Tabletop Tracker</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #0f1115;
+    color: #f0ede6;
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+  }
+  .card { width: 100%; max-width: 460px; text-align: center; }
+  h1 { font-size: 1.8rem; line-height: 1.25; margin: 0 0 0.75rem; }
+  p { font-size: 1.2rem; line-height: 1.5; margin: 0.5rem 0; color: #cfcabd; }
+  .label { font-size: 0.95rem; color: #8f8a7e; margin-top: 1.75rem; text-transform: uppercase; letter-spacing: 2px; }
+  .code { font-size: 3.2rem; font-weight: 800; letter-spacing: 8px; color: #8b80ff; margin: 0.25rem 0 1.75rem; }
+  .btn {
+    display: block;
+    background: #534ab7;
+    color: #fff;
+    text-decoration: none;
+    padding: 1.1rem;
+    border-radius: 14px;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  .fallback { font-size: 1.05rem; color: #8f8a7e; margin-top: 2rem; }
+  .fallback a { color: #8b80ff; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>🎲 Add a board game library</h1>
+    <p>A friend shared their Tabletop Tracker collection with you.</p>
+    <div class="label">Share code</div>
+    <div class="code" id="code">——————</div>
+    <a class="btn" id="open" href="#">Open in Tabletop Tracker</a>
+    <p class="fallback">
+      Don't have the app yet?
+      <a id="store" href="https://play.google.com/store/apps/details?id=com.bgk.boardgamekeeper">Get it on Google Play</a>,
+      then open the Library tab and enter the code above.
+    </p>
+  </div>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var code = (params.get('code') || '').trim().toUpperCase();
+      if (code) {
+        document.getElementById('code').textContent = code;
+        document.getElementById('open').setAttribute('href', 'tabletoptracker://library/' + encodeURIComponent(code));
+      } else {
+        document.getElementById('open').style.display = 'none';
+      }
+    })();
+  </script>
+</body>
+</html>

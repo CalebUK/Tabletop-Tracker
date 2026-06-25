@@ -70,7 +70,7 @@ export default function LibraryScreen() {
 
   function onShare() {
     if (!myLib) return;
-    const link = `https://calebuk.github.io/Tabletop-Tracker/add/?code=${myLib.code}`;
+    const link = `https://calebuk.github.io/Tabletop-Tracker/add.html?code=${myLib.code}`;
     Share.share({
       message: `Check out my board game collection on Tabletop Tracker! Tap to add it (code ${myLib.code}): ${link}`,
     });
