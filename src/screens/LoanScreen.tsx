@@ -55,8 +55,8 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
 
   function addProofPhoto() {
     Alert.alert('Proof photo', undefined, [
-      { text: 'Take Photo', onPress: async () => { const u = await takePhoto(); if (u) setPhotoUri(u); } },
-      { text: 'Choose from Library', onPress: async () => { const u = await pickFromLibrary(); if (u) setPhotoUri(u); } },
+      { text: 'Take Photo', onPress: async () => { const u = await takePhoto(false); if (u) setPhotoUri(u); } },
+      { text: 'Choose from Library', onPress: async () => { const u = await pickFromLibrary(false); if (u) setPhotoUri(u); } },
       ...(photoUri ? [{ text: 'Remove Photo', style: 'destructive' as const, onPress: () => setPhotoUri(null) }] : []),
       { text: 'Cancel', style: 'cancel' as const },
     ]);

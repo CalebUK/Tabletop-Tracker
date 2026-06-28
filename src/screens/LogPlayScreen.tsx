@@ -167,14 +167,14 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
       {
         text: '📸 Take photo',
         onPress: async () => {
-          const uri = await takePhoto();
+          const uri = await takePhoto(false);
           if (uri) setPhotos((ps) => [...ps, uri]);
         },
       },
       {
         text: '🖼 Choose from library',
         onPress: async () => {
-          const uri = await pickFromLibrary();
+          const uri = await pickFromLibrary(false);
           if (uri) setPhotos((ps) => [...ps, uri]);
         },
       },

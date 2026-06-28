@@ -115,31 +115,37 @@ export default function CalculatorScreen() {
           {display}
         </Text>
       </View>
-      <View style={styles.grid}>
-        {KEYS.map((k) => (
-          <Pressable
-            key={k.label}
-            style={[
-              styles.key,
-              k.wide && styles.keyWide,
-              k.kind === 'op' && styles.keyOp,
-              k.kind === 'fn' && styles.keyFn,
-              k.kind === 'eq' && styles.keyEq,
-              k.active && styles.keyOpActive,
-            ]}
-            onPress={k.onPress}
-          >
-            <Text
-              style={[
-                styles.keyText,
-                (k.kind === 'op' || k.kind === 'eq') && styles.keyTextLight,
-                k.kind === 'fn' && styles.keyTextFn,
-              ]}
-            >
-              {k.label}
-            </Text>
-          </Pressable>
-        ))}
+      <View style={styles.pad}>
+        {[KEYS.slice(0, 4), KEYS.slice(4, 8), KEYS.slice(8, 12), KEYS.slice(12, 16), KEYS.slice(16)].map(
+          (row, ri) => (
+            <View key={ri} style={styles.row}>
+              {row.map((k) => (
+                <Pressable
+                  key={k.label}
+                  style={[
+                    styles.key,
+                    k.wide && styles.keyWide,
+                    k.kind === 'op' && styles.keyOp,
+                    k.kind === 'fn' && styles.keyFn,
+                    k.kind === 'eq' && styles.keyEq,
+                    k.active && styles.keyOpActive,
+                  ]}
+                  onPress={k.onPress}
+                >
+                  <Text
+                    style={[
+                      styles.keyText,
+                      (k.kind === 'op' || k.kind === 'eq') && styles.keyTextLight,
+                      k.kind === 'fn' && styles.keyTextFn,
+                    ]}
+                  >
+                    {k.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )
+        )}
       </View>
     </SafeAreaView>
   );
@@ -157,10 +163,12 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   display: { color: colors.text, fontSize: 64, fontWeight: '300' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
+  // Row-based flex layout: keys size themselves to any screen width.
+  pad: { gap: GAP },
+  row: { flexDirection: 'row', gap: GAP },
   key: {
-    width: `${(100 - 3 * 2) / 4}%`,
-    aspectRatio: 1.15,
+    flex: 1,
+    height: 60,
     borderRadius: radius.lg,
     backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
@@ -169,7 +177,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: 'transparent',
   },
-  keyWide: { width: `${(100 - 3 * 2) / 4 * 2 + 2}%`, aspectRatio: undefined },
+  keyWide: { flex: 2 },
   keyOp: { backgroundColor: colors.primary },
   keyOpActive: { borderColor: colors.primaryText },
   keyFn: { backgroundColor: colors.surface },

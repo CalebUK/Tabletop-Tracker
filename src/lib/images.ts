@@ -21,23 +21,26 @@ async function persist(uri: string): Promise<string> {
   return dest;
 }
 
-export async function pickFromLibrary(): Promise<string | null> {
+// allowsEditing crops to a square (good for game covers). Pass edit=false for
+// full-frame snaps (loan proof, in-progress board photos) so the camera just
+// confirms the shot instead of opening the crop editor.
+export async function pickFromLibrary(edit = true): Promise<string | null> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) return null;
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    allowsEditing: true,
+    allowsEditing: edit,
     quality: 0.7,
   });
   if (result.canceled || !result.assets?.[0]) return null;
   return persist(result.assets[0].uri);
 }
 
-export async function takePhoto(): Promise<string | null> {
+export async function takePhoto(edit = true): Promise<string | null> {
   const perm = await ImagePicker.requestCameraPermissionsAsync();
   if (!perm.granted) return null;
   const result = await ImagePicker.launchCameraAsync({
-    allowsEditing: true,
+    allowsEditing: edit,
     quality: 0.7,
   });
   if (result.canceled || !result.assets?.[0]) return null;
