@@ -3,6 +3,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -57,6 +58,7 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
   const [focused, setFocused] = useState<number | null>(null);
   const [status, setStatus] = useState<PlayStatus>('completed');
   const [photos, setPhotos] = useState<string[]>([]);
+  const [viewPhoto, setViewPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     navigation.setOptions({ title: playId ? 'Edit Play' : 'Log Play' });
@@ -167,14 +169,14 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
       {
         text: '📸 Take photo',
         onPress: async () => {
-          const uri = await takePhoto(false);
+          const uri = await takePhoto();
           if (uri) setPhotos((ps) => [...ps, uri]);
         },
       },
       {
         text: '🖼 Choose from library',
         onPress: async () => {
-          const uri = await pickFromLibrary(false);
+          const uri = await pickFromLibrary();
           if (uri) setPhotos((ps) => [...ps, uri]);
         },
       },
@@ -416,7 +418,9 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
               <View style={styles.photoRow}>
                 {photos.map((uri) => (
                   <View key={uri} style={styles.photoThumb}>
-                    <Image source={{ uri }} style={styles.photoImg} />
+                    <Pressable onPress={() => setViewPhoto(uri)}>
+                      <Image source={{ uri }} style={styles.photoImg} />
+                    </Pressable>
                     <Pressable style={styles.photoRemove} onPress={() => removeBoardPhoto(uri)} hitSlop={6}>
                       <Text style={styles.photoRemoveText}>✕</Text>
                     </Pressable>
@@ -450,6 +454,13 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal visible={!!viewPhoto} transparent animationType="fade" onRequestClose={() => setViewPhoto(null)}>
+        <Pressable style={styles.viewerBackdrop} onPress={() => setViewPhoto(null)}>
+          {viewPhoto && <Image source={{ uri: viewPhoto }} style={styles.viewerImg} resizeMode="contain" />}
+          <Text style={styles.viewerHint}>Tap to close</Text>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -497,6 +508,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   photoRemoveText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  viewerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  viewerImg: { width: '100%', height: '85%' },
+  viewerHint: { color: colors.textMuted, fontSize: 13, marginTop: spacing.md },
   photoAdd: {
     width: 80,
     height: 80,
