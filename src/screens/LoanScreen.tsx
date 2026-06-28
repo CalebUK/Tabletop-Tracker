@@ -3,6 +3,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -32,6 +33,7 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
   const [allLocations, setAllLocations] = useState<string[]>([]);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [originalPhoto, setOriginalPhoto] = useState<string | null>(null);
+  const [viewPhoto, setViewPhoto] = useState(false);
 
   useEffect(() => {
     getAllLocations().then(setAllLocations).catch(() => {});
@@ -128,13 +130,20 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
         />
 
         <Text style={[styles.label, { marginTop: spacing.lg }]}>Proof photo (optional)</Text>
-        <Pressable style={styles.photoBox} onPress={addProofPhoto}>
-          {photoUri ? (
-            <Image source={{ uri: photoUri }} style={styles.photo} />
-          ) : (
+        {photoUri ? (
+          <>
+            <Pressable style={styles.photoBox} onPress={() => setViewPhoto(true)}>
+              <Image source={{ uri: photoUri }} style={styles.photo} />
+            </Pressable>
+            <Pressable onPress={addProofPhoto} hitSlop={6}>
+              <Text style={styles.changePhoto}>Tap photo to view · change or remove</Text>
+            </Pressable>
+          </>
+        ) : (
+          <Pressable style={styles.photoBox} onPress={addProofPhoto}>
             <Text style={styles.photoHint}>📷  Tap to add a photo (deleted when returned)</Text>
-          )}
-        </Pressable>
+          </Pressable>
+        )}
 
         <Pressable style={styles.saveBtn} onPress={onLoan}>
           <Text style={styles.saveBtnText}>
@@ -174,6 +183,13 @@ export default function LoanScreen({ route, navigation }: RootStackProps<'Loan'>
         ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal visible={viewPhoto && !!photoUri} transparent animationType="fade" onRequestClose={() => setViewPhoto(false)}>
+        <Pressable style={styles.viewerBackdrop} onPress={() => setViewPhoto(false)}>
+          {photoUri && <Image source={{ uri: photoUri }} style={styles.viewerImg} resizeMode="contain" />}
+          <Text style={styles.viewerHint}>Tap to close</Text>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -231,6 +247,16 @@ const styles = StyleSheet.create({
   },
   photo: { width: '100%', height: 200 },
   photoHint: { color: colors.placeholder, fontSize: 14, padding: spacing.md, textAlign: 'center' },
+  changePhoto: { color: colors.primary, fontSize: 13, fontWeight: '600', marginTop: 6, textAlign: 'center' },
+  viewerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  viewerImg: { width: '100%', height: '85%' },
+  viewerHint: { color: colors.textMuted, fontSize: 13, marginTop: spacing.md },
   returnBox: { marginTop: spacing.lg, gap: 6 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {
