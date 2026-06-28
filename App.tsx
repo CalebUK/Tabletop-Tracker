@@ -21,6 +21,7 @@ import LibraryScreen from './src/screens/LibraryScreen';
 import FriendLibraryScreen from './src/screens/FriendLibraryScreen';
 import BrowseAllScreen from './src/screens/BrowseAllScreen';
 import { OnboardingProvider } from './src/components/OnboardingProvider';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import GameDetailScreen from './src/screens/GameDetailScreen';
 import EditGameScreen from './src/screens/EditGameScreen';
 import LogPlayScreen from './src/screens/LogPlayScreen';
@@ -106,6 +107,7 @@ function Tabs() {
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <SafeAreaProvider>
       <OnboardingProvider>
       <NavigationContainer theme={navTheme} linking={linking}>
@@ -140,5 +142,6 @@ export default function App() {
       </NavigationContainer>
       </OnboardingProvider>
     </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
