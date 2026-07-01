@@ -165,7 +165,10 @@ export default function LogPlayScreen({ route, navigation }: RootStackProps<'Log
   }
 
   function addBoardPhoto() {
-    Alert.alert('Board photo', 'Add a photo of the board so you can re-set up later.', [
+    Alert.alert(
+      'Board photo',
+      'Snap the board so you can re-set up later.\n\nAfter you take the photo, you can crop it — tap “Crop” (or the ✓) to save it.',
+      [
       {
         text: '📸 Take photo',
         onPress: async () => {
