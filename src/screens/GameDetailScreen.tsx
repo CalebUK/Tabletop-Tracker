@@ -4,7 +4,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { RootStackProps } from '../navigation';
 import { getGame, toggleFavorite, getLoanHistory, getExpansions, getStandaloneExpansions, setWishlist } from '../db/games';
 import { getFriendOwnersByGame } from '../lib/onlineLibrary';
-import { getPlaysForGame, deletePlay } from '../db/plays';
+import { getPlaysForGame, deletePlay, getPlayPhotoUris } from '../db/plays';
+import { deleteImage } from '../lib/images';
 import { Expansion, Game, LoanRecord, Play } from '../types';
 import { colors, radius, spacing } from '../theme';
 import { isoToUk } from '../lib/dates';
@@ -133,9 +134,19 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
   }
 
   function onDeletePlay(playId: number) {
-    Alert.alert('Delete this play?', 'This cannot be undone.', [
+    Alert.alert('Delete this log?', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deletePlay(playId).then(load) },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          // Clean up any board-photo files (in-progress games) before deleting.
+          const uris = await getPlayPhotoUris(playId).catch(() => []);
+          await Promise.all(uris.map((u) => deleteImage(u).catch(() => {})));
+          await deletePlay(playId);
+          load();
+        },
+      },
     ]);
   }
 
@@ -337,25 +348,26 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
       {!game.baseGameId && (
       <View style={styles.section}>
         <View style={styles.playsHeader}>
-          <Text style={styles.sectionTitle}>Plays ({plays.length})</Text>
+          <Text style={styles.sectionTitle}>Game Logs ({plays.length})</Text>
           <Pressable onPress={() => navigation.navigate('LogPlay', { gameId })}>
             <Text style={styles.editLink}>+ Log play</Text>
           </Pressable>
         </View>
 
         {plays.length === 0 ? (
-          <Text style={styles.bodyMuted}>No plays logged yet.</Text>
+          <Text style={styles.bodyMuted}>No game logs yet.</Text>
         ) : (
           plays.map((p) => (
             <Pressable
               key={p.id}
-              style={styles.playCard}
+              style={[styles.playCard, p.status === 'saved' && styles.playCardSaved]}
               onPress={() => navigation.navigate('LogPlay', { gameId, playId: p.id })}
               onLongPress={() => onDeletePlay(p.id)}
             >
               <Text style={styles.playDate}>
                 {isoToUk(p.playedAt)}
                 {p.status === 'dnf' ? '  🏳️ DNF' : ''}
+                {p.status === 'saved' ? '  ⏸ In progress' : ''}
               </Text>
               {p.players.length > 0 && (
                 <Text style={styles.playPlayers}>
@@ -367,12 +379,15 @@ export default function GameDetailScreen({ route, navigation }: RootStackProps<'
               {p.expansions.length > 0 && (
                 <Text style={styles.bodyMuted}>🧩 {p.expansions.join(', ')}</Text>
               )}
+              {p.status === 'saved' && (
+                <Text style={styles.savedHint}>Tap to resume this game</Text>
+              )}
               {p.notes ? <Text style={styles.bodyMuted}>{p.notes}</Text> : null}
             </Pressable>
           ))
         )}
         {plays.length > 0 && (
-          <Text style={styles.hint}>Tap a play to edit · long-press to delete.</Text>
+          <Text style={styles.hint}>Tap a log to edit · long-press to delete.</Text>
         )}
       </View>
       )}
@@ -488,8 +503,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     gap: 3,
   },
+  playCardSaved: { borderColor: colors.star, backgroundColor: colors.surfaceAlt },
   playDate: { color: colors.text, fontSize: 14, fontWeight: '600' },
   playPlayers: { color: colors.text, fontSize: 14 },
+  savedHint: { color: colors.star, fontSize: 12, fontWeight: '600' },
   loanRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

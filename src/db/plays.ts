@@ -84,9 +84,9 @@ async function writePlayChildren(
 // All plays for a game, newest first, with players and used expansions.
 export async function getPlaysForGame(gameId: number): Promise<Play[]> {
   const db = await getDb();
-  // Saved-for-later games live in "Unfinished games", not the normal history.
+  // Include saved-for-later (in-progress) games, surfaced at the top of the log.
   const playRows = await db.getAllAsync<PlayRow>(
-    "SELECT * FROM plays WHERE game_id = ? AND status != 'saved' ORDER BY played_at DESC, id DESC",
+    "SELECT * FROM plays WHERE game_id = ? ORDER BY (status = 'saved') DESC, played_at DESC, id DESC",
     [gameId]
   );
   if (playRows.length === 0) return [];
