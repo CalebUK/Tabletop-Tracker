@@ -823,6 +823,9 @@ export default function EditGameScreen({ route, navigation }: RootStackProps<'Ed
         <Pressable style={styles.modalBackdrop} onPress={() => setPhotoMenu(false)}>
           <Pressable style={styles.sheet} onPress={() => {}}>
             <Text style={styles.sheetTitle}>Photo</Text>
+            <Text style={styles.sheetHint}>
+              After you take the photo, crop it to a square — tap “Crop” (or the ✓) to save it.
+            </Text>
             <Pressable style={styles.sheetItem} onPress={doTakePhoto}>
               <Text style={styles.sheetItemText}>📸  Take Photo</Text>
             </Pressable>
@@ -969,6 +972,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   sheetTitle: { color: colors.textMuted, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs },
+  sheetHint: { color: colors.placeholder, fontSize: 12, lineHeight: 17, marginBottom: spacing.sm },
   sheetItem: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.md,
