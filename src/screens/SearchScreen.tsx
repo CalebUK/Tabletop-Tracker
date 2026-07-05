@@ -3,6 +3,7 @@ import {
   Animated,
   Easing,
   FlatList,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -16,9 +17,22 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation';
 import { searchGames, getAllTags, getAllCategories } from '../db/games';
-import { Game, SearchFilters } from '../types';
+import { fetchAllGames } from '../lib/onlineLibrary';
+import { getFriendLibraries, libraryLabel, FriendLibrary } from '../db/library';
+import { AggregatedGame, Game, SearchFilters } from '../types';
 import { colors, radius, spacing } from '../theme';
 import GameCard from '../components/GameCard';
+
+// A friend-library game as shown in results, with who owns it.
+interface LibResult {
+  name: string;
+  minPlayers: number | null;
+  maxPlayers: number | null;
+  playTimeMin: number | null;
+  image: string | null;
+  rating: number | null;
+  owners: string[];
+}
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -74,6 +88,15 @@ export default function SearchScreen() {
   const [labelMenu, setLabelMenu] = useState(false);
   // Whether the detailed criteria are expanded (collapse for a cleaner results view).
   const [criteriaOpen, setCriteriaOpen] = useState(true);
+  // Search scope: 'collection' (yours), 'friends' (all friends' games), or a
+  // friend library's share code.
+  const [scope, setScope] = useState<string>('collection');
+  const [scopeMenu, setScopeMenu] = useState(false);
+  const [friendLibs, setFriendLibs] = useState<FriendLibrary[]>([]);
+  const [libGames, setLibGames] = useState<AggregatedGame[] | null>(null);
+  const [libLoading, setLibLoading] = useState(false);
+
+  const isLibrary = scope !== 'collection';
 
   // "Feeling lucky" dice-roll animation state.
   const [rolling, setRolling] = useState(false);
@@ -91,12 +114,75 @@ export default function SearchScreen() {
     useCallback(() => {
       getAllTags().then(setAllTags);
       getAllCategories().then(setAllCategories);
+      getFriendLibraries().then(setFriendLibs).catch(() => {});
       searchGames(filters).then(setResults).catch((e) => console.warn('search', e));
     }, [filters])
   );
 
+  // Fetch friends' games once, the first time a library scope is used.
+  useEffect(() => {
+    if (isLibrary && libGames === null && !libLoading) {
+      setLibLoading(true);
+      fetchAllGames(false)
+        .then(setLibGames)
+        .catch(() => setLibGames([]))
+        .finally(() => setLibLoading(false));
+    }
+  }, [isLibrary, libGames, libLoading]);
+
   function patch(p: Partial<SearchFilters>) {
     setFilters((f) => ({ ...f, ...p }));
+  }
+
+  // Label for the current scope (for the dropdown button + result header).
+  function scopeLabel(s: string): string {
+    if (s === 'collection') return 'My collection';
+    if (s === 'friends') return "All friends' games";
+    const f = friendLibs.find((l) => l.code === s);
+    return f ? libraryLabel(f) : 'Library';
+  }
+
+  // Turn the fetched friends' games into result rows for the current scope,
+  // then apply the filters that library data can support.
+  function libraryResults(): LibResult[] {
+    if (!libGames) return [];
+    const wantOwner = scope === 'friends' ? null : scopeLabel(scope);
+    const rows: LibResult[] = [];
+    for (const g of libGames) {
+      const owners = wantOwner ? g.owners.filter((o) => o.owner === wantOwner) : g.owners;
+      if (owners.length === 0) continue; // not in this specific library
+      const rating = wantOwner
+        ? owners[0].rating
+        : g.owners.reduce<number | null>((m, o) => (o.rating != null && (m == null || o.rating > m) ? o.rating : m), null);
+      rows.push({
+        name: g.name,
+        minPlayers: g.minPlayers,
+        maxPlayers: g.maxPlayers,
+        playTimeMin: g.playTimeMin,
+        image: g.image,
+        rating,
+        owners: owners.map((o) => o.owner),
+      });
+    }
+
+    const q = filters.text.trim().toLowerCase();
+    return rows
+      .filter((g) => {
+        if (q && !g.name.toLowerCase().includes(q)) return false;
+        if (filters.playerCount != null) {
+          const pc = filters.playerCount;
+          if (pc >= 7) {
+            if (!(g.maxPlayers != null && g.maxPlayers >= pc)) return false;
+          } else if (!(g.minPlayers != null && g.maxPlayers != null && g.minPlayers <= pc && g.maxPlayers >= pc)) {
+            return false;
+          }
+        }
+        if (filters.maxPlayTime != null && !(g.playTimeMin != null && g.playTimeMin <= filters.maxPlayTime)) return false;
+        if (filters.minPlayTime != null && !(g.playTimeMin != null && g.playTimeMin >= filters.minPlayTime)) return false;
+        if (filters.minRating != null && !(g.rating != null && g.rating >= filters.minRating)) return false;
+        return true;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   // Pick a random matching game — avoiding the previous pick — then play a
@@ -150,34 +236,88 @@ export default function SearchScreen() {
     filters.ageBands.length > 0 || filters.teachRatings.length > 0 || filters.category != null ||
     filters.types.length > 0;
 
-  // How many of the collapsible criteria are set (shown on the header when collapsed).
-  const criteriaCount =
-    (filters.playerCount != null ? 1 : 0) +
-    (filters.maxPlayTime != null || filters.minPlayTime != null ? 1 : 0) +
-    (filters.teachRatings.length ? 1 : 0) +
-    (filters.types.length ? 1 : 0) +
-    (filters.ageBands.length ? 1 : 0) +
-    (filters.minRating != null ? 1 : 0) +
-    (filters.category != null ? 1 : 0) +
-    (filters.tags.length ? 1 : 0);
+  // How many of the collapsible criteria are set (shown on the header when
+  // collapsed). Library scopes only count the filters that apply to them.
+  const criteriaCount = isLibrary
+    ? (filters.playerCount != null ? 1 : 0) +
+      (filters.maxPlayTime != null || filters.minPlayTime != null ? 1 : 0) +
+      (filters.minRating != null ? 1 : 0)
+    : (filters.playerCount != null ? 1 : 0) +
+      (filters.maxPlayTime != null || filters.minPlayTime != null ? 1 : 0) +
+      (filters.teachRatings.length ? 1 : 0) +
+      (filters.types.length ? 1 : 0) +
+      (filters.ageBands.length ? 1 : 0) +
+      (filters.minRating != null ? 1 : 0) +
+      (filters.category != null ? 1 : 0) +
+      (filters.tags.length ? 1 : 0);
+
+  const libFiltered = isLibrary ? libraryResults() : [];
+  const resultCount = isLibrary ? libFiltered.length : results.length;
+
+  function renderLibRow(g: LibResult) {
+    const meta = [
+      g.minPlayers && g.maxPlayers
+        ? g.minPlayers === g.maxPlayers
+          ? `${g.minPlayers}p`
+          : `${g.minPlayers}–${g.maxPlayers}p`
+        : null,
+      g.playTimeMin ? `${g.playTimeMin} min` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+    return (
+      <View style={styles.libRow}>
+        {g.image ? (
+          <Image source={{ uri: g.image }} style={styles.libThumb} />
+        ) : (
+          <View style={[styles.libThumb, styles.libPlaceholder]}>
+            <Text style={styles.libEmoji}>🎲</Text>
+          </View>
+        )}
+        <View style={styles.flex1}>
+          <Text style={styles.libName} numberOfLines={1}>{g.name}</Text>
+          {scope === 'friends' && g.owners.length > 0 && (
+            <Text style={styles.libOwners} numberOfLines={1}>👥 {g.owners.join(', ')}</Text>
+          )}
+          {meta ? <Text style={styles.libMeta}>{meta}</Text> : null}
+        </View>
+        {g.rating != null && g.rating > 0 ? (
+          <Text style={styles.libRating}>★ {Number.isInteger(g.rating) ? g.rating : g.rating.toFixed(1)}</Text>
+        ) : null}
+      </View>
+    );
+  }
 
   const header = (
     <View style={styles.filters}>
       <Text style={styles.heading}>Find a Game</Text>
 
+      <Pressable style={styles.scopeBtn} onPress={() => setScopeMenu(true)}>
+        <Text style={styles.scopeLabel} numberOfLines={1}>🔎  {scopeLabel(scope)}</Text>
+        <Text style={styles.scopeCaret}>▾</Text>
+      </Pressable>
+      {isLibrary && (
+        <Text style={styles.scopeNote}>
+          Searching friends' shared games — not your own collection.
+          {scope === 'friends' ? ' Each result shows who owns it.' : ''}
+        </Text>
+      )}
+
       <TextInput
         style={styles.search}
-        placeholder="Search name, notes, designer…"
+        placeholder={isLibrary ? 'Search their games…' : 'Search name, notes, designer…'}
         placeholderTextColor={colors.placeholder}
         value={filters.text}
         onChangeText={(v) => patch({ text: v })}
       />
 
-      <View style={styles.toggleRow}>
-        <Toggle label="⭐ Favorites" on={filters.favoritesOnly} onPress={() => patch({ favoritesOnly: !filters.favoritesOnly })} />
-        <Toggle label="🆕 Unplayed" on={filters.unplayedOnly} onPress={() => patch({ unplayedOnly: !filters.unplayedOnly })} />
-        <Toggle label="🏠 At home" on={filters.atHomeOnly} onPress={() => patch({ atHomeOnly: !filters.atHomeOnly })} />
-      </View>
+      {!isLibrary && (
+        <View style={styles.toggleRow}>
+          <Toggle label="⭐ Favorites" on={filters.favoritesOnly} onPress={() => patch({ favoritesOnly: !filters.favoritesOnly })} />
+          <Toggle label="🆕 Unplayed" on={filters.unplayedOnly} onPress={() => patch({ unplayedOnly: !filters.unplayedOnly })} />
+          <Toggle label="🏠 At home" on={filters.atHomeOnly} onPress={() => patch({ atHomeOnly: !filters.atHomeOnly })} />
+        </View>
+      )}
 
       <Pressable style={styles.criteriaHeader} onPress={() => setCriteriaOpen((o) => !o)}>
         <Text style={styles.criteriaTitle}>Search criteria</Text>
@@ -216,6 +356,8 @@ export default function SearchScreen() {
         ))}
       </View>
 
+      {!isLibrary && (
+        <>
       <Text style={styles.groupLabel}>Teachability</Text>
       <View style={styles.chipWrap}>
         <Toggle label="Any" on={filters.teachRatings.length === 0} onPress={() => patch({ teachRatings: [] })} />
@@ -281,8 +423,10 @@ export default function SearchScreen() {
           );
         })}
       </View>
+        </>
+      )}
 
-      <Text style={styles.groupLabel}>My rating</Text>
+      <Text style={styles.groupLabel}>{isLibrary ? 'Rating' : 'My rating'}</Text>
       <View style={styles.chipWrap}>
         <Toggle label="Any" on={filters.minRating == null} onPress={() => patch({ minRating: null })} />
         <Toggle label="3+" on={filters.minRating === 3} onPress={() => patch({ minRating: 3 })} />
@@ -290,27 +434,31 @@ export default function SearchScreen() {
         <Toggle label="9+" on={filters.minRating === 9} onPress={() => patch({ minRating: 9 })} />
       </View>
 
-      <View style={styles.dropRow}>
-        <View style={styles.flex1}>
-          <Text style={styles.groupLabel}>Category</Text>
-          <Pressable style={styles.dropdown} onPress={() => setCategoryMenu(true)}>
-            <Text style={styles.dropdownText} numberOfLines={1}>{filters.category ?? 'Any'}</Text>
-            <Text style={styles.dropdownCaret}>▾</Text>
-          </Pressable>
+      {!isLibrary && (
+        <View style={styles.dropRow}>
+          <View style={styles.flex1}>
+            <Text style={styles.groupLabel}>Category</Text>
+            <Pressable style={styles.dropdown} onPress={() => setCategoryMenu(true)}>
+              <Text style={styles.dropdownText} numberOfLines={1}>{filters.category ?? 'Any'}</Text>
+              <Text style={styles.dropdownCaret}>▾</Text>
+            </Pressable>
+          </View>
+          <View style={styles.flex1}>
+            <Text style={styles.groupLabel}>Tags</Text>
+            <Pressable style={styles.dropdown} onPress={() => setLabelMenu(true)}>
+              <Text style={styles.dropdownText} numberOfLines={1}>{filters.tags[0] ?? 'Any'}</Text>
+              <Text style={styles.dropdownCaret}>▾</Text>
+            </Pressable>
+          </View>
         </View>
-        <View style={styles.flex1}>
-          <Text style={styles.groupLabel}>Tags</Text>
-          <Pressable style={styles.dropdown} onPress={() => setLabelMenu(true)}>
-            <Text style={styles.dropdownText} numberOfLines={1}>{filters.tags[0] ?? 'Any'}</Text>
-            <Text style={styles.dropdownCaret}>▾</Text>
-          </Pressable>
-        </View>
-      </View>
+      )}
         </>
       )}
 
       <View style={styles.resultHeader}>
-        <Text style={styles.resultCount}>{results.length} result{results.length === 1 ? '' : 's'}</Text>
+        <Text style={styles.resultCount}>
+          {libLoading && isLibrary ? 'Loading…' : `${resultCount} result${resultCount === 1 ? '' : 's'}`}
+        </Text>
         {active ? (
           <Pressable onPress={() => setFilters(EMPTY_FILTERS)}>
             <Text style={styles.clear}>Clear all</Text>
@@ -318,7 +466,7 @@ export default function SearchScreen() {
         ) : null}
       </View>
 
-      {results.length > 0 && (
+      {!isLibrary && results.length > 0 && (
         <Pressable style={styles.luckyBtn} onPress={feelingLucky}>
           <Text style={styles.luckyText}>🎲 Feeling lucky</Text>
         </Pressable>
@@ -328,18 +476,31 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <FlatList
-        data={results}
-        keyExtractor={(g) => String(g.id)}
-        ListHeaderComponent={header}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <View style={styles.cardWrap}>
-            <GameCard game={item} onPress={() => navigation.navigate('GameDetail', { gameId: item.id })} />
-          </View>
-        )}
-        ListEmptyComponent={<Text style={styles.noResults}>No games match these filters.</Text>}
-      />
+      {isLibrary ? (
+        <FlatList
+          data={libFiltered}
+          keyExtractor={(g, i) => `${g.name}-${i}`}
+          ListHeaderComponent={header}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => renderLibRow(item)}
+          ListEmptyComponent={
+            libLoading ? null : <Text style={styles.noResults}>No games match — or no friends' libraries added yet.</Text>
+          }
+        />
+      ) : (
+        <FlatList
+          data={results}
+          keyExtractor={(g) => String(g.id)}
+          ListHeaderComponent={header}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => (
+            <View style={styles.cardWrap}>
+              <GameCard game={item} onPress={() => navigation.navigate('GameDetail', { gameId: item.id })} />
+            </View>
+          )}
+          ListEmptyComponent={<Text style={styles.noResults}>No games match these filters.</Text>}
+        />
+      )}
 
       <Modal visible={rolling} transparent animationType="fade">
         <View style={styles.rollOverlay}>
@@ -355,6 +516,39 @@ export default function SearchScreen() {
             {rollName}
           </Text>
         </View>
+      </Modal>
+
+      <Modal visible={scopeMenu} animationType="fade" transparent onRequestClose={() => setScopeMenu(false)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setScopeMenu(false)}>
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <Text style={styles.sheetTitle}>Search in</Text>
+            <ScrollView contentContainerStyle={{ gap: spacing.sm }}>
+              <CatItem
+                label="🎲 My collection"
+                active={scope === 'collection'}
+                onPress={() => { setScope('collection'); setScopeMenu(false); }}
+              />
+              <CatItem
+                label="🤝 All friends' games"
+                active={scope === 'friends'}
+                onPress={() => { setScope('friends'); setScopeMenu(false); }}
+              />
+              {friendLibs.map((f) => (
+                <CatItem
+                  key={f.code}
+                  label={libraryLabel(f)}
+                  active={scope === f.code}
+                  onPress={() => { setScope(f.code); setScopeMenu(false); }}
+                />
+              ))}
+              {friendLibs.length === 0 && (
+                <Text style={styles.sheetNote}>
+                  Add a friend's library code on the Library tab to search it here.
+                </Text>
+              )}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       <Modal visible={categoryMenu} animationType="fade" transparent onRequestClose={() => setCategoryMenu(false)}>
@@ -438,6 +632,39 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   toggleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
+  scopeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 11,
+  },
+  scopeLabel: { color: colors.text, fontSize: 15, fontWeight: '700', flexShrink: 1 },
+  scopeCaret: { color: colors.textMuted, fontSize: 14 },
+  scopeNote: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginTop: 2 },
+  sheetNote: { color: colors.textMuted, fontSize: 13, lineHeight: 19, paddingVertical: spacing.sm },
+  libRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  libThumb: { width: 48, height: 48, borderRadius: radius.sm, backgroundColor: colors.surfaceAlt },
+  libPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  libEmoji: { fontSize: 22 },
+  libName: { color: colors.text, fontSize: 15, fontWeight: '600' },
+  libOwners: { color: colors.success, fontSize: 12, fontWeight: '600', marginTop: 2 },
+  libMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  libRating: { color: colors.star, fontSize: 14, fontWeight: '700' },
   criteriaHeader: {
     flexDirection: 'row',
     alignItems: 'center',
