@@ -3,6 +3,8 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   Share,
   StyleSheet,
@@ -237,25 +239,32 @@ export default function LibraryScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <FlatList
-        data={friends}
-        keyExtractor={(f) => f.code}
-        ListHeaderComponent={header}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.friendRow}
-            onPress={() => navigation.navigate('FriendLibrary', { code: item.code, name: libraryLabel(item) })}
-            onLongPress={() => onRemoveFriend(item.code)}
-          >
-            <View style={styles.flex1}>
-              <Text style={styles.friendName}>{libraryLabel(item)}</Text>
-              <Text style={styles.friendCode}>{item.code}</Text>
-            </View>
-            <Text style={styles.friendChevron}>›</Text>
-          </Pressable>
-        )}
-      />
+      <KeyboardAvoidingView
+        style={styles.flex1}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <FlatList
+          data={friends}
+          keyExtractor={(f) => f.code}
+          ListHeaderComponent={header}
+          contentContainerStyle={styles.list}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          renderItem={({ item }) => (
+            <Pressable
+              style={styles.friendRow}
+              onPress={() => navigation.navigate('FriendLibrary', { code: item.code, name: libraryLabel(item) })}
+              onLongPress={() => onRemoveFriend(item.code)}
+            >
+              <View style={styles.flex1}>
+                <Text style={styles.friendName}>{libraryLabel(item)}</Text>
+                <Text style={styles.friendCode}>{item.code}</Text>
+              </View>
+              <Text style={styles.friendChevron}>›</Text>
+            </Pressable>
+          )}
+        />
+      </KeyboardAvoidingView>
 
       {busy && (
         <View style={styles.overlay}>
