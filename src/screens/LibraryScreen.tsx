@@ -22,6 +22,7 @@ import {
   getFriendLibraries,
   saveFriendLibrary,
   removeFriendLibrary,
+  libraryLabel,
   FriendLibrary,
 } from '../db/library';
 import { publishLibrary, deleteLibrary, fetchLibrary, getLibraryViews } from '../lib/onlineLibrary';
@@ -244,11 +245,11 @@ export default function LibraryScreen() {
         renderItem={({ item }) => (
           <Pressable
             style={styles.friendRow}
-            onPress={() => navigation.navigate('FriendLibrary', { code: item.code, name: item.name ?? undefined })}
+            onPress={() => navigation.navigate('FriendLibrary', { code: item.code, name: libraryLabel(item) })}
             onLongPress={() => onRemoveFriend(item.code)}
           >
             <View style={styles.flex1}>
-              <Text style={styles.friendName}>{item.name ?? 'Library'}</Text>
+              <Text style={styles.friendName}>{libraryLabel(item)}</Text>
               <Text style={styles.friendCode}>{item.code}</Text>
             </View>
             <Text style={styles.friendChevron}>›</Text>

@@ -153,6 +153,7 @@ CREATE TABLE IF NOT EXISTS meta (
 CREATE TABLE IF NOT EXISTS friend_libraries (
   code TEXT PRIMARY KEY,
   name TEXT,
+  nickname TEXT,
   added_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -258,6 +259,12 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   const groupCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(groups)');
   if (!groupCols.some((c) => c.name === 'autofill')) {
     await db.execAsync('ALTER TABLE groups ADD COLUMN autofill INTEGER NOT NULL DEFAULT 0');
+  }
+
+  // friend_libraries.nickname — a user-set label for a linked library.
+  const flCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(friend_libraries)');
+  if (!flCols.some((c) => c.name === 'nickname')) {
+    await db.execAsync('ALTER TABLE friend_libraries ADD COLUMN nickname TEXT');
   }
 
   // plays: make game_id nullable + add game_name/group_id (for not-owned games

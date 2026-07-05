@@ -1,9 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackProps } from '../navigation';
 import { fetchLibrary } from '../lib/onlineLibrary';
-import { saveFriendLibrary, removeFriendLibrary } from '../db/library';
+import {
+  saveFriendLibrary,
+  removeFriendLibrary,
+  getFriendLibraries,
+  setFriendLibraryNickname,
+} from '../db/library';
 import { getGamesForLibrary } from '../db/games';
 import { LibraryGame, SharedLibrary } from '../types';
 import { colors, radius, spacing } from '../theme';
@@ -28,6 +33,10 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
   const [query, setQuery] = useState('');
   const [hideOwned, setHideOwned] = useState(false);
   const [ownedNames, setOwnedNames] = useState<Set<string>>(new Set());
+  const [nickname, setNickname] = useState<string | null>(null);
+  const [nickModal, setNickModal] = useState(false);
+  const [nickInput, setNickInput] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'rating'>('name');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -46,18 +55,39 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
   }, [code]);
 
   useEffect(() => {
-    navigation.setOptions({ title: name ?? 'Library' });
     load();
+    // Load this library's nickname (if the user has set one).
+    getFriendLibraries()
+      .then((libs) => setNickname(libs.find((l) => l.code === code)?.nickname ?? null))
+      .catch(() => {});
     // Names of games I own, to optionally hide them from a friend's list.
     getGamesForLibrary()
       .then((mine) => setOwnedNames(new Set(mine.map((g) => g.name.trim().toLowerCase()))))
       .catch(() => {});
   }, [code]);
 
+  // Nickname (if set) wins over the library's own name for the display label.
+  const label = nickname?.trim() || lib?.name || name || 'Library';
+
+  useEffect(() => {
+    navigation.setOptions({ title: label });
+  }, [label]);
+
+  function openNickname() {
+    setNickInput(nickname ?? '');
+    setNickModal(true);
+  }
+  async function saveNickname() {
+    const value = nickInput.trim();
+    await setFriendLibraryNickname(code, value);
+    setNickname(value || null);
+    setNickModal(false);
+  }
+
   function onRemove() {
     Alert.alert(
       'Remove this library?',
-      `${name ?? lib?.name ?? 'This library'} will be removed from your saved libraries.`,
+      `${label} will be removed from your saved libraries.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -74,7 +104,12 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
   const q = query.trim().toLowerCase();
   const filtered = games
     .filter((g) => (hideOwned ? !ownedNames.has(g.name.trim().toLowerCase()) : true))
-    .filter((g) => (q ? g.name.toLowerCase().includes(q) : true));
+    .filter((g) => (q ? g.name.toLowerCase().includes(q) : true))
+    .sort((a, b) =>
+      sortBy === 'rating'
+        ? (b.rating ?? -1) - (a.rating ?? -1) || a.name.localeCompare(b.name)
+        : a.name.localeCompare(b.name)
+    );
 
   // Only show the full-screen spinner on the first load. Once we have the
   // library, a refresh (↺ or re-entering) updates it quietly in place.
@@ -105,7 +140,12 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           <View>
-            <Text style={styles.title}>{lib?.name}</Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.title} numberOfLines={1}>{label}</Text>
+              <Pressable onPress={openNickname} hitSlop={8}>
+                <Text style={styles.nickBtn}>✏️ Nickname</Text>
+              </Pressable>
+            </View>
             <Text style={styles.sub}>
               {games.length} game{games.length === 1 ? '' : 's'} · code {lib?.code}
             </Text>
@@ -119,6 +159,14 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
               />
               <Pressable style={styles.refresh} onPress={load}>
                 <Text style={styles.refreshText}>↺</Text>
+              </Pressable>
+            </View>
+            <View style={styles.sortRow}>
+              <Pressable style={[styles.sortChip, sortBy === 'name' && styles.sortChipOn]} onPress={() => setSortBy('name')}>
+                <Text style={[styles.sortText, sortBy === 'name' && styles.sortTextOn]}>A–Z</Text>
+              </Pressable>
+              <Pressable style={[styles.sortChip, sortBy === 'rating' && styles.sortChipOn]} onPress={() => setSortBy('rating')}>
+                <Text style={[styles.sortText, sortBy === 'rating' && styles.sortTextOn]}>Rating</Text>
               </Pressable>
             </View>
             {ownedCount > 0 && (
@@ -159,6 +207,31 @@ export default function FriendLibraryScreen({ route, navigation }: RootStackProp
           </Pressable>
         }
       />
+
+      <Modal visible={nickModal} transparent animationType="fade" onRequestClose={() => setNickModal(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setNickModal(false)}>
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <Text style={styles.sheetTitle}>Library nickname</Text>
+            <Text style={styles.sheetHint}>
+              A label just for you — e.g. “Dave's shelf”. Shown here, on the bookshelf and wishlist.
+              Leave blank to use the library's own name.
+            </Text>
+            <TextInput
+              style={styles.nickInput}
+              value={nickInput}
+              onChangeText={setNickInput}
+              placeholder={lib?.name ?? 'Nickname'}
+              placeholderTextColor={colors.placeholder}
+              autoFocus
+              onSubmitEditing={saveNickname}
+              returnKeyType="done"
+            />
+            <Pressable style={styles.nickSave} onPress={saveNickname}>
+              <Text style={styles.nickSaveText}>Save</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -167,9 +240,55 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   list: { padding: spacing.lg, paddingBottom: 60 },
-  title: { color: colors.text, fontSize: 22, fontWeight: '700' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  title: { color: colors.text, fontSize: 22, fontWeight: '700', flexShrink: 1 },
+  nickBtn: { color: colors.primary, fontSize: 13, fontWeight: '600' },
   sub: { color: colors.textMuted, fontSize: 13, marginTop: 2, marginBottom: spacing.md },
   toolRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+  sortRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+  sortChip: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  sortChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  sortText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+  sortTextOn: { color: colors.primaryText },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
+  sheet: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  sheetTitle: { color: colors.text, fontSize: 18, fontWeight: '700' },
+  sheetHint: { color: colors.textMuted, fontSize: 13, lineHeight: 19 },
+  nickInput: {
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    color: colors.text,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 11,
+    fontSize: 15,
+    marginTop: spacing.xs,
+  },
+  nickSave: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  nickSaveText: { color: colors.primaryText, fontSize: 15, fontWeight: '700' },
   flex1: { flex: 1 },
   search: {
     backgroundColor: colors.surface,

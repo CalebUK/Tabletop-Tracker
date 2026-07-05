@@ -104,7 +104,8 @@ async function fetchFriendSources(): Promise<FriendSource[]> {
   const sources: FriendSource[] = [];
   friends.forEach((f, i) => {
     const lib = fetched[i];
-    if (lib) sources.push({ owner: f.name || lib.name || f.code, games: lib.games });
+    // Prefer the user's nickname, then the library's own name, then the code.
+    if (lib) sources.push({ owner: f.nickname || f.name || lib.name || f.code, games: lib.games });
   });
   return sources;
 }
