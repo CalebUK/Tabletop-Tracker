@@ -62,6 +62,17 @@ export default function CalculatorScreen() {
     setOverwrite(true);
   }
 
+  function backspace() {
+    if (isError) {
+      clearAll();
+      return;
+    }
+    if (overwrite) return; // showing a result/operator — nothing being typed
+    setDisplay((s) =>
+      s.length > 1 && !(s.length === 2 && s.startsWith('-')) ? s.slice(0, -1) : '0'
+    );
+  }
+
   function chooseOp(next: Op) {
     if (isError) return;
     const v = parseFloat(display);
@@ -88,7 +99,7 @@ export default function CalculatorScreen() {
 
   const KEYS: { label: string; kind?: 'op' | 'fn' | 'eq'; onPress: () => void; wide?: boolean; active?: boolean }[] = [
     { label: 'C', kind: 'fn', onPress: clearAll },
-    { label: '±', kind: 'fn', onPress: toggleSign },
+    { label: '⌫', kind: 'fn', onPress: backspace },
     { label: '%', kind: 'fn', onPress: percent },
     { label: '÷', kind: 'op', onPress: () => chooseOp('÷'), active: op === '÷' && overwrite },
     { label: '7', onPress: () => inputDigit('7') },
@@ -103,7 +114,8 @@ export default function CalculatorScreen() {
     { label: '2', onPress: () => inputDigit('2') },
     { label: '3', onPress: () => inputDigit('3') },
     { label: '+', kind: 'op', onPress: () => chooseOp('+'), active: op === '+' && overwrite },
-    { label: '0', onPress: () => inputDigit('0'), wide: true },
+    { label: '±', kind: 'fn', onPress: toggleSign },
+    { label: '0', onPress: () => inputDigit('0') },
     { label: '.', onPress: inputDot },
     { label: '=', kind: 'eq', onPress: equals },
   ];
