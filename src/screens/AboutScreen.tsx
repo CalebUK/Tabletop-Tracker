@@ -7,6 +7,9 @@ import { colors, radius, spacing } from '../theme';
 
 const PRIVACY_URL = 'https://calebuk.github.io/Tabletop-Tracker/privacy/';
 const TERMS_URL = 'https://calebuk.github.io/Tabletop-Tracker/terms/';
+const COFFEE_URL = 'https://buymeacoffee.com/calebhill';
+const CONTACT_EMAIL = 'calebthill@gmail.com';
+const SUGGESTION_MAILTO = `mailto:${CONTACT_EMAIL}?subject=Tabletop%20Tracker%20suggestion`;
 
 export default function AboutScreen() {
   const version = appConfig.expo.version;
@@ -53,6 +56,20 @@ export default function AboutScreen() {
 
         <Pressable style={styles.linkBtn} onPress={openTour}>
           <Text style={styles.linkBtnText}>Show app tour again</Text>
+        </Pressable>
+
+        <Text style={styles.sectionTitle}>Suggestions &amp; support</Text>
+        <Text style={styles.body}>
+          Got an idea or spotted a bug? I'd love to hear it — this app is built and improved in my
+          spare time, and your feedback shapes what comes next.
+        </Text>
+
+        <Pressable style={styles.linkBtn} onPress={() => Linking.openURL(SUGGESTION_MAILTO)}>
+          <Text style={styles.linkBtnText}>✉️  Email me a suggestion</Text>
+        </Pressable>
+
+        <Pressable style={styles.linkBtn} onPress={() => Linking.openURL(COFFEE_URL)}>
+          <Text style={styles.linkBtnText}>☕  Buy me a coffee ↗</Text>
         </Pressable>
 
         <Text style={styles.footer}>Made for board game lovers, by board game lovers. 🎲</Text>
