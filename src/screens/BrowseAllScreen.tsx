@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
+  FlatList,
   Image,
   Modal,
   Pressable,
@@ -51,7 +52,12 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'rating'>('name');
+  const [viewMode, setViewMode] = useState<'grid' | 'shelf' | 'list'>('grid');
   const [selected, setSelected] = useState<AggregatedGame | null>(null);
+
+  const isOwned = (g: AggregatedGame) => g.owners.some((o) => o.owner === 'You');
+  // Fixed 3-column tile width so the last row stays left-aligned (no stretching).
+  const tileW = (Dimensions.get('window').width - spacing.lg * 2 - spacing.sm * 2) / 3;
 
   useEffect(() => {
     navigation.setOptions({ title: 'All games' });
@@ -60,15 +66,19 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
       .catch((e: any) => setError(e?.message ?? 'Could not load libraries.'));
   }, []);
 
-  const shelves = useMemo(() => {
+  const filtered = useMemo(() => {
     if (!games) return [];
     const q = query.trim().toLowerCase();
-    const filtered = q ? games.filter((g) => g.name.toLowerCase().includes(q)) : games.slice();
-    filtered.sort((a, b) =>
+    const arr = q ? games.filter((g) => g.name.toLowerCase().includes(q)) : games.slice();
+    arr.sort((a, b) =>
       sortBy === 'rating'
         ? (b.bestRating ?? -1) - (a.bestRating ?? -1) || a.name.localeCompare(b.name)
         : a.name.localeCompare(b.name)
     );
+    return arr;
+  }, [games, query, sortBy]);
+
+  const shelves = useMemo(() => {
     // Pack each shelf by actual spine width so it fills the width (no end gap).
     const availW = Dimensions.get('window').width - spacing.lg * 2 - 28;
     const rows: AggregatedGame[][] = [];
@@ -88,7 +98,7 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
     }
     if (row.length) rows.push(row);
     return rows;
-  }, [games, query, sortBy]);
+  }, [filtered]);
 
   if (error) {
     return (
@@ -123,10 +133,11 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
     const textStyle = onLabel ? styles.spineTextDark : gold ? styles.spineTextGold : styles.spineText;
     const tint = TINTS[seed % TINTS.length];
     const worn = seed % 4 === 0; // a worn, shelf-scuffed base on some books
+    const owned = isOwned(g);
     return (
       <Pressable
         key={g.name}
-        style={[styles.spine, { height: h, width: w, backgroundColor: color }]}
+        style={[styles.spine, { height: h, width: w, backgroundColor: color }, owned && styles.spineOwned]}
         onPress={() => setSelected(g)}
       >
         {tint && <View style={[styles.tint, { backgroundColor: tint }]} />}
@@ -148,6 +159,69 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
     );
   }
 
+  function metaLine(g: AggregatedGame): string {
+    const players =
+      g.minPlayers && g.maxPlayers
+        ? g.minPlayers === g.maxPlayers
+          ? `${g.minPlayers}p`
+          : `${g.minPlayers}–${g.maxPlayers}p`
+        : null;
+    const owners = g.owners.length;
+    return [
+      owners > 0 ? `👥 ${owners}` : null,
+      players ? `· ${players}` : null,
+      g.playTimeMin ? `· ${g.playTimeMin}m` : null,
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  function renderGridTile(g: AggregatedGame) {
+    const owned = isOwned(g);
+    return (
+      <Pressable style={[styles.gridTile, { width: tileW }]} onPress={() => setSelected(g)}>
+        {g.image ? (
+          <Image source={{ uri: g.image }} style={[styles.gridImg, owned && styles.imgOwned]} />
+        ) : (
+          <View style={[styles.gridImg, styles.tilePlaceholder, owned && styles.imgOwned]}>
+            <Text style={styles.tileEmoji}>🎲</Text>
+          </View>
+        )}
+        {owned && (
+          <View style={styles.ownedBadge}>
+            <Text style={styles.ownedBadgeText}>✓</Text>
+          </View>
+        )}
+        <Text style={[styles.gridName, owned && styles.ownedName]} numberOfLines={2}>{g.name}</Text>
+      </Pressable>
+    );
+  }
+
+  function renderListRow(g: AggregatedGame) {
+    const owned = isOwned(g);
+    return (
+      <Pressable style={[styles.listRow, owned && styles.listRowOwned]} onPress={() => setSelected(g)}>
+        {g.image ? (
+          <Image source={{ uri: g.image }} style={[styles.listThumb, owned && styles.imgOwned]} />
+        ) : (
+          <View style={[styles.listThumb, styles.tilePlaceholder, owned && styles.imgOwned]}>
+            <Text style={styles.tileEmojiSm}>🎲</Text>
+          </View>
+        )}
+        <View style={styles.flex1}>
+          <Text style={styles.listName} numberOfLines={1}>{g.name}</Text>
+          <Text style={styles.listMeta} numberOfLines={1}>
+            {owned ? <Text style={styles.ownedInline}>✓ Owned  </Text> : null}
+            {metaLine(g)}
+          </Text>
+        </View>
+        {g.bestRating != null && g.bestRating > 0 ? (
+          <Text style={styles.listRating}>★ {fmt(g.bestRating)}</Text>
+        ) : null}
+      </Pressable>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <View style={styles.toolbar}>
@@ -158,13 +232,28 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
           placeholder={`Search ${total} games…`}
           placeholderTextColor={colors.placeholder}
         />
-        <View style={styles.sortRow}>
-          <Pressable style={[styles.sortChip, sortBy === 'name' && styles.sortChipOn]} onPress={() => setSortBy('name')}>
-            <Text style={[styles.sortText, sortBy === 'name' && styles.sortTextOn]}>A–Z</Text>
-          </Pressable>
-          <Pressable style={[styles.sortChip, sortBy === 'rating' && styles.sortChipOn]} onPress={() => setSortBy('rating')}>
-            <Text style={[styles.sortText, sortBy === 'rating' && styles.sortTextOn]}>Rating</Text>
-          </Pressable>
+        <View style={styles.controlsRow}>
+          <View style={styles.viewToggle}>
+            {(['grid', 'shelf', 'list'] as const).map((m) => (
+              <Pressable
+                key={m}
+                style={[styles.viewSeg, viewMode === m && styles.viewSegOn]}
+                onPress={() => setViewMode(m)}
+              >
+                <Text style={[styles.viewSegText, viewMode === m && styles.viewSegTextOn]}>
+                  {m === 'grid' ? '▦ Grid' : m === 'shelf' ? '📚 Shelf' : '☰ List'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={styles.sortRow}>
+            <Pressable style={[styles.sortChip, sortBy === 'name' && styles.sortChipOn]} onPress={() => setSortBy('name')}>
+              <Text style={[styles.sortText, sortBy === 'name' && styles.sortTextOn]}>A–Z</Text>
+            </Pressable>
+            <Pressable style={[styles.sortChip, sortBy === 'rating' && styles.sortChipOn]} onPress={() => setSortBy('rating')}>
+              <Text style={[styles.sortText, sortBy === 'rating' && styles.sortTextOn]}>Rating</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -172,6 +261,19 @@ export default function BrowseAllScreen({ navigation }: RootStackProps<'BrowseAl
         <View style={styles.center}>
           <Text style={styles.muted}>No games yet — add a friend's library code on the Library tab.</Text>
         </View>
+      ) : viewMode !== 'shelf' ? (
+        <FlatList
+          key={viewMode}
+          data={filtered}
+          keyExtractor={(g) => g.name}
+          numColumns={viewMode === 'grid' ? 3 : 1}
+          columnWrapperStyle={viewMode === 'grid' ? styles.gridRow : undefined}
+          contentContainerStyle={styles.flatContent}
+          renderItem={({ item }) => (viewMode === 'grid' ? renderGridTile(item) : renderListRow(item))}
+          ListEmptyComponent={
+            query.trim() ? <Text style={styles.muted}>No games match “{query}”.</Text> : null
+          }
+        />
       ) : (
         <ScrollView contentContainerStyle={styles.shelfScroll}>
           <View style={styles.cabinet}>
@@ -275,6 +377,63 @@ const styles = StyleSheet.create({
   sortText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   sortTextOn: { color: colors.primaryText },
   shelfScroll: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl * 2 },
+
+  controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  viewToggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  viewSeg: { paddingHorizontal: 10, paddingVertical: 6 },
+  viewSegOn: { backgroundColor: colors.primary },
+  viewSegText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
+  viewSegTextOn: { color: colors.primaryText },
+
+  // Grid + list views.
+  flatContent: { padding: spacing.lg, paddingBottom: spacing.xl * 2 },
+  gridRow: { gap: spacing.sm, marginBottom: spacing.sm },
+  gridTile: { gap: 4 },
+  gridImg: { width: '100%', aspectRatio: 1, borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
+  imgOwned: { borderWidth: 2, borderColor: colors.success },
+  tilePlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  tileEmoji: { fontSize: 26 },
+  tileEmojiSm: { fontSize: 20 },
+  gridName: { color: colors.text, fontSize: 12, lineHeight: 15 },
+  ownedName: { color: colors.success, fontWeight: '600' },
+  ownedBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ownedBadgeText: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  flex1: { flex: 1 },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  listRowOwned: { borderColor: colors.success },
+  listThumb: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: colors.surfaceAlt },
+  listName: { color: colors.text, fontSize: 15, fontWeight: '600' },
+  listMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  ownedInline: { color: colors.success, fontWeight: '700' },
+  listRating: { color: colors.star, fontSize: 13, fontWeight: '700' },
+  spineOwned: { borderColor: colors.success, borderWidth: 1.5 },
 
   // The wooden cabinet that frames all the shelves.
   cabinet: {
