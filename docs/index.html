@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tabletop Tracker — your board game collection, organised</title>
+<meta name="description" content="Catalogue your board game collection, log plays and winners, share your shelf with friends, and find the perfect game for tonight. Free, private, and made for board game lovers." />
+<link rel="icon" href="icon.png" />
+<meta property="og:title" content="Tabletop Tracker" />
+<meta property="og:description" content="Your whole board game collection — organised, in your pocket." />
+<meta property="og:image" content="icon.png" />
+<meta property="og:type" content="website" />
+<style>
+  :root {
+    --bg: #0f1115; --surface: #1a1d24; --surface-alt: #232730; --border: #2e333d;
+    --text: #f2f4f8; --muted: #9aa3b2; --primary: #6c8cff; --star: #ffc857; --success: #3ddc97;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+
+  /* Hero */
+  .hero { text-align: center; padding: 64px 20px 40px; position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; top: -120px; left: 50%; transform: translateX(-50%);
+    width: 520px; height: 320px; background: radial-gradient(closest-side, rgba(108,140,255,0.22), transparent 70%);
+    pointer-events: none;
+  }
+  .icon { width: 104px; height: 104px; border-radius: 24px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+  .hero h1 { font-size: 44px; margin: 22px 0 6px; letter-spacing: -0.5px; }
+  .tagline { font-size: 20px; color: var(--text); margin: 0 0 14px; font-weight: 600; }
+  .lead { font-size: 17px; color: var(--muted); max-width: 620px; margin: 0 auto 28px; }
+  .cta {
+    display: inline-block; background: var(--primary); color: #fff; font-weight: 700; font-size: 17px;
+    padding: 14px 28px; border-radius: 12px; box-shadow: 0 8px 24px rgba(108,140,255,0.35);
+  }
+  .cta-note { color: var(--muted); font-size: 14px; margin-top: 12px; }
+
+  /* Feature grid */
+  .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 24px 0 8px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px;
+  }
+  .card .emoji { font-size: 30px; }
+  .card h3 { margin: 12px 0 6px; font-size: 18px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  /* Privacy band */
+  .band {
+    background: var(--surface-alt); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px; margin: 32px 0; text-align: center;
+  }
+  .band h2 { margin: 0 0 8px; font-size: 22px; }
+  .band p { margin: 0 auto; color: var(--muted); max-width: 640px; }
+  .band .success { color: var(--success); font-weight: 600; }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--border); margin-top: 40px; padding: 28px 20px 48px; text-align: center; }
+  .links { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: center; margin-bottom: 14px; }
+  .foot-note { color: var(--muted); font-size: 14px; }
+  .heart { color: var(--star); }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 34px; }
+    .features { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <img class="icon" src="icon.png" alt="Tabletop Tracker app icon" />
+      <h1>Tabletop Tracker</h1>
+      <p class="tagline">Your whole board game collection — organised, in your pocket.</p>
+      <p class="lead">
+        Catalogue your games, log who played and won, share your shelf with friends, and always
+        find the right game for tonight. Free, private, and made for board game lovers.
+      </p>
+      <a class="cta" href="https://play.google.com/store/apps/details?id=com.bgk.boardgamekeeper">Get it on Google Play</a>
+      <p class="cta-note">🎲 Launching soon on Android — closed testing in progress.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="features">
+      <div class="card">
+        <div class="emoji">🎲</div>
+        <h3>Your collection</h3>
+        <p>Add games with a photo, rating, location and tags — or pull the details in automatically from BoardGameGeek.</p>
+      </div>
+      <div class="card">
+        <div class="emoji">📊</div>
+        <h3>Plays, groups &amp; stats</h3>
+        <p>Log who played, who won and each player's score. Set up gaming groups, leaderboards and high scores for your game nights.</p>
+      </div>
+      <div class="card">
+        <div class="emoji">🔍</div>
+        <h3>Find the right game</h3>
+        <p>Filter by players, play time, age and more — then let "Feeling lucky" pick one for tonight.</p>
+      </div>
+      <div class="card">
+        <div class="emoji">⭐</div>
+        <h3>Wishlist</h3>
+        <p>Keep track of games you'd love to own — and see which friends already have one you could borrow.</p>
+      </div>
+      <div class="card">
+        <div class="emoji">👥</div>
+        <h3>Share with friends</h3>
+        <p>Publish your shelf with a share code and browse everyone's games together on one shared bookshelf.</p>
+      </div>
+      <div class="card">
+        <div class="emoji">🧰</div>
+        <h3>Game-night tools</h3>
+        <p>A dice roller, a "who goes first" picker, a calculator and a scorepad — all built in.</p>
+      </div>
+    </section>
+
+    <section class="band">
+      <h2>Your data stays yours</h2>
+      <p>
+        By default, <span class="success">everything lives only on your device</span> — your
+        collection, photos, plays and notes are never uploaded unless you choose to share a library
+        or export a backup. No ads, no tracking.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="links">
+      <a href="privacy/">Privacy Policy</a>
+      <a href="terms/">Terms of Use</a>
+      <a href="mailto:calebthill@gmail.com?subject=Tabletop%20Tracker">Contact</a>
+      <a href="https://buymeacoffee.com/calebhill">Buy me a coffee ☕</a>
+    </div>
+    <p class="foot-note">Made for board game lovers, by board game lovers. <span class="heart">🎲</span></p>
+  </footer>
+</body>
+</html>
