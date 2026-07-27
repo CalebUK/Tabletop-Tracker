@@ -38,6 +38,7 @@ yarn-error.*
 # internal launch/ops docs — kept locally, not published to the public repo
 /GOING_PUBLIC.md
 /STORE_LISTING.md
+/POST_GO_LIVE.md
 
 # typescript
 *.tsbuildinfo
