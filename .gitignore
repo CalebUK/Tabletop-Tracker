@@ -39,6 +39,7 @@ yarn-error.*
 /GOING_PUBLIC.md
 /STORE_LISTING.md
 /POST_GO_LIVE.md
+/IOS.md
 
 # typescript
 *.tsbuildinfo
