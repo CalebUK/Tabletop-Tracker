@@ -8,7 +8,11 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true,
+      "bundleIdentifier": "com.bgk.boardgamekeeper",
+      "supportsTablet": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
         "NSCameraUsageDescription": "Tabletop Tracker uses the camera so you can photograph your board games.",
         "NSPhotoLibraryUsageDescription": "Tabletop Tracker lets you pick a photo of your board game from your library."
