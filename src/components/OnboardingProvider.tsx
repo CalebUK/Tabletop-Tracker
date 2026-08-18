@@ -15,6 +15,10 @@ import { colors, radius, spacing } from '../theme';
 
 const SEEN_KEY = 'onboarding_seen';
 
+// Cap how far the OS "large text" accessibility setting can scale tour text,
+// so slides don't overflow the screen on phones with big system font sizes.
+const MAX_FONT_SCALE = 1.3;
+
 interface Slide {
   emoji?: string;
   logo?: boolean;
@@ -129,12 +133,15 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         <SafeAreaView style={styles.safe}>
           <View style={styles.topBar}>
             <Pressable onPress={close} hitSlop={10}>
-              <Text style={styles.skip}>{last ? '' : 'Skip'}</Text>
+              <Text style={styles.skip} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                {last ? '' : 'Skip'}
+              </Text>
             </Pressable>
           </View>
 
           <ScrollView
             ref={scrollRef}
+            style={styles.pager}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
@@ -150,18 +157,22 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
                 {s.logo ? (
                   <Image source={require('../../assets/adaptive-icon.png')} style={styles.logo} />
                 ) : (
-                  <Text style={styles.emoji}>{s.emoji}</Text>
+                  <Text style={styles.emoji} maxFontSizeMultiplier={MAX_FONT_SCALE}>{s.emoji}</Text>
                 )}
-                <Text style={styles.title}>{s.title}</Text>
-                <Text style={styles.body}>{s.body}</Text>
+                <Text style={styles.title} maxFontSizeMultiplier={MAX_FONT_SCALE}>{s.title}</Text>
+                <Text style={styles.body} maxFontSizeMultiplier={MAX_FONT_SCALE}>{s.body}</Text>
                 {s.hints && (
                   <View style={styles.hints}>
                     {s.hints.map((h) => (
                       <View key={h.label} style={styles.hintRow}>
                         <View style={styles.hintIcon}>
-                          <Text style={styles.hintIconText}>{h.icon}</Text>
+                          <Text style={styles.hintIconText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                            {h.icon}
+                          </Text>
                         </View>
-                        <Text style={styles.hintLabel}>{h.label}</Text>
+                        <Text style={styles.hintLabel} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                          {h.label}
+                        </Text>
                       </View>
                     ))}
                   </View>
@@ -177,7 +188,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
           </View>
 
           <Pressable style={styles.cta} onPress={next}>
-            <Text style={styles.ctaText}>{last ? 'Get started' : 'Next'}</Text>
+            <Text style={styles.ctaText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              {last ? 'Get started' : 'Next'}
+            </Text>
           </Pressable>
         </SafeAreaView>
       </Modal>
@@ -187,6 +200,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
+  pager: { flex: 1 },
   topBar: { height: 44, justifyContent: 'center', alignItems: 'flex-end', paddingHorizontal: spacing.lg },
   skip: { color: colors.textMuted, fontSize: 16, fontWeight: '600' },
   slide: {
@@ -212,7 +226,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  hintIconText: { fontSize: 20 },
+  hintIconText: { fontSize: 20, color: colors.favorite },
   hintLabel: { color: colors.text, fontSize: 15 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: spacing.lg },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },

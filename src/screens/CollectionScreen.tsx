@@ -311,10 +311,12 @@ export default function CollectionScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Image source={require('../../assets/adaptive-icon.png')} style={styles.logo} />
-          <Text style={styles.heading}>{wishlist ? 'My Wishlist' : 'My Collection'}</Text>
+          <Text style={styles.heading} numberOfLines={1} maxFontSizeMultiplier={1.2}>
+            {wishlist ? 'My Wishlist' : 'My Collection'}
+          </Text>
         </View>
         <View style={styles.headerRight}>
-          <Text style={styles.count}>
+          <Text style={styles.count} maxFontSizeMultiplier={1.2}>
             {games.length} {wishlist ? (games.length === 1 ? 'game' : 'games') : 'games'}
           </Text>
           <Pressable onPress={() => navigation.navigate('Backup')} hitSlop={10}>
@@ -599,11 +601,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexShrink: 0 },
   logo: { width: 40, height: 40 },
   gear: { fontSize: 20 },
-  heading: { color: colors.text, fontSize: 26, fontWeight: '700' },
+  heading: { color: colors.text, fontSize: 26, fontWeight: '700', flexShrink: 1 },
   count: { color: colors.textMuted, fontSize: 14 },
   toggle: {
     flexDirection: 'row',
