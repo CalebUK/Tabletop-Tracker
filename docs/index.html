@@ -40,6 +40,7 @@
     display: inline-block; background: var(--primary); color: #fff; font-weight: 700; font-size: 17px;
     padding: 14px 28px; border-radius: 12px; box-shadow: 0 8px 24px rgba(108,140,255,0.35);
   }
+  .cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   .cta-note { color: var(--muted); font-size: 14px; margin-top: 12px; }
 
   /* Screenshot strip */
@@ -97,8 +98,11 @@
         Catalogue your games, log who played and won, share your shelf with friends, and always
         find the right game for tonight. Free, private, and made for board game lovers.
       </p>
-      <a class="cta" href="https://play.google.com/store/apps/details?id=com.bgk.boardgamekeeper">Get it on Google Play</a>
-      <p class="cta-note">Free on Android — no ads, no tracking. 🎲</p>
+      <div class="cta-row">
+        <a class="cta" href="https://play.google.com/store/apps/details?id=com.bgk.boardgamekeeper">Get it on Google Play</a>
+        <a class="cta" href="https://apps.apple.com/us/app/tabletop-tracker/id6795932118">Download on the App Store</a>
+      </div>
+      <p class="cta-note">Free on Android &amp; iOS — no ads, no tracking. 🎲</p>
     </div>
   </header>
 
